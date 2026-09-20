@@ -246,9 +246,9 @@ signature, échange du code) — il n'y a qu'à créer l'app et cliquer un bouto
    - **URL publique de ce serveur** (ex. `https://queue.3dkeycap.com`) ;
    - **Domaine de la boutique** (`ma-boutique.myshopify.com`) ;
    - **Client ID** et **Client secret**.
-3. Cliquer **Enregistrer**, puis copier la « Redirect URL OAuth » affichée sous les champs
-   et la coller dans le Partner Dashboard → Configuration → App URL / Allowed redirection
-   URL(s).
+3. Cliquer **Enregistrer**, puis cliquer **Copier** à côté de la « Redirect URL OAuth »
+   affichée sous les champs et la coller telle quelle dans le Partner Dashboard →
+   Configuration → **Allowed redirection URL(s)**.
 4. Cliquer **Connecter via OAuth** : le navigateur va sur Shopify, le marchand approuve les
    accès, puis revient automatiquement sur le dashboard — le token d'accès est rempli tout
    seul et la pastille passe à « Configuré ».
@@ -262,6 +262,15 @@ signature, échange du code) — il n'y a qu'à créer l'app et cliquer un bouto
 Une app privée existante qui a encore un token classique peut continuer à le coller
 directement dans le champ **Token d'accès** : le flux OAuth n'écrase rien tant qu'on ne
 clique pas sur « Connecter ».
+
+**Erreur « Oops, something went wrong / Unauthorized Access »** en cliquant sur
+« Connecter via OAuth » : Shopify rejette la demande dès que l'URL de redirection reçue ne
+correspond pas exactement à ce qui est enregistré dans le Partner Dashboard.
+- vérifier que **Allowed redirection URL(s)** n'est pas vide et contient l'URL copiée
+  depuis le bouton **Copier** ci-dessus, au caractère près (l'app rejette silencieusement
+  toute variation — https vs http, `/` de fin, sous-domaine) ;
+- si l'app est encore en brouillon, la publier (ou l'installer via un lien d'installation)
+  avant de réessayer.
 
 La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` / `Colour` /
 `Couleur` / `Resin`, puis `variant_title`, puis le SKU.

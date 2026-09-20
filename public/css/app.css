@@ -409,5 +409,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .switch input { width: 16px; height: 16px; }
 
 .oauth-block { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; border-top: 1px dashed var(--line); margin-top: 2px; }
+.oauth-redirect-row { display: flex; align-items: center; gap: 8px; }
+.oauth-redirect-row .field-hint { flex: 1; }
 .oauth-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .oauth-actions .primary-btn { text-decoration: none; }

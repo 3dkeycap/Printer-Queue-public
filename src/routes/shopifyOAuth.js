@@ -8,6 +8,7 @@ import {
   OAUTH_STATE_TTL_MS,
   buildAuthorizeUrl,
   exchangeCodeForToken,
+  normalizeBaseUrl,
   normalizeShopDomain,
   verifyOAuthCallback,
 } from '../integrations/shopifyOAuth.js';
@@ -37,7 +38,7 @@ shopifyOAuthRouter.get(
   '/callback',
   asyncRoute(async (req, res) => {
     const backToDashboard = (status, message) => {
-      const url = new URL(`${getSettings()['app.publicUrl'] || ''}/`);
+      const url = new URL(`${normalizeBaseUrl(getSettings()['app.publicUrl'])}/`);
       url.hash = 'integrations';
       url.searchParams.set('shopify_status', status);
       if (message) url.searchParams.set('shopify_message', message);

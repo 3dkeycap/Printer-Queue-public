@@ -9,6 +9,7 @@ const { closeDb } = await import('../src/db/index.js');
 const { updateSettings } = await import('../src/domain/settings.service.js');
 const {
   buildAuthorizeUrl,
+  normalizeBaseUrl,
   normalizeShopDomain,
   redirectUri,
   verifyOAuthCallback,
@@ -70,6 +71,18 @@ describe('Shopify OAuth 2.0', () => {
     assert.equal(
       redirectUri({ 'app.publicUrl': 'https://queue.3dkeycap.com' }),
       'https://queue.3dkeycap.com/api/integrations/shopify/oauth/callback',
+    );
+  });
+
+  it('ne produit jamais de double slash quand l\'URL publique est collée avec un / final', () => {
+    // Cas réel : "https://printer.stackia.duckdns.org/" copié depuis la barre
+    // d'adresse. Un double slash ne matcherait plus jamais la redirect URL
+    // enregistrée dans le Partner Dashboard -> Shopify répond "Unauthorized Access".
+    assert.equal(normalizeBaseUrl('https://queue.3dkeycap.com/'), 'https://queue.3dkeycap.com');
+    assert.equal(normalizeBaseUrl('https://queue.3dkeycap.com///'), 'https://queue.3dkeycap.com');
+    assert.equal(
+      redirectUri({ 'app.publicUrl': 'https://printer.stackia.duckdns.org/' }),
+      'https://printer.stackia.duckdns.org/api/integrations/shopify/oauth/callback',
     );
   });
 });

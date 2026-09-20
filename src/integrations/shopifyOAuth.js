@@ -17,6 +17,14 @@ export const normalizeShopDomain = (input) => {
 const isValidShopDomain = (domain) => /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(domain);
 
 /**
+ * Retire les `/` de fin. L'URL publique est souvent collée avec un slash final
+ * (copiée depuis la barre d'adresse) ; sans ce nettoyage, la concaténation
+ * produirait un double slash et l'URL ne matcherait plus jamais ce qui est
+ * enregistré dans le Partner Dashboard, avec un rejet "Unauthorized Access".
+ */
+export const normalizeBaseUrl = (url) => String(url ?? '').trim().replace(/\/+$/, '');
+
+/**
  * Construit l'URL d'autorisation Shopify (étape 1 du flux OAuth).
  * Le marchand est redirigé vers cette URL depuis son navigateur.
  */
@@ -42,7 +50,7 @@ export const buildAuthorizeUrl = (state) => {
 };
 
 export const redirectUri = (settings = getSettings()) =>
-  `${settings['app.publicUrl']}/api/integrations/shopify/oauth/callback`;
+  `${normalizeBaseUrl(settings['app.publicUrl'])}/api/integrations/shopify/oauth/callback`;
 
 /**
  * Vérifie la signature HMAC des paramètres de retour OAuth (étape 2).

@@ -61,6 +61,17 @@ describe('routes OAuth Shopify', () => {
     assert.equal(stored.state, location.searchParams.get('state'));
   });
 
+  it('/start ne produit pas de double slash quand l\'URL publique a un / final', async () => {
+    updateSettings({ 'app.publicUrl': 'https://printer.stackia.duckdns.org/' });
+    const response = await fetch(`${base}/api/integrations/shopify/oauth/start`, { redirect: 'manual' });
+    const location = new URL(response.headers.get('location'));
+    assert.equal(
+      location.searchParams.get('redirect_uri'),
+      'https://printer.stackia.duckdns.org/api/integrations/shopify/oauth/callback',
+    );
+    updateSettings({ 'app.publicUrl': 'https://queue.3dkeycap.com' });
+  });
+
   it('/callback échange le code, enregistre le token et renvoie au dashboard', async () => {
     const started = await fetch(`${base}/api/integrations/shopify/oauth/start`, { redirect: 'manual' });
     const state = new URL(started.headers.get('location')).searchParams.get('state');

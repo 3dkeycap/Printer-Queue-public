@@ -129,16 +129,39 @@ const groupCard = (group, actions) => {
  * la redirect URL à enregistrer dans le Partner Dashboard.
  */
 const shopifyOAuthBlock = (actions) => {
-  const publicUrl = state.settings.find((item) => item.key === 'app.publicUrl')?.value || '';
+  const rawPublicUrl = state.settings.find((item) => item.key === 'app.publicUrl')?.value || '';
+  // Un / de fin (fréquent en copiant depuis la barre d'adresse) ne doit pas
+  // produire un double slash : c'est exactement l'URL que le serveur enverra
+  // à Shopify, elle doit matcher au caractère près ce qui est collé côté
+  // Partner Dashboard.
+  const base = rawPublicUrl.replace(/\/+$/, '') || location.origin;
+  const redirectUrl = `${base}/api/integrations/shopify/oauth/callback`;
   const connected = state.connectors.shopify?.configured;
 
   return el('div', { class: 'oauth-block' }, [
     el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/shopify`),
-    el(
-      'p',
-      { class: 'field-hint mono' },
-      `Redirect URL OAuth (Partner Dashboard) : ${publicUrl || location.origin}/api/integrations/shopify/oauth/callback`,
-    ),
+    el('div', { class: 'oauth-redirect-row' }, [
+      el('p', { class: 'field-hint mono' }, `Redirect URL OAuth (Partner Dashboard) : ${redirectUrl}`),
+      el(
+        'button',
+        {
+          class: 'mini-btn',
+          type: 'button',
+          onclick: async (event) => {
+            // `event.currentTarget` redevient null une fois l'événement
+            // terminé : on garde une référence au bouton pour le setTimeout.
+            const button = event.currentTarget;
+            await navigator.clipboard.writeText(redirectUrl);
+            const label = button.textContent;
+            button.textContent = 'Copié';
+            setTimeout(() => {
+              button.textContent = label;
+            }, 1500);
+          },
+        },
+        'Copier',
+      ),
+    ]),
     el('div', { class: 'oauth-actions' }, [
       el(
         'a',
