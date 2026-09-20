@@ -73,6 +73,35 @@ export const toast = (message, kind = 'ok') => {
   }, 3200);
 };
 
+// Élément unique réutilisé pour l'aperçu flottant : évite qu'un aperçu reste
+// coincé à l'écran si la carte survolée disparaît (rafraîchissement) avant le mouseleave.
+let previewImg = null;
+const getPreviewImg = () => {
+  if (!previewImg) {
+    previewImg = document.createElement('img');
+    previewImg.className = 'image-preview';
+    previewImg.hidden = true;
+    document.body.append(previewImg);
+  }
+  return previewImg;
+};
+
+/** Affiche la photo du produit au survol d'un tag (ex. le tag « Photo » d'une carte). */
+export const attachImagePreview = (node, url) => {
+  node.addEventListener('mouseenter', () => {
+    const preview = getPreviewImg();
+    preview.src = url;
+    preview.hidden = false;
+    const rect = node.getBoundingClientRect();
+    preview.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 216))}px`;
+    preview.style.top = `${rect.bottom + 8}px`;
+  });
+  node.addEventListener('mouseleave', () => {
+    getPreviewImg().hidden = true;
+  });
+  return node;
+};
+
 /** Small promise-based confirm/prompt dialog built on <dialog>. */
 export const modal = ({ title, body, confirmLabel = 'Confirmer', onConfirm }) =>
   new Promise((resolve) => {

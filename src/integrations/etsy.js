@@ -29,8 +29,47 @@ export const normalizeTransaction = (transaction) => {
     quantity: Number(transaction.quantity ?? 1),
     unitPrice: Number(transaction.price?.amount ?? 0) / Number(transaction.price?.divisor ?? 1),
     colorHints: [...colorHints, variantTitle, transaction.sku].filter(Boolean),
+    listingId: transaction.listing_id ?? null,
+    listingImageId: transaction.listing_image_id ?? null,
     raw: transaction,
   };
+};
+
+// `${listingId}:${listingImageId}` -> URL de la photo (ou null). En mémoire
+// pour la durée de vie du process, même logique que côté Shopify.
+const listingImageCache = new Map();
+
+/** Photo d'une annonce Etsy. Best-effort : une erreur ne bloque jamais la synchro. */
+export const fetchListingImage = async (listingId, listingImageId, settings) => {
+  if (!listingId || !listingImageId) return null;
+  const cacheKey = `${listingId}:${listingImageId}`;
+  if (listingImageCache.has(cacheKey)) return listingImageCache.get(cacheKey);
+
+  try {
+    const url = `${config.etsy.apiBase}/listings/${listingId}/images/${listingImageId}`;
+    const payload = await requestJson(url, {
+      headers: {
+        'x-api-key': settings['etsy.apiKey'],
+        Authorization: `Bearer ${settings['etsy.accessToken']}`,
+      },
+    });
+    const imageUrl = payload?.url_570xN ?? payload?.url_fullxfull ?? null;
+    listingImageCache.set(cacheKey, imageUrl);
+    return imageUrl;
+  } catch (error) {
+    log.warn('failed to fetch listing image', { listingId, listingImageId, error: error.message });
+    return null;
+  }
+};
+
+/** Ajoute `imageUrl` à chaque article, sans jamais faire échouer la synchro. */
+export const attachListingImages = async (orders, settings) => {
+  for (const order of orders) {
+    for (const item of order.items) {
+      item.imageUrl = await fetchListingImage(item.listingId, item.listingImageId, settings);
+    }
+  }
+  return orders;
 };
 
 /** Etsy receipt -> normalised order. */
@@ -89,5 +128,7 @@ export const fetchOrders = async ({ since } = {}) => {
 
   const receipts = payload?.results ?? [];
   log.info('receipts fetched', { count: receipts.length });
-  return receipts.map(normalizeReceipt);
+  const normalized = receipts.map(normalizeReceipt);
+  await attachListingImages(normalized, freshSettings);
+  return normalized;
 };

@@ -102,10 +102,12 @@ export const listParts = (query = {}) => {
               o.tracking_number, o.carrier,
               COALESCE(c.name, 'Non assigné') AS color_name,
               COALESCE(c.hex, '#7C7364') AS color_hex,
-              COALESCE(c.sort_order, 999) AS color_sort
+              COALESCE(c.sort_order, 999) AS color_sort,
+              oi.image_url
        FROM parts p
        JOIN orders o ON o.id = p.order_id
        LEFT JOIN resin_colors c ON c.key = p.color_key
+       LEFT JOIN order_items oi ON oi.id = p.order_item_id
        ${clause}
        ORDER BY ${sort}
        LIMIT @limit OFFSET @offset`,
@@ -134,10 +136,12 @@ export const getPart = (id) => {
       `SELECT p.*, o.source, o.order_number, o.customer_name, o.customer_email, o.placed_at,
               o.is_priority AS order_priority, o.tracking_number, o.carrier,
               COALESCE(c.name, 'Non assigné') AS color_name,
-              COALESCE(c.hex, '#7C7364') AS color_hex
+              COALESCE(c.hex, '#7C7364') AS color_hex,
+              oi.image_url
        FROM parts p
        JOIN orders o ON o.id = p.order_id
        LEFT JOIN resin_colors c ON c.key = p.color_key
+       LEFT JOIN order_items oi ON oi.id = p.order_item_id
        WHERE p.id = ?`,
     )
     .get(Number(id));

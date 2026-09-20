@@ -20,6 +20,7 @@ const matchesAnyKeyword = (title, keywords) => {
  * @property {number} quantity
  * @property {number} [unitPrice]
  * @property {string[]} [colorHints] free text used to detect the resin colour
+ * @property {string} [imageUrl] product photo, when the marketplace could resolve one
  * @property {object} [raw]
  *
  * @typedef {Object} NormalizedOrder
@@ -150,6 +151,7 @@ export const ingestOrder = (order) => {
         db.prepare(
           `UPDATE order_items SET title = @title, sku = @sku, variant_title = @variantTitle,
                                   quantity = @quantity, unit_price = @unitPrice, color_key = @colorKey,
+                                  image_url = COALESCE(@imageUrl, image_url),
                                   raw_payload = COALESCE(@raw, raw_payload), updated_at = @ts
            WHERE id = @id`,
         ).run({
@@ -160,6 +162,7 @@ export const ingestOrder = (order) => {
           quantity,
           unitPrice: item.unitPrice ?? null,
           colorKey,
+          imageUrl: item.imageUrl ?? null,
           raw: item.raw ? JSON.stringify(item.raw) : null,
           ts,
         });
@@ -167,9 +170,9 @@ export const ingestOrder = (order) => {
         const info = db
           .prepare(
             `INSERT INTO order_items (order_id, external_id, title, sku, variant_title, quantity,
-                                      unit_price, color_key, raw_payload, created_at, updated_at)
+                                      unit_price, color_key, image_url, raw_payload, created_at, updated_at)
              VALUES (@orderId, @externalId, @title, @sku, @variantTitle, @quantity,
-                     @unitPrice, @colorKey, @raw, @ts, @ts)`,
+                     @unitPrice, @colorKey, @imageUrl, @raw, @ts, @ts)`,
           )
           .run({
             orderId,
@@ -180,6 +183,7 @@ export const ingestOrder = (order) => {
             quantity,
             unitPrice: item.unitPrice ?? null,
             colorKey,
+            imageUrl: item.imageUrl ?? null,
             raw: item.raw ? JSON.stringify(item.raw) : null,
             ts,
           });

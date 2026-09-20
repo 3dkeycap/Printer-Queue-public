@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity      INTEGER NOT NULL DEFAULT 1,
   unit_price    REAL,
   color_key     TEXT REFERENCES resin_colors (key),
+  image_url     TEXT,                               -- photo du produit (Shopify/Etsy), best-effort
   raw_payload   TEXT,
   created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -149,7 +150,9 @@ SELECT
   p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
   o.source, o.external_id AS order_external_id, o.order_number, o.customer_name,
   o.placed_at, o.is_priority AS order_priority, o.tracking_number, o.carrier,
-  c.name AS color_name, c.hex AS color_hex, c.sort_order AS color_sort
+  c.name AS color_name, c.hex AS color_hex, c.sort_order AS color_sort,
+  oi.image_url
 FROM parts p
 JOIN orders o ON o.id = p.order_id
-LEFT JOIN resin_colors c ON c.key = p.color_key;
+LEFT JOIN resin_colors c ON c.key = p.color_key
+LEFT JOIN order_items oi ON oi.id = p.order_item_id;

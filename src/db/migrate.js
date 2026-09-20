@@ -98,6 +98,7 @@ export const migrate = () => {
   // bases créées avant l'ajout des colonnes UV / commentaire
   addColumnIfMissing(db, 'parts', 'uv', 'TEXT');
   addColumnIfMissing(db, 'parts', 'comment', 'TEXT');
+  addColumnIfMissing(db, 'order_items', 'image_url', 'TEXT');
 
   // statuts retirés en v2 (FILE_READY, IN_INVENTORY) -> équivalent actuel
   for (const [legacy, replacement] of Object.entries(LEGACY_STATUS_MAP)) {

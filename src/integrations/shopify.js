@@ -20,8 +20,44 @@ export const normalizeLineItem = (lineItem) => {
     quantity: Number(lineItem.quantity ?? 1),
     unitPrice: Number(lineItem.price ?? 0),
     colorHints: [...propertyHints, lineItem.variant_title, lineItem.sku].filter(Boolean),
+    productId: lineItem.product_id ?? null,
     raw: lineItem,
   };
+};
+
+// product_id -> URL de la photo principale (ou null si le produit n'en a pas).
+// En mémoire pour la durée de vie du process : la fenêtre de synchro revoit
+// souvent les mêmes commandes ouvertes d'un cycle à l'autre, ça évite de
+// refaire un appel API pour un produit déjà résolu.
+const productImageCache = new Map();
+
+/** Photo principale d'un produit Shopify. Best-effort : une erreur ne bloque jamais la synchro. */
+export const fetchProductImage = async (productId, settings) => {
+  if (!productId) return null;
+  if (productImageCache.has(productId)) return productImageCache.get(productId);
+
+  try {
+    const url = `https://${settings['shopify.shopDomain']}/admin/api/${settings['shopify.apiVersion']}/products/${productId}.json?fields=id,image`;
+    const payload = await requestJson(url, {
+      headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'] },
+    });
+    const imageUrl = payload?.product?.image?.src ?? null;
+    productImageCache.set(productId, imageUrl);
+    return imageUrl;
+  } catch (error) {
+    log.warn('failed to fetch product image', { productId, error: error.message });
+    return null;
+  }
+};
+
+/** Ajoute `imageUrl` à chaque article, sans jamais faire échouer la synchro. */
+export const attachProductImages = async (orders, settings) => {
+  for (const order of orders) {
+    for (const item of order.items) {
+      item.imageUrl = await fetchProductImage(item.productId, settings);
+    }
+  }
+  return orders;
 };
 
 /** Shopify order -> normalised order. Exported for the webhook route + tests. */
@@ -81,5 +117,7 @@ export const fetchOrders = async ({ since } = {}) => {
 
   const orders = payload?.orders ?? [];
   log.info('orders fetched', { count: orders.length });
-  return orders.map(normalizeOrder);
+  const normalized = orders.map(normalizeOrder);
+  await attachProductImages(normalized, settings);
+  return normalized;
 };

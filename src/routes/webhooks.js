@@ -5,7 +5,7 @@ import { getSettings } from '../domain/settings.service.js';
 import { asyncRoute } from '../lib/errors.js';
 import { createLogger } from '../lib/logger.js';
 import { normalizeShipment, verifyWebhookSecret } from '../integrations/chitchats.js';
-import { normalizeOrder } from '../integrations/shopify.js';
+import { attachProductImages, normalizeOrder } from '../integrations/shopify.js';
 import { ingestOrder } from '../domain/ingest.js';
 import { applyShipment } from '../jobs/syncShipments.js';
 
@@ -58,8 +58,9 @@ webhooksRouter.post(
  */
 webhooksRouter.post(
   '/shopify',
-  asyncRoute((req, res) => {
-    const secret = getSettings()['shopify.apiSecret'];
+  asyncRoute(async (req, res) => {
+    const settings = getSettings();
+    const secret = settings['shopify.apiSecret'];
     if (secret) {
       const digest = crypto.createHmac('sha256', secret).update(req.rawBody ?? Buffer.alloc(0)).digest('base64');
       const provided = String(req.headers['x-shopify-hmac-sha256'] ?? '');
@@ -74,7 +75,9 @@ webhooksRouter.post(
 
     const topic = String(req.headers['x-shopify-topic'] ?? 'orders/create');
     const eventId = record('shopify', topic, req.body?.id, req.body);
-    const result = ingestOrder(normalizeOrder(req.body ?? {}));
+    const order = normalizeOrder(req.body ?? {});
+    await attachProductImages([order], settings);
+    const result = ingestOrder(order);
     settle(eventId, 'processed', result);
 
     return res.json({ received: true, ...result });
@@ -86,8 +89,10 @@ webhooksRouter.post(
   '/etsy',
   asyncRoute(async (req, res) => {
     const eventId = record('etsy', 'receipt.created', req.body?.receipt_id, req.body);
-    const { normalizeReceipt } = await import('../integrations/etsy.js');
-    const result = ingestOrder(normalizeReceipt(req.body ?? {}));
+    const { normalizeReceipt, attachListingImages } = await import('../integrations/etsy.js');
+    const order = normalizeReceipt(req.body ?? {});
+    await attachListingImages([order], getSettings());
+    const result = ingestOrder(order);
     settle(eventId, 'processed', result);
     return res.json({ received: true, ...result });
   }),

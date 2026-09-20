@@ -1,4 +1,4 @@
-import { el, icon, swatch } from '../ui.js';
+import { attachImagePreview, el, icon, swatch } from '../ui.js';
 import { groupParts, state, statusMeta } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -25,6 +25,7 @@ const buildCard = (part, actions) => {
         el('span', { class: 'tag' }, part.order_number ?? `#${part.order_id}`),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
         part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
+        part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),
       part.comment && el('div', { class: 'card-comment' }, [icon('note'), part.comment]),
       el('div', { class: 'card-foot' }, [

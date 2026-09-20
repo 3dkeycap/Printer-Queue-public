@@ -384,6 +384,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 }
 .card-comment .icon { width: 14px; height: 14px; flex: none; }
 
+/* aperçu flottant de la photo produit, au survol du tag « Photo » */
+.image-preview {
+  position: fixed; z-index: 200; width: 200px; height: 200px; object-fit: cover;
+  border-radius: var(--radius-sm); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  background: var(--surface-2); pointer-events: none;
+}
+
 /* ------------------------------------------------- édition dans le tableau - */
 .cell-select, .cell-input {
   width: 100%; min-width: 96px; height: 30px; padding: 0 8px;
