@@ -61,6 +61,30 @@ export const DEFINITIONS = [
   { key: 'production.commentOptions', group: 'production', label: 'Commentaires prédéfinis', type: 'list', hint: 'Liste déroulante disponible sur chaque pièce.', fallback: () => ['Réimpression', 'Support à revoir', 'Attente client', 'Pièce cassée', 'Prioritaire', 'Échantillon'] },
   { key: 'production.printerOptions', group: 'production', label: 'Imprimantes', type: 'list', hint: 'Une valeur par ligne. Liste déroulante pour assigner une pièce à une imprimante.', fallback: () => ['Mars 4 Ultra #1', 'Mars 4 Ultra #2', 'Mars 4 Ultra #3', 'Mars 4 Ultra #4'] },
   { key: 'production.defaultUv', group: 'production', label: 'Valeur UV par défaut', type: 'text', hint: 'Laisser vide pour ne rien pré-remplir.', fallback: () => '' },
+  {
+    key: 'production.nonPrintableKeywords',
+    group: 'production',
+    label: 'Suppléments à ne pas imprimer',
+    type: 'list',
+    hint: "Une valeur par ligne. Si le titre d'une ligne de commande contient un de ces mots (Etsy/Shopify), c'est un supplément/upsell, pas un objet : aucune pièce n'est créée pour cette ligne (la commande, elle, est conservée normalement).",
+    fallback: () => ['Custom UV Printed Legends', 'Color Variety Pack'],
+  },
+  {
+    key: 'production.uvTriggerKeywords',
+    group: 'production',
+    label: 'Suppléments qui indiquent un besoin UV',
+    type: 'list',
+    hint: "Une valeur par ligne, parmi les suppléments ci-dessus. Si un de ces titres apparaît dans une commande, les vraies pièces de cette même commande reçoivent automatiquement la valeur UV définie juste en dessous.",
+    fallback: () => ['Custom UV Printed Legends'],
+  },
+  {
+    key: 'production.uvAutoValue',
+    group: 'production',
+    label: 'Valeur UV appliquée automatiquement',
+    type: 'text',
+    hint: 'Doit correspondre à une des options UV définies plus haut (ex. « oui »).',
+    fallback: () => 'oui',
+  },
 ];
 
 const BY_KEY = new Map(DEFINITIONS.map((definition) => [definition.key, definition]));

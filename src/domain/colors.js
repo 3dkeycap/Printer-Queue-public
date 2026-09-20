@@ -26,15 +26,9 @@ export const listColors = ({ activeOnly = false } = {}) => {
 
 export const getColor = (key) => listColors().find((c) => c.key === key) ?? null;
 
-/**
- * Maps free-text hints coming from a marketplace (variant title, SKU suffix,
- * personalisation field...) to a resin colour of the catalogue.
- * Longest alias wins so "bleu nuit" beats "bleu".
- */
-export const resolveColorKey = (hints = [], colors = listColors()) => {
-  const haystack = hints.filter(Boolean).map(normalise).join(' | ');
-  if (!haystack) return 'unassigned';
+const NYLON_WORD = /(^|[^a-z0-9])nylon([^a-z0-9]|$)/;
 
+const findBestColorMatch = (haystack, colors) => {
   let best = { key: 'unassigned', score: 0 };
   for (const color of colors) {
     if (color.key === 'unassigned') continue;
@@ -50,7 +44,43 @@ export const resolveColorKey = (hints = [], colors = listColors()) => {
       }
     }
   }
-  return best.key;
+  return best;
+};
+
+/**
+ * Maps free-text hints coming from a marketplace (variant title, SKU suffix,
+ * personalisation field...) to a resin colour of the catalogue.
+ * Longest alias wins so "bleu nuit" beats "bleu".
+ *
+ * Le nylon est un procédé d'impression totalement différent (FDM/SLS), jamais
+ * de la résine : une variante « Nylon Grey » n'est donc jamais confondue avec
+ * « Grey ». Elle est automatiquement dirigée vers une entrée dédiée
+ * (`nylon-grey`), créée à la volée au premier passage si besoin, pour rester
+ * visible et filtrable à part du reste de la file de production résine.
+ */
+export const resolveColorKey = (hints = [], colors = listColors()) => {
+  const haystack = hints.filter(Boolean).map(normalise).join(' | ');
+  if (!haystack) return 'unassigned';
+
+  const match = findBestColorMatch(haystack, colors);
+  if (!NYLON_WORD.test(haystack) || match.key.startsWith('nylon')) return match.key;
+
+  const baseKey = match.key === 'unassigned' ? null : match.key;
+  const nylonKey = baseKey ? `nylon-${baseKey}` : 'nylon';
+  if (colors.some((color) => color.key === nylonKey)) return nylonKey;
+
+  const baseColor = baseKey ? colors.find((color) => color.key === baseKey) : null;
+  const created = createColor({
+    key: nylonKey,
+    name: baseColor ? `Nylon ${baseColor.name}` : 'Nylon',
+    hex: baseColor?.hex ?? '#8C8579',
+    aliases: baseColor
+      ? [`Nylon ${baseColor.name}`, ...baseColor.aliases.map((alias) => `Nylon ${alias}`)]
+      : ['Nylon'],
+    // regroupées après les résines, jamais mélangées avec la couleur de base
+    sort_order: 900 + (baseColor?.sort_order ?? 0),
+  });
+  return created?.key ?? nylonKey;
 };
 
 export const updateColor = (key, patch) => {

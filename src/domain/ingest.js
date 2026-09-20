@@ -1,8 +1,15 @@
 import { getDb, nowIso } from '../db/index.js';
 import { createLogger } from '../lib/logger.js';
 import { listColors, resolveColorKey } from './colors.js';
+import { getSettings } from './settings.service.js';
 
 const log = createLogger('ingest');
+
+/** Vrai si `title` contient un des mots-clés (comparaison insensible à la casse). */
+const matchesAnyKeyword = (title, keywords) => {
+  const normalizedTitle = String(title ?? '').toLowerCase();
+  return (keywords ?? []).some((keyword) => normalizedTitle.includes(String(keyword).toLowerCase()));
+};
 
 /**
  * @typedef {Object} NormalizedItem
@@ -42,7 +49,15 @@ const log = createLogger('ingest');
 export const ingestOrder = (order) => {
   const db = getDb();
   const colors = listColors();
+  const settings = getSettings();
   const ts = nowIso();
+
+  // Un supplément Etsy/Shopify comme « Custom UV Printed Legends » n'est pas
+  // un objet à imprimer : sa seule présence dans la commande indique que la
+  // vraie pièce (souvent un « Custom Keycap Set ») a besoin d'UV.
+  const needsAutoUv = (order.items ?? []).some((item) =>
+    matchesAnyKeyword(item.title, settings['production.uvTriggerKeywords']),
+  );
 
   const run = db.transaction(() => {
     const existing = db
@@ -120,6 +135,10 @@ export const ingestOrder = (order) => {
         [item.variantTitle, item.sku, item.title, ...(item.colorHints ?? [])],
         colors,
       );
+      // Supplément Etsy/Shopify (ex. « Custom UV Printed Legends », « Color
+      // Variety Pack ») : pas un objet physique, donc pas de pièce à créer -
+      // la ligne de commande reste enregistrée pour l'historique/le total.
+      const isNonPrintable = matchesAnyKeyword(item.title, settings['production.nonPrintableKeywords']);
 
       const existingItem = db
         .prepare('SELECT * FROM order_items WHERE order_id = ? AND external_id = ?')
@@ -168,52 +187,55 @@ export const ingestOrder = (order) => {
       }
 
       // --- granularity: one row per physical object ---------------------
-      const known = db
-        .prepare('SELECT unit_index FROM parts WHERE order_item_id = ?')
-        .all(itemId)
-        .map((row) => row.unit_index);
+      if (!isNonPrintable) {
+        const known = db
+          .prepare('SELECT unit_index FROM parts WHERE order_item_id = ?')
+          .all(itemId)
+          .map((row) => row.unit_index);
 
-      for (let unitIndex = 1; unitIndex <= quantity; unitIndex += 1) {
-        if (known.includes(unitIndex)) {
-          partsUpdated += 1;
-          continue;
+        for (let unitIndex = 1; unitIndex <= quantity; unitIndex += 1) {
+          if (known.includes(unitIndex)) {
+            partsUpdated += 1;
+            continue;
+          }
+          const info = db
+            .prepare(
+              `INSERT INTO parts (order_id, order_item_id, unit_index, name, sku, variant_title,
+                                  color_key, status, priority, uv, status_changed_at, created_at, updated_at)
+               VALUES (@orderId, @itemId, @unitIndex, @name, @sku, @variantTitle,
+                       @colorKey, 'TO_PRINT', @priority, @uv, @ts, @ts, @ts)`,
+            )
+            .run({
+              orderId,
+              itemId,
+              unitIndex,
+              name: item.title,
+              sku: item.sku ?? null,
+              variantTitle: item.variantTitle ?? null,
+              colorKey,
+              priority: order.isPriority ? 1 : 0,
+              uv: needsAutoUv ? settings['production.uvAutoValue'] || null : null,
+              ts,
+            });
+          db.prepare(
+            `INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at)
+             VALUES (?, NULL, 'TO_PRINT', 'worker', ?, ?)`,
+          ).run(
+            info.lastInsertRowid,
+            `Importé depuis ${order.source} (commande ${order.orderNumber ?? order.externalId})`,
+            ts,
+          );
+          partsCreated += 1;
         }
-        const info = db
-          .prepare(
-            `INSERT INTO parts (order_id, order_item_id, unit_index, name, sku, variant_title,
-                                color_key, status, priority, status_changed_at, created_at, updated_at)
-             VALUES (@orderId, @itemId, @unitIndex, @name, @sku, @variantTitle,
-                     @colorKey, 'TO_PRINT', @priority, @ts, @ts, @ts)`,
-          )
-          .run({
+
+        if (known.length > quantity) {
+          log.warn('line item quantity decreased, existing parts kept', {
             orderId,
             itemId,
-            unitIndex,
-            name: item.title,
-            sku: item.sku ?? null,
-            variantTitle: item.variantTitle ?? null,
-            colorKey,
-            priority: order.isPriority ? 1 : 0,
-            ts,
+            known: known.length,
+            quantity,
           });
-        db.prepare(
-          `INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at)
-           VALUES (?, NULL, 'TO_PRINT', 'worker', ?, ?)`,
-        ).run(
-          info.lastInsertRowid,
-          `Importé depuis ${order.source} (commande ${order.orderNumber ?? order.externalId})`,
-          ts,
-        );
-        partsCreated += 1;
-      }
-
-      if (known.length > quantity) {
-        log.warn('line item quantity decreased, existing parts kept', {
-          orderId,
-          itemId,
-          known: known.length,
-          quantity,
-        });
+        }
       }
     }
 

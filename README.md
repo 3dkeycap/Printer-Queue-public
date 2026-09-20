@@ -306,6 +306,22 @@ sans commande du tout dans les 60 derniers jours. `read_orders` suffit amplement
 La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` / `Colour` /
 `Couleur` / `Resin`, puis `variant_title`, puis le SKU.
 
+**Suppléments Etsy/Shopify (« Custom UV Printed Legends », « Color Variety Pack »...)** —
+ce ne sont pas des objets à imprimer, ce sont des options rattachées à la vraie pièce de la
+même commande (souvent un « Custom Keycap Set »). Réglable dans Intégrations → Production :
+- **Suppléments à ne pas imprimer** : tout titre de ligne contenant un de ces mots ne
+  génère aucune pièce (la ligne de commande reste enregistrée pour l'historique).
+- **Suppléments qui indiquent un besoin UV** : si un de ces titres apparaît dans la
+  commande, les vraies pièces de la même commande reçoivent automatiquement la **valeur UV
+  appliquée automatiquement** (ex. `oui`).
+
+**Nylon** — un procédé d'impression totalement différent de la résine (FDM/SLS, pas MSLA).
+Une variante commençant par « Nylon » (ex. « Nylon Grey ») n'est donc jamais rangée avec la
+résine de même nom : elle est automatiquement dirigée vers une entrée séparée du catalogue
+(`Nylon Gris`, classée à part, après toutes les résines), créée à la volée dès la première
+commande qui en contient. Fonctionne avec n'importe quelle couleur suivant « Nylon », sans
+liste à préconfigurer.
+
 ### Etsy
 
 1. App Open API v3 avec le scope `transactions_r`.
