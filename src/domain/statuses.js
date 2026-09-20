@@ -1,23 +1,17 @@
 /**
- * The seven production states of a single physical part.
- * Order matters: it drives the Kanban column order.
+ * Les états de production d'une pièce, calqués sur les cases à cocher de la
+ * feuille de calcul remplacée par l'application :
+ *   Print Started -> PRINTING, Print Fail -> FAILED,
+ *   Printed Successfully -> DONE, Done (colis parti) -> SHIPPED.
  */
 export const STATUSES = [
   {
     key: 'TO_PRINT',
     label: 'To print',
     labelFr: 'À imprimer',
-    hint: 'Commande reçue, fichier pas encore tranché',
+    hint: 'Commande reçue, pas encore lancée sur une machine',
     accent: '#8C8579',
     icon: 'inbox',
-  },
-  {
-    key: 'FILE_READY',
-    label: 'File ready',
-    labelFr: 'Fichier prêt',
-    hint: 'Tranché, supports posés, prêt pour la machine',
-    accent: '#6E8FA6',
-    icon: 'file',
   },
   {
     key: 'PRINTING',
@@ -37,19 +31,11 @@ export const STATUSES = [
   },
   {
     key: 'DONE',
-    label: 'Done',
-    labelFr: 'Terminé',
-    hint: 'Imprimé, lavé, post-durci',
+    label: 'Printed',
+    labelFr: 'Imprimé',
+    hint: 'Imprimé, lavé, post-durci, prêt à être emballé',
     accent: '#6E8F63',
     icon: 'check',
-  },
-  {
-    key: 'IN_INVENTORY',
-    label: 'In inventory',
-    labelFr: 'En stock',
-    hint: 'En bac, prêt à être emballé',
-    accent: '#7E6CA8',
-    icon: 'box',
   },
   {
     key: 'SHIPPED',
@@ -63,26 +49,26 @@ export const STATUSES = [
 
 export const STATUS_KEYS = STATUSES.map((s) => s.key);
 
-/** Statuses displayed on the production board (SHIPPED leaves the board). */
-export const ACTIVE_STATUSES = STATUS_KEYS.filter((key) => key !== 'SHIPPED');
+/** Colonnes du tableau « À imprimer » (SHIPPED quitte la production). */
+export const BOARD_STATUSES = STATUS_KEYS.filter((key) => key !== 'SHIPPED');
+
+/** Alias historique conservé pour les filtres « scope=board ». */
+export const ACTIVE_STATUSES = BOARD_STATUSES;
 
 export const isStatus = (value) => STATUS_KEYS.includes(value);
 
 export const getStatus = (key) => STATUSES.find((s) => s.key === key) ?? null;
 
 /**
- * Allowed transitions. The board is deliberately permissive (an operator must
- * be able to drag a card back when they mis-click) but a few moves make no
- * sense and are rejected unless `force` is used.
+ * Transitions autorisées. Volontairement permissif (un opérateur doit pouvoir
+ * revenir en arrière après un mauvais clic), sauf les sauts absurdes.
  */
 const TRANSITIONS = {
-  TO_PRINT: ['FILE_READY', 'PRINTING', 'FAILED', 'DONE', 'IN_INVENTORY'],
-  FILE_READY: ['TO_PRINT', 'PRINTING', 'FAILED', 'DONE', 'IN_INVENTORY'],
-  PRINTING: ['FAILED', 'DONE', 'IN_INVENTORY', 'FILE_READY', 'TO_PRINT'],
-  FAILED: ['TO_PRINT', 'FILE_READY', 'PRINTING', 'DONE'],
-  DONE: ['IN_INVENTORY', 'SHIPPED', 'FAILED', 'PRINTING'],
-  IN_INVENTORY: ['SHIPPED', 'DONE', 'FAILED', 'TO_PRINT'],
-  SHIPPED: ['IN_INVENTORY', 'DONE'],
+  TO_PRINT: ['PRINTING', 'FAILED', 'DONE'],
+  PRINTING: ['FAILED', 'DONE', 'TO_PRINT'],
+  FAILED: ['TO_PRINT', 'PRINTING', 'DONE'],
+  DONE: ['SHIPPED', 'FAILED', 'PRINTING', 'TO_PRINT'],
+  SHIPPED: ['DONE'],
 };
 
 export const canTransition = (from, to) => {
@@ -93,16 +79,20 @@ export const canTransition = (from, to) => {
 
 export const nextStatuses = (from) => TRANSITIONS[from] ?? [];
 
-/** The one-click "advance" button of the dashboard. */
+/** Bouton « avancer d'un cran » du tableau de bord. */
 export const defaultNextStatus = (from) => {
   const flow = {
-    TO_PRINT: 'FILE_READY',
-    FILE_READY: 'PRINTING',
+    TO_PRINT: 'PRINTING',
     PRINTING: 'DONE',
     FAILED: 'TO_PRINT',
-    DONE: 'IN_INVENTORY',
-    IN_INVENTORY: 'SHIPPED',
+    DONE: 'SHIPPED',
     SHIPPED: null,
   };
   return flow[from] ?? null;
+};
+
+/** Statuts retirés en v2 et réécrits au démarrage sur leur équivalent. */
+export const LEGACY_STATUS_MAP = {
+  FILE_READY: 'TO_PRINT',
+  IN_INVENTORY: 'DONE',
 };

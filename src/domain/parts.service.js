@@ -61,6 +61,14 @@ const buildFilters = (query = {}) => {
     params.printer = query.printer;
   }
 
+  const uvs = csv(query.uv);
+  if (uvs.length) {
+    where.push(`p.uv IN (${uvs.map((_, i) => `@uv${i}`).join(', ')})`);
+    uvs.forEach((uv, i) => {
+      params[`uv${i}`] = uv;
+    });
+  }
+
   if (query.priority === '1' || query.priority === true) {
     where.push('(p.priority = 1 OR o.is_priority = 1)');
   }
@@ -69,6 +77,7 @@ const buildFilters = (query = {}) => {
   if (search) {
     where.push(`(
       p.name LIKE @q OR p.sku LIKE @q OR p.variant_title LIKE @q OR p.notes LIKE @q
+      OR p.comment LIKE @q OR p.printer LIKE @q
       OR o.order_number LIKE @q OR o.customer_name LIKE @q OR o.external_id LIKE @q
     )`);
     params.q = `%${search}%`;
@@ -87,7 +96,7 @@ export const listParts = (query = {}) => {
   const rows = db
     .prepare(
       `SELECT p.id, p.order_id, p.order_item_id, p.unit_index, p.name, p.sku, p.variant_title,
-              p.color_key, p.status, p.priority, p.printer, p.notes, p.fail_count,
+              p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count,
               p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
               o.tracking_number, o.carrier,
@@ -175,7 +184,7 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
          status_changed_at = @ts,
          updated_at = @ts,
          fail_count = fail_count + @failInc,
-         printed_at = CASE WHEN @status IN ('DONE','IN_INVENTORY','SHIPPED') AND printed_at IS NULL THEN @ts ELSE printed_at END,
+         printed_at = CASE WHEN @status IN ('DONE','SHIPPED') AND printed_at IS NULL THEN @ts ELSE printed_at END,
          shipped_at = CASE WHEN @status = 'SHIPPED' THEN @ts WHEN @status <> 'SHIPPED' THEN NULL ELSE shipped_at END
        WHERE id = @id`,
     ).run({ id: part.id, status, ts, failInc: status === 'FAILED' ? 1 : 0 });
@@ -200,7 +209,7 @@ export const bulkSetStatus = (ids, status, options = {}) => {
   return { updated, errors };
 };
 
-const PATCHABLE = ['name', 'sku', 'variant_title', 'color_key', 'printer', 'notes'];
+const PATCHABLE = ['name', 'sku', 'variant_title', 'color_key', 'printer', 'uv', 'comment', 'notes'];
 
 export const updatePart = (id, patch, { actor = 'dashboard' } = {}) => {
   const db = getDb();
@@ -243,6 +252,9 @@ export const createManualPart = ({
   color_key = 'unassigned',
   quantity = 1,
   notes = null,
+  uv = null,
+  comment = null,
+  customer = null,
   priority = false,
   status = 'TO_PRINT',
 }) => {
@@ -253,16 +265,17 @@ export const createManualPart = ({
   const ts = nowIso();
 
   const run = db.transaction(() => {
+    const orderKey = customer ? `manual-${customer.toLowerCase()}` : 'internal-stock';
     let order = db
-      .prepare(`SELECT * FROM orders WHERE source = 'manual' AND external_id = 'internal-stock'`)
-      .get();
+      .prepare(`SELECT * FROM orders WHERE source = 'manual' AND external_id = ?`)
+      .get(orderKey);
     if (!order) {
       const info = db
         .prepare(
           `INSERT INTO orders (source, external_id, order_number, customer_name, placed_at, created_at, updated_at)
-           VALUES ('manual', 'internal-stock', 'STOCK', 'Production interne', ?, ?, ?)`,
+           VALUES ('manual', ?, ?, ?, ?, ?, ?)`,
         )
-        .run(ts, ts, ts);
+        .run(orderKey, customer ? 'INTERNE' : 'STOCK', customer ?? 'Production interne', ts, ts, ts);
       order = db.prepare('SELECT * FROM orders WHERE id = ?').get(info.lastInsertRowid);
     }
 
@@ -278,10 +291,10 @@ export const createManualPart = ({
       const info = db
         .prepare(
           `INSERT INTO parts (order_id, order_item_id, unit_index, name, sku, color_key, status,
-                              priority, notes, status_changed_at, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                              priority, uv, comment, notes, status_changed_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(order.id, itemInfo.lastInsertRowid, index, name, sku, color_key, status, priority ? 1 : 0, notes, ts, ts, ts);
+        .run(order.id, itemInfo.lastInsertRowid, index, name, sku, color_key, status, priority ? 1 : 0, uv, comment, notes, ts, ts, ts);
       recordEvent(db, {
         partId: info.lastInsertRowid,
         from: null,

@@ -1,17 +1,40 @@
 # Resin Print Queue
 
-File d'attente d'impression **et** gestionnaire d'inventaire pour une ferme d'imprimantes 3D
-résine. L'application importe les commandes Shopify et Etsy toutes les 5 minutes, éclate
-chaque commande en **pièces physiques individuelles**, les suit sur un tableau Kanban
-classable **par couleur de résine**, et les sort automatiquement de la production quand
-Chit Chats scanne le colis.
+Remplaçant de la feuille de calcul « Printer Queue » d'une ferme d'imprimantes 3D résine.
+L'application importe les commandes Shopify et Etsy toutes les 5 minutes, éclate chaque
+commande en **pièces physiques individuelles**, les suit sur un tableau classable **par
+couleur de résine**, gère le **poste UV** et les **commentaires** de chaque pièce, et les
+sort automatiquement de la production quand Chit Chats scanne le colis.
 
 ```
 docker compose up -d --build     →  http://localhost:8080
 ```
 
-Sans aucune clé d'API : l'application démarre en mode `mock` et fabrique des commandes
-réalistes, ce qui permet de la découvrir immédiatement.
+Aucun identifiant à saisir avant le premier démarrage : **tout se configure dans la page
+« Intégrations »** du dashboard (clés API, crons, listes UV et commentaires, résines), et
+les réglages sont stockés en base.
+
+### Les trois pages
+
+| Page | Rôle |
+| --- | --- |
+| **À imprimer** | Le tableau de production : colonnes *À imprimer · En impression · Échec · Imprimé*, glisser-déposer, regroupement par couleur de résine. |
+| **Tout** | Toutes les pièces, tous statuts confondus, en tableau éditable (statut, UV, commentaire en liste déroulante) — l'équivalent direct de la feuille de calcul. Uniquement des filtres en haut, pas de compteurs. |
+| **Intégrations** | Tous les réglages : Shopify, Etsy, Chit Chats, planification, listes UV / commentaires, catalogue de résines, journal des synchronisations. |
+
+### Correspondance avec l'ancienne feuille
+
+| Colonne de la feuille | Dans l'application |
+| --- | --- |
+| Print Started | statut **En impression** |
+| Print Fail | statut **Échec** |
+| Printed Successfully | statut **Imprimé** |
+| Done (colis parti) | statut **Expédié** (posé automatiquement par Chit Chats) |
+| Comment | liste déroulante **Commentaire** (options réglables) |
+| Uv (a/b/c) | liste déroulante **UV**, affichée sur chaque carte (options réglables) |
+| What / Quantity | une ligne **par pièce physique** : quantité 3 = 3 lignes |
+| For Who | colonne **Pour qui** (client de la commande) |
+| Onglets White / Black / Grey… | filtre et regroupement **par couleur de résine** |
 
 ---
 
@@ -43,7 +66,7 @@ réalistes, ce qui permet de la découvrir immédiatement.
                                        │  fetch JSON
                                        ▼
                             Navigateur — Dashboard beige & noir
-                            Kanban · Tableau · Inventaire · Commandes
+                            À imprimer · Tout · Intégrations
 ```
 
 ### Choix techniques et pourquoi
@@ -54,7 +77,7 @@ réalistes, ce qui permet de la découvrir immédiatement.
 | **SQLite + `better-sqlite3`** | Base d'un seul fichier, zéro service à administrer, API **synchrone** : pas de `await` dans les transactions, donc l'éclatement d'une commande en pièces est atomique et trivial à lire. Mode **WAL** pour que l'API et le worker écrivent dans le même fichier sans se bloquer. |
 | **Worker dans son propre conteneur** | Une API lente de marketplace ne doit jamais ralentir le dashboard. Les deux conteneurs partagent le volume SQLite ; `SCHEDULER_INLINE=true` permet aussi de tout faire tourner dans un seul process. |
 | **Front-end sans build** (ES modules + CSS natif) | Pas de webpack/Vite/node_modules côté client : l'image Docker reste légère, le déploiement est un simple `docker compose up`, et le dashboard fonctionne hors-ligne dans l'atelier. |
-| **Mode `mock` par défaut** | Le projet est « plug-and-play » : il tourne et se démontre sans aucun identifiant. Passer en `live` ne change qu'une variable d'environnement. |
+| **Réglages en base, pas en `.env`** | L'atelier change une clé API ou une expression cron depuis le dashboard, sans toucher à Docker : les réglages sont lus à chaque cycle et le worker se reprogramme en moins d'une minute. Les secrets ne ressortent jamais de l'API. |
 | **Webhook + polling pour Chit Chats** | Le webhook donne la réaction instantanée, le cron de 15 min sert de filet de sécurité si un webhook est perdu. Les deux passent par le même code (`applyShipment`). |
 
 ### Granularité des données — le cœur du modèle
@@ -90,7 +113,8 @@ seules les pièces manquantes sont ajoutées.
 │   │   ├── colors.seed.json    catalogue de résines (noms, hex, alias)
 │   │   └── index.js            connexion, PRAGMA WAL, settings
 │   ├── domain/
-│   │   ├── statuses.js         les 7 statuts + transitions autorisées
+│   │   ├── statuses.js         les 5 statuts + transitions autorisées
+│   │   ├── settings.service.js réglages en base pilotés par la page Intégrations
 │   │   ├── colors.js           résolution « Bleu nuit / R2 » → navy
 │   │   ├── ingest.js           commande normalisée → pièces individuelles
 │   │   ├── parts.service.js    requêtes, filtres, transitions, historique
@@ -99,22 +123,21 @@ seules les pièces manquantes sont ajoutées.
 │   ├── integrations/
 │   │   ├── shopify.js          poll + normalisation + webhook
 │   │   ├── etsy.js             poll + normalisation
-│   │   ├── chitchats.js        poll, webhook, statuts d'expédition
-│   │   └── mock-data.js        générateur déterministe de commandes
+│   │   └── chitchats.js        poll, webhook, statuts d'expédition
 │   ├── jobs/
 │   │   ├── scheduler.js        node-cron, anti-chevauchement
 │   │   ├── syncOrders.js       Shopify + Etsy → base
 │   │   ├── syncShipments.js    Chit Chats → statut SHIPPED
 │   │   ├── worker.js           entrée du conteneur « worker »
 │   │   └── run-once.js         `npm run sync:once`
-│   ├── routes/                 parts, orders, colors, stats, sync, webhooks, meta
+│   ├── routes/                 parts, orders, colors, stats, settings, sync, webhooks, meta
 │   └── lib/                    logger JSON, erreurs HTTP, fetch + retry, auth
 ├── public/                     dashboard (HTML/CSS/ES modules, aucun build)
 │   ├── index.html
 │   ├── css/app.css             thème beige & noir, clair / sombre
-│   └── js/                     api, store, views/{board,table,inventory,orders,integrations}
-├── scripts/seed-demo.js        jeu de données de démonstration
-└── tests/                      51 tests (node:test)
+│   └── js/                     api, store, drawer, views/{board,all,integrations}
+├── scripts/reset-data.js       purge des commandes et des pièces
+└── tests/                      58 tests (node:test)
 ```
 
 ---
@@ -124,13 +147,18 @@ seules les pièces manquantes sont ajoutées.
 ### Docker (recommandé)
 
 ```bash
-cp .env.example .env          # facultatif : tout a une valeur par défaut
-docker compose up -d --build
+docker compose up -d --build       # aucun .env nécessaire
+docker compose logs -f worker      # suivre les synchronisations
+```
 
-# jeu de données de démonstration (facultatif)
-docker compose --profile demo run --rm seed
+Ouvrir ensuite **Intégrations** et saisir les identifiants Shopify / Etsy / Chit Chats :
+la première synchronisation part dans les 5 minutes (ou immédiatement avec le bouton
+« Synchroniser »).
 
-docker compose logs -f worker # voir les synchronisations
+Pour repartir d'une base vide (après des essais, par exemple) :
+
+```bash
+docker compose exec app node scripts/reset-data.js --yes
 ```
 
 Dashboard : **http://localhost:8080** (changer le port : `APP_PORT=9000 docker compose up -d`).
@@ -140,29 +168,26 @@ Dashboard : **http://localhost:8080** (changer le port : `APP_PORT=9000 docker c
 ```bash
 npm install
 npm run migrate
-npm run seed:demo             # facultatif
 SCHEDULER_INLINE=true npm start
 ```
 
 ### Tests
 
 ```bash
-npm test                      # 51 tests : ingestion, statuts, Chit Chats, API, normalisation
+npm test                      # 58 tests : ingestion, statuts, réglages, Chit Chats, API, normalisation
 ```
 
 ---
 
 ## 3. Statuts d'une pièce
 
-| Statut | Libellé | Signification |
+| Statut | Libellé | Équivalent dans la feuille |
 | --- | --- | --- |
-| `TO_PRINT` | À imprimer | Commande reçue, fichier pas encore tranché |
-| `FILE_READY` | Fichier prêt | Tranché, supports posés, prêt pour la machine |
-| `PRINTING` | En impression | Sur une imprimante en ce moment |
-| `FAILED` | Échec | Impression ratée, à relancer (incrémente `fail_count`) |
-| `DONE` | Terminé | Imprimé, lavé, post-durci |
-| `IN_INVENTORY` | En stock | En bac, prêt à être emballé |
-| `SHIPPED` | Expédié | Scanné par Chit Chats — **sort du tableau de production** |
+| `TO_PRINT` | À imprimer | aucune case cochée |
+| `PRINTING` | En impression | Print Started |
+| `FAILED` | Échec | Print Fail (incrémente `fail_count`) |
+| `DONE` | Imprimé | Printed Successfully |
+| `SHIPPED` | Expédié | Done — **sort du tableau de production** |
 
 Les transitions sont validées côté serveur (`src/domain/statuses.js`) ; le dashboard peut
 forcer n'importe quelle transition (`force: true`) pour corriger une erreur de manipulation.
@@ -173,30 +198,47 @@ Chaque changement est écrit dans `part_events` avec son auteur (`dashboard`, `w
 
 ## 4. Le dashboard
 
-* **Kanban** — une colonne par statut, **glisser-déposer** d'une colonne à l'autre,
-  bouton d'action rapide sur chaque carte pour avancer d'un cran.
-* **Regroupement par couleur de résine** — actif par défaut, dans le Kanban comme dans le
-  tableau : on imprime un bac entier de « Glow in the dark » d'un coup.
-* **Filtres** — pastilles de couleur avec compteurs, source (Shopify / Etsy / interne),
-  rush, recherche plein texte (`/` pour y accéder au clavier).
-* **Sélection multiple** — `Ctrl`/`Cmd` + clic, ou cases à cocher dans la vue tableau,
-  puis changement de statut en lot depuis la barre d'action.
-* **Fiche pièce** — historique complet, imprimante assignée, notes, couleur, priorité.
-* **Inventaire** — pièces finies en bac + stock de résine en grammes par couleur avec
-  alerte de seuil bas.
+**Page « À imprimer »**
+
+* Quatre colonnes (*À imprimer · En impression · Échec · Imprimé*), **glisser-déposer**
+  d'une colonne à l'autre, bouton d'action rapide pour avancer d'un cran.
+* **Regroupement par couleur de résine** actif par défaut : on imprime un bac entier de
+  « Glow in the dark » d'un coup. Regroupement possible aussi par UV ou par commande.
+* Chaque carte affiche la **résine**, le **poste UV**, le **commentaire**, la source, le
+  numéro de commande, l'imprimante et le drapeau rush.
+* Filtres : pastilles de couleur et d'UV avec compteurs, source, rush, recherche plein
+  texte (`/` pour y accéder au clavier).
+
+**Page « Tout »**
+
+* Toutes les pièces, tous statuts confondus, en **tableau éditable** : statut, UV et
+  commentaire se changent directement dans la ligne, comme dans la feuille de calcul.
+* Uniquement des filtres en haut de page (aucun compteur), groupes par couleur / UV /
+  commande.
+* Sélection multiple (cases à cocher) puis changement de statut, d'UV ou de commentaire
+  **en lot**.
+
+**Commun**
+
+* **Fiche pièce** (clic sur une ligne ou une carte) : historique complet des transitions,
+  imprimante, notes libres, couleur, UV, commentaire, priorité.
 * **Thème beige & noir** — sombre par défaut, thème beige clair en un clic (mémorisé).
 
 ---
 
 ## 5. Intégrations
 
+Tout se saisit dans la page **Intégrations** ; les valeurs sont stockées en base et les
+secrets ne sont jamais renvoyés au navigateur (le champ affiche « enregistré »). Laisser
+un champ secret vide conserve la valeur existante.
+
 ### Shopify
 
 1. Créer une app personnalisée avec le scope `read_orders`.
-2. Renseigner `SHOPIFY_SHOP_DOMAIN`, `SHOPIFY_ACCESS_TOKEN`, puis `INTEGRATION_MODE=live`.
+2. Page Intégrations → *Shopify* : domaine de la boutique + token d'accès Admin API.
 3. (Optionnel, pour l'instantané) webhook `orders/create` →
-   `https://votre-domaine/api/webhooks/shopify`, avec `SHOPIFY_WEBHOOK_SECRET`
-   (signature HMAC SHA-256 vérifiée).
+   `https://votre-domaine/api/webhooks/shopify`, avec le secret HMAC saisi au même
+   endroit (signature SHA-256 vérifiée).
 
 La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` / `Colour` /
 `Couleur` / `Resin`, puis `variant_title`, puis le SKU.
@@ -204,7 +246,7 @@ La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` 
 ### Etsy
 
 1. App Open API v3 avec le scope `transactions_r`.
-2. Renseigner `ETSY_SHOP_ID`, `ETSY_API_KEY`, `ETSY_ACCESS_TOKEN`.
+2. Page Intégrations → *Etsy* : shop ID, clé API, token d'accès OAuth.
 3. Etsy ne propose pas de webhook de commande : le poll de 5 minutes fait le travail
    (`/api/webhooks/etsy` reste disponible pour un relais type Zapier).
 
@@ -212,9 +254,9 @@ La couleur vient de la variation dont le nom vaut `Color` / `Couleur` / `Resin`.
 
 ### Chit Chats
 
-1. `CHITCHATS_CLIENT_ID` + `CHITCHATS_ACCESS_TOKEN`.
+1. Page Intégrations → *Chit Chats* : client ID + token d'accès.
 2. Webhook vers `https://votre-domaine/api/webhooks/chitchats` avec l'en-tête
-   `X-Webhook-Secret: <CHITCHATS_WEBHOOK_SECRET>` (comparaison à temps constant).
+   `X-Webhook-Secret: <secret saisi dans la page>` (comparaison à temps constant).
 3. À la réception, le colis est rapproché de la commande locale via `order_id`,
    `reference`, `name`, puis le nom du destinataire ; toutes les pièces de la commande
    passent à `SHIPPED`, le numéro de suivi est stocké et les pièces disparaissent du
@@ -222,8 +264,8 @@ La couleur vient de la variation dont le nom vaut `Color` / `Couleur` / `Resin`.
 
 Les statuts considérés comme « parti » : `shipped`, `in_transit`, `out_for_delivery`,
 `delivered`, `ready_for_pickup`, `picked_up`, `completed`.
-`SHIP_ALL_PARTS_ON_SHIPMENT=false` limite le passage à `SHIPPED` aux pièces déjà
-`DONE`/`IN_INVENTORY` et signale l'incohérence dans les logs.
+Décocher « Expédier toutes les pièces du colis » limite le passage à `SHIPPED` aux pièces
+déjà `DONE` et signale l'incohérence dans les logs.
 
 ---
 
@@ -233,16 +275,18 @@ Les statuts considérés comme « parti » : `shipped`, `in_transit`, `out_for_d
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check (utilisé par Docker) |
 | `GET` | `/api/meta` | Statuts, mode, expressions cron |
-| `GET` | `/api/parts` | Liste filtrable : `status`, `color`, `source`, `q`, `priority`, `sort`, `scope=board` |
+| `GET` | `/api/parts` | Liste filtrable : `status`, `color`, `uv`, `source`, `q`, `priority`, `sort`, `scope=board` |
 | `POST` | `/api/parts` | Pièce manuelle (réimpression, production pour le stock) |
 | `GET` | `/api/parts/:id` | Fiche + historique |
-| `PATCH` | `/api/parts/:id` | Couleur, imprimante, notes, priorité, statut |
+| `PATCH` | `/api/parts/:id` | Couleur, UV, commentaire, imprimante, notes, priorité, statut |
 | `POST` | `/api/parts/:id/status` | Transition unitaire (`{ status, note, force }`) |
 | `POST` | `/api/parts/bulk/status` | Transition en lot (`{ ids, status }`) |
 | `GET` | `/api/orders` · `/api/orders/:id` | Commandes et leurs pièces |
 | `POST` | `/api/orders/:id/ship` | Expédition manuelle |
-| `GET` | `/api/colors` · `PATCH /api/colors/:key` | Catalogue de résines, stock en grammes |
-| `GET` | `/api/stats/summary` · `/api/stats/inventory` | Agrégats du dashboard |
+| `GET` | `/api/colors` · `POST` · `PATCH /api/colors/:key` · `DELETE` | Catalogue de résines, alias, stock en grammes |
+| `GET` | `/api/settings` | Tous les réglages (secrets masqués) + état des connecteurs |
+| `PUT` | `/api/settings` | Enregistre un lot de réglages |
+| `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |
 | `POST` | `/api/sync/run?source=all\|shopify\|etsy\|chitchats` | Synchronisation manuelle |
 | `GET` | `/api/sync/runs` · `/api/sync/webhooks` | Journal des exécutions et des webhooks |
 | `POST` | `/api/webhooks/{chitchats,shopify,etsy}` | Entrées webhook |
@@ -255,12 +299,12 @@ Les statuts considérés comme « parti » : `shipped`, `in_transit`, `out_for_d
 | --- | --- |
 | `orders` | Commande importée (source, numéro, client, suivi, expédition) |
 | `order_items` | Ligne de commande telle que reçue (quantité, variante, prix) |
-| `parts` | **Une ligne = un objet physique** (statut, imprimante, notes, échecs) |
+| `parts` | **Une ligne = un objet physique** (statut, UV, commentaire, imprimante, notes, échecs) |
 | `part_events` | Historique de toutes les transitions de statut |
 | `resin_colors` | Catalogue des résines : nom, hex, alias de détection, stock en g |
 | `sync_runs` | Journal des exécutions du worker (durée, volumétrie, erreurs) |
 | `webhook_events` | Payloads bruts reçus, pour l'audit et le rejeu |
-| `settings` | Curseurs de synchronisation, version du schéma |
+| `settings` | Réglages de la page Intégrations, curseurs de synchronisation |
 
 Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 
@@ -273,6 +317,11 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 * **Authentification** : renseigner `DASHBOARD_PASSWORD` active une authentification HTTP
   Basic sur le dashboard et l'API (les webhooks et le health check restent ouverts, ils
   ont leur propre secret).
+* **Secrets** : les identifiants saisis dans la page Intégrations sont stockés en clair
+  dans le fichier SQLite, comme tout auto-hébergement de ce type — protégez le volume
+  `rpq-data` et les sauvegardes en conséquence.
+* **Repartir à zéro** : `node scripts/reset-data.js --yes` vide commandes, pièces,
+  historiques et journaux ; le catalogue de résines et les réglages sont conservés.
 * **Derrière un reverse proxy** : terminer le TLS chez le proxy et ne publier que le port
   8080 du service `app` ; le worker n'expose rien.
 * **Logs** : JSON sur stdout (`LOG_LEVEL=debug` pour le détail des requêtes).

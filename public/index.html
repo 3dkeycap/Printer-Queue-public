@@ -31,6 +31,10 @@
       <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></symbol>
       <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.4 6 10.5A6 6 0 0 1 6 13.5C6 9.4 12 3 12 3Z"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+      <symbol id="i-uv" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+      <symbol id="i-note" viewBox="0 0 24 24"><path d="M4 5h16v11l-4 4H4z"/><path d="M20 16h-4v4M8 9h8M8 13h5"/></symbol>
+      <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M9 3v6h6V3M8 14h8v7H8z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
     </svg>
 
     <div class="app">
@@ -45,16 +49,12 @@
 
         <nav class="nav" id="nav">
           <button class="nav-item is-active" data-view="board">
-            <svg class="icon"><use href="#i-layers" /></svg><span>Production</span>
+            <svg class="icon"><use href="#i-layers" /></svg><span>À imprimer</span>
             <em class="nav-count" data-count="board"></em>
           </button>
-          <button class="nav-item" data-view="inventory">
-            <svg class="icon"><use href="#i-box" /></svg><span>Inventaire</span>
-            <em class="nav-count" data-count="inventory"></em>
-          </button>
-          <button class="nav-item" data-view="orders">
-            <svg class="icon"><use href="#i-receipt" /></svg><span>Commandes</span>
-            <em class="nav-count" data-count="orders"></em>
+          <button class="nav-item" data-view="all">
+            <svg class="icon"><use href="#i-table" /></svg><span>Tout</span>
+            <em class="nav-count" data-count="all"></em>
           </button>
           <button class="nav-item" data-view="integrations">
             <svg class="icon"><use href="#i-plug" /></svg><span>Intégrations</span>
@@ -75,7 +75,7 @@
       <main class="main">
         <header class="topbar">
           <div class="topbar-title">
-            <h1 id="view-title">Production</h1>
+            <h1 id="view-title">À imprimer</h1>
             <p id="view-subtitle">Chaque carte&nbsp;= une pièce physique à imprimer.</p>
           </div>
           <div class="topbar-actions">

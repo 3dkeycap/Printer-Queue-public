@@ -9,6 +9,7 @@ import { colorsRouter } from './routes/colors.js';
 import { metaRouter } from './routes/meta.js';
 import { ordersRouter } from './routes/orders.js';
 import { partsRouter } from './routes/parts.js';
+import { settingsRouter } from './routes/settings.js';
 import { statsRouter } from './routes/stats.js';
 import { syncRouter } from './routes/sync.js';
 import { webhooksRouter } from './routes/webhooks.js';
@@ -67,6 +68,7 @@ export const createApp = () => {
   app.use('/api/orders', ordersRouter);
   app.use('/api/colors', colorsRouter);
   app.use('/api/stats', statsRouter);
+  app.use('/api/settings', settingsRouter);
   app.use('/api/sync', syncRouter);
 
   app.use(express.static(config.publicDir, { extensions: ['html'], maxAge: '1h' }));

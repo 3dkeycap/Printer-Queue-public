@@ -1,13 +1,11 @@
 import crypto from 'node:crypto';
-import { config, isMock } from '../config.js';
-import { getDb } from '../db/index.js';
 import { requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
-import { generateMockShipments } from './mock-data.js';
+import { getSettings } from '../domain/settings.service.js';
 
 const log = createLogger('chitchats');
 
-/** Chit Chats statuses that mean "the parcel physically left the farm". */
+/** Statuts Chit Chats signifiant « le colis a quitté l'atelier ». */
 export const SHIPPED_STATUSES = new Set([
   'shipped',
   'in_transit',
@@ -21,10 +19,10 @@ export const SHIPPED_STATUSES = new Set([
 export const isShippedStatus = (status) =>
   SHIPPED_STATUSES.has(String(status ?? '').toLowerCase().replace(/\s+/g, '_'));
 
-export const isConfigured = () =>
-  Boolean(config.chitchats.clientId && config.chitchats.accessToken);
+export const isConfigured = (settings = getSettings()) =>
+  Boolean(settings['chitchats.clientId'] && settings['chitchats.accessToken']);
 
-/** Normalises both the REST payload and the webhook payload into one shape. */
+/** Normalise le payload REST et le payload webhook dans une seule forme. */
 export const normalizeShipment = (payload = {}) => {
   const shipment = payload.shipment ?? payload;
   return {
@@ -40,52 +38,33 @@ export const normalizeShipment = (payload = {}) => {
 };
 
 /**
- * Verifies the shared secret of an incoming webhook.
- * Chit Chats does not sign its payloads, so we rely on a secret header that
- * you configure on their side (and compare in constant time).
+ * Vérifie le secret partagé d'un webhook entrant.
+ * Chit Chats ne signe pas ses payloads : on s'appuie sur un en-tête secret,
+ * comparé à temps constant.
  */
 export const verifyWebhookSecret = (providedSecret) => {
-  const expected = config.chitchats.webhookSecret;
-  if (!expected) return true; // verification disabled
+  const expected = getSettings()['chitchats.webhookSecret'];
+  if (!expected) return true; // vérification désactivée
   const a = Buffer.from(String(providedSecret ?? ''));
   const b = Buffer.from(expected);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
-/**
- * Polls recent shipments. Used as a safety net when a webhook is missed.
- * In mock mode it fabricates shipments for orders that are fully produced,
- * which is exactly the scenario the dashboard needs to demo.
- */
+/** Relit les expéditions récentes : filet de sécurité si un webhook est perdu. */
 export const fetchShipments = async ({ since } = {}) => {
-  if (isMock()) {
-    const candidates = getDb()
-      .prepare(
-        `SELECT o.* FROM orders o
-         WHERE o.shipped_at IS NULL
-           AND EXISTS (SELECT 1 FROM parts p WHERE p.order_id = o.id)
-           AND NOT EXISTS (
-             SELECT 1 FROM parts p WHERE p.order_id = o.id
-               AND p.status NOT IN ('DONE','IN_INVENTORY','SHIPPED')
-           )
-         LIMIT 5`,
-      )
-      .all();
-    return generateMockShipments(candidates).map(normalizeShipment);
-  }
-
-  if (!isConfigured()) {
+  const settings = getSettings();
+  if (!isConfigured(settings)) {
     log.warn('chit chats credentials missing, skipping');
     return [];
   }
 
-  const url = new URL(`${config.chitchats.apiBase}/clients/${config.chitchats.clientId}/shipments`);
+  const url = new URL(`${settings['chitchats.apiBase']}/clients/${settings['chitchats.clientId']}/shipments`);
   url.searchParams.set('limit', '100');
   if (since) url.searchParams.set('since', since);
 
   const payload = await requestJson(url.toString(), {
     headers: {
-      Authorization: config.chitchats.accessToken,
+      Authorization: settings['chitchats.accessToken'],
       'Content-Type': 'application/json',
     },
   });
@@ -95,12 +74,13 @@ export const fetchShipments = async ({ since } = {}) => {
   return shipments.map(normalizeShipment);
 };
 
-/** Fetches a single shipment (used to confirm a thin webhook payload). */
+/** Relit un envoi précis (pour confirmer un payload webhook incomplet). */
 export const fetchShipment = async (shipmentId) => {
-  if (isMock() || !isConfigured()) return null;
+  const settings = getSettings();
+  if (!isConfigured(settings)) return null;
   const payload = await requestJson(
-    `${config.chitchats.apiBase}/clients/${config.chitchats.clientId}/shipments/${shipmentId}`,
-    { headers: { Authorization: config.chitchats.accessToken } },
+    `${settings['chitchats.apiBase']}/clients/${settings['chitchats.clientId']}/shipments/${shipmentId}`,
+    { headers: { Authorization: settings['chitchats.accessToken'] } },
   );
   return payload ? normalizeShipment(payload) : null;
 };

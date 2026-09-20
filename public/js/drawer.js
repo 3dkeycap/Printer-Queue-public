@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { clear, el, formatDate, fromNow, icon, swatch, toast } from './ui.js';
-import { state, statusMeta } from './store.js';
+import { commentOptions, state, statusMeta, uvOptions } from './store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -43,6 +43,21 @@ export const openDrawer = async (partId, actions) => {
 
   const printerInput = el('input', { value: part.printer ?? '', placeholder: 'Mars 4 Ultra #2' });
   printerInput.addEventListener('change', () => actions.patchPart(part.id, { printer: printerInput.value }));
+
+  const buildSelect = (options, value, placeholder, onChange) => {
+    const node = el('select', {}, [
+      el('option', { value: '', selected: !value }, placeholder),
+      ...options.map((option) => el('option', { value: option, selected: option === value }, option)),
+      value && !options.includes(value) ? el('option', { value, selected: true }, value) : null,
+    ].filter(Boolean));
+    node.addEventListener('change', (event) => onChange(event.target.value || null));
+    return node;
+  };
+
+  const uvSelect = buildSelect(uvOptions(), part.uv, 'Aucun poste UV', (value) =>
+    actions.patchPart(part.id, { uv: value }));
+  const commentSelect = buildSelect(commentOptions(), part.comment, 'Aucun commentaire', (value) =>
+    actions.patchPart(part.id, { comment: value }));
 
   const notesInput = el('textarea', { placeholder: 'Notes de production…' }, part.notes ?? '');
   notesInput.addEventListener('change', () => actions.patchPart(part.id, { notes: notesInput.value }));
@@ -97,6 +112,8 @@ export const openDrawer = async (partId, actions) => {
           el('dd', {}, part.variant_title ?? '—'),
           el('dt', {}, 'Résine'),
           el('dd', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
+          el('dt', {}, 'UV'),
+          el('dd', {}, part.uv ?? '—'),
           el('dt', {}, 'Échecs'),
           el('dd', {}, String(part.fail_count)),
           el('dt', {}, 'Suivi'),
@@ -105,8 +122,10 @@ export const openDrawer = async (partId, actions) => {
       ]),
 
       el('div', { class: 'field' }, [el('label', {}, 'Couleur de résine'), colorSelect]),
+      el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uvSelect]),
+      el('div', { class: 'field' }, [el('label', {}, 'Commentaire'), commentSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Imprimante'), printerInput]),
-      el('div', { class: 'field' }, [el('label', {}, 'Notes'), notesInput]),
+      el('div', { class: 'field' }, [el('label', {}, 'Notes libres'), notesInput]),
 
       el('div', {}, [
         el('div', { class: 'section-title' }, 'Priorité'),

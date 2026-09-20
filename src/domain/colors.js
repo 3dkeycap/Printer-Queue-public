@@ -94,3 +94,16 @@ export const createColor = ({ key, name, hex = '#8C8579', aliases = [], sort_ord
   ).run(slug, name || slug, hex, JSON.stringify(aliases), sort_order, nowIso());
   return getColor(slug);
 };
+
+export const deleteColor = (key) => {
+  const db = getDb();
+  if (key === 'unassigned') return { deleted: null, reason: 'La couleur par défaut ne peut pas être supprimée' };
+  const used = db.prepare('SELECT COUNT(*) AS n FROM parts WHERE color_key = ?').get(key).n;
+  if (used) {
+    // on ne casse pas l'historique : la couleur est simplement désactivée
+    updateColor(key, { is_active: false });
+    return { deleted: null, deactivated: key, parts: used };
+  }
+  db.prepare('DELETE FROM resin_colors WHERE key = ?').run(key);
+  return { deleted: key };
+};

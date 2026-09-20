@@ -1,17 +1,28 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { ACTIVE_STATUSES, STATUS_KEYS, canTransition, defaultNextStatus, isStatus } from '../src/domain/statuses.js';
+import {
+  BOARD_STATUSES,
+  LEGACY_STATUS_MAP,
+  STATUS_KEYS,
+  canTransition,
+  defaultNextStatus,
+  isStatus,
+} from '../src/domain/statuses.js';
 
 describe('machine à états des pièces', () => {
-  it('expose les sept statuts du cahier des charges', () => {
-    assert.deepEqual(STATUS_KEYS, [
-      'TO_PRINT', 'FILE_READY', 'PRINTING', 'FAILED', 'DONE', 'IN_INVENTORY', 'SHIPPED',
-    ]);
+  it('reprend les cases à cocher de la feuille de production', () => {
+    assert.deepEqual(STATUS_KEYS, ['TO_PRINT', 'PRINTING', 'FAILED', 'DONE', 'SHIPPED']);
   });
 
-  it('retire SHIPPED du tableau de production', () => {
-    assert.ok(!ACTIVE_STATUSES.includes('SHIPPED'));
-    assert.equal(ACTIVE_STATUSES.length, 6);
+  it('retire SHIPPED du tableau « À imprimer »', () => {
+    assert.deepEqual(BOARD_STATUSES, ['TO_PRINT', 'PRINTING', 'FAILED', 'DONE']);
+  });
+
+  it('n\'expose plus « fichier prêt » ni « en stock »', () => {
+    assert.ok(!isStatus('FILE_READY'));
+    assert.ok(!isStatus('IN_INVENTORY'));
+    assert.equal(LEGACY_STATUS_MAP.FILE_READY, 'TO_PRINT');
+    assert.equal(LEGACY_STATUS_MAP.IN_INVENTORY, 'DONE');
   });
 
   it('autorise le flux nominal', () => {
@@ -24,7 +35,7 @@ describe('machine à états des pièces', () => {
       path.push(next);
       status = next;
     }
-    assert.deepEqual(path, ['FILE_READY', 'PRINTING', 'DONE', 'IN_INVENTORY', 'SHIPPED']);
+    assert.deepEqual(path, ['PRINTING', 'DONE', 'SHIPPED']);
   });
 
   it('permet de relancer une impression ratée', () => {
@@ -36,6 +47,5 @@ describe('machine à états des pièces', () => {
     assert.ok(!canTransition('TO_PRINT', 'SHIPPED'));
     assert.ok(!canTransition('SHIPPED', 'PRINTING'));
     assert.ok(!isStatus('EN_COURS'));
-    assert.ok(!canTransition('DONE', 'EN_COURS'));
   });
 });

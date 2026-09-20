@@ -1,7 +1,7 @@
 import { getDb, nowIso } from '../db/index.js';
 import { notFound } from '../lib/errors.js';
 import { createLogger } from '../lib/logger.js';
-import { config } from '../config.js';
+import { getSettings } from './settings.service.js';
 
 const log = createLogger('orders');
 
@@ -26,7 +26,7 @@ export const listOrders = ({ limit = 100, offset = 0, source, q, scope } = {}) =
       `SELECT o.*,
               COUNT(p.id) AS parts_total,
               SUM(CASE WHEN p.status = 'SHIPPED' THEN 1 ELSE 0 END) AS parts_shipped,
-              SUM(CASE WHEN p.status IN ('DONE','IN_INVENTORY','SHIPPED') THEN 1 ELSE 0 END) AS parts_done
+              SUM(CASE WHEN p.status IN ('DONE','SHIPPED') THEN 1 ELSE 0 END) AS parts_done
        FROM orders o
        LEFT JOIN parts p ON p.order_id = o.id
        ${clause}
@@ -89,7 +89,7 @@ export const findOrderForShipment = (shipment) => {
   return null;
 };
 
-const SHIPPABLE_FROM_PRODUCTION = ['DONE', 'IN_INVENTORY'];
+const SHIPPABLE_FROM_PRODUCTION = ['DONE'];
 
 /**
  * Marks every part of an order as SHIPPED and stores the tracking info.
@@ -99,7 +99,7 @@ const SHIPPABLE_FROM_PRODUCTION = ['DONE', 'IN_INVENTORY'];
 export const markOrderShipped = (orderId, shipment, { actor = 'chitchats' } = {}) => {
   const db = getDb();
   const ts = nowIso();
-  const shipAll = config.chitchats.shipAllParts;
+  const shipAll = getSettings()['chitchats.shipAllParts'];
 
   const run = db.transaction(() => {
     const parts = db

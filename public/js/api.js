@@ -36,14 +36,17 @@ export const api = {
   bulkStatus: (ids, status, extra = {}) =>
     request('/api/parts/bulk/status', { method: 'POST', body: { ids, status, ...extra } }),
   deletePart: (id) => request(`/api/parts/${id}`, { method: 'DELETE' }),
-  orders: (params) => request(`/api/orders${qs(params)}`),
-  order: (id) => request(`/api/orders/${id}`),
-  shipOrder: (id, body = {}) => request(`/api/orders/${id}/ship`, { method: 'POST', body }),
+
   colors: () => request('/api/colors'),
+  createColor: (body) => request('/api/colors', { method: 'POST', body }),
   patchColor: (key, body) => request(`/api/colors/${key}`, { method: 'PATCH', body }),
+  deleteColor: (key) => request(`/api/colors/${key}`, { method: 'DELETE' }),
+
+  settings: () => request('/api/settings'),
+  saveSettings: (body) => request('/api/settings', { method: 'PUT', body }),
+
   summary: () => request('/api/stats/summary'),
-  inventory: () => request('/api/stats/inventory'),
   runs: () => request('/api/sync/runs'),
-  webhookEvents: () => request('/api/sync/webhooks'),
   sync: (source = 'all') => request(`/api/sync/run?source=${source}`, { method: 'POST' }),
+  shipOrder: (id, body = {}) => request(`/api/orders/${id}/ship`, { method: 'POST', body }),
 };

@@ -1,0 +1,162 @@
+import { config } from '../config.js';
+import { getDb, nowIso } from '../db/index.js';
+import { badRequest } from '../lib/errors.js';
+
+/**
+ * Tous les réglages de l'application vivent ici : ils sont stockés en base
+ * (table `settings`) et pilotés depuis la page « Intégrations ».
+ * Les variables d'environnement ne servent plus que de valeur initiale, ce qui
+ * permet de tout configurer sans redéployer.
+ */
+export const DEFINITIONS = [
+  // --- Shopify ------------------------------------------------------------
+  { key: 'shopify.shopDomain', group: 'shopify', label: 'Domaine de la boutique', type: 'text', placeholder: 'ma-boutique.myshopify.com', fallback: () => config.shopify.shopDomain },
+  { key: 'shopify.accessToken', group: 'shopify', label: "Token d'accès Admin API", type: 'secret', fallback: () => config.shopify.accessToken },
+  { key: 'shopify.apiVersion', group: 'shopify', label: 'Version API', type: 'text', fallback: () => config.shopify.apiVersion },
+  { key: 'shopify.webhookSecret', group: 'shopify', label: 'Secret webhook (HMAC)', type: 'secret', fallback: () => config.shopify.webhookSecret },
+  { key: 'shopify.enabled', group: 'shopify', label: 'Synchronisation active', type: 'boolean', fallback: () => true },
+
+  // --- Etsy ---------------------------------------------------------------
+  { key: 'etsy.shopId', group: 'etsy', label: 'Shop ID', type: 'text', fallback: () => config.etsy.shopId },
+  { key: 'etsy.apiKey', group: 'etsy', label: 'Clé API (keystring)', type: 'secret', fallback: () => config.etsy.apiKey },
+  { key: 'etsy.accessToken', group: 'etsy', label: "Token d'accès OAuth", type: 'secret', fallback: () => config.etsy.accessToken },
+  { key: 'etsy.enabled', group: 'etsy', label: 'Synchronisation active', type: 'boolean', fallback: () => true },
+
+  // --- Chit Chats ---------------------------------------------------------
+  { key: 'chitchats.clientId', group: 'chitchats', label: 'Client ID', type: 'text', fallback: () => config.chitchats.clientId },
+  { key: 'chitchats.accessToken', group: 'chitchats', label: "Token d'accès", type: 'secret', fallback: () => config.chitchats.accessToken },
+  { key: 'chitchats.apiBase', group: 'chitchats', label: 'URL de l\'API', type: 'text', fallback: () => config.chitchats.apiBase },
+  { key: 'chitchats.webhookSecret', group: 'chitchats', label: 'Secret webhook (X-Webhook-Secret)', type: 'secret', fallback: () => config.chitchats.webhookSecret },
+  { key: 'chitchats.shipAllParts', group: 'chitchats', label: 'Expédier toutes les pièces du colis', type: 'boolean', hint: 'Sinon, seules les pièces déjà imprimées passent à Expédié.', fallback: () => config.chitchats.shipAllParts },
+
+  // --- Planification ------------------------------------------------------
+  { key: 'schedule.syncCron', group: 'schedule', label: 'Cron des commandes', type: 'text', hint: 'Par défaut toutes les 5 minutes.', fallback: () => config.jobs.syncCron },
+  { key: 'schedule.shipmentCron', group: 'schedule', label: 'Cron des expéditions', type: 'text', fallback: () => config.jobs.shipmentCron },
+  { key: 'schedule.lookbackDays', group: 'schedule', label: 'Fenêtre de rattrapage (jours)', type: 'number', fallback: () => config.integrations.lookbackDays },
+
+  // --- Production ---------------------------------------------------------
+  { key: 'production.uvOptions', group: 'production', label: 'Options UV', type: 'list', hint: 'Une valeur par ligne. Affichée sur chaque carte.', fallback: () => ['Standard', 'A', 'B', 'C'] },
+  { key: 'production.commentOptions', group: 'production', label: 'Commentaires prédéfinis', type: 'list', hint: 'Liste déroulante disponible sur chaque pièce.', fallback: () => ['Réimpression', 'Support à revoir', 'Attente client', 'Pièce cassée', 'Prioritaire', 'Échantillon'] },
+  { key: 'production.defaultUv', group: 'production', label: 'Valeur UV par défaut', type: 'text', hint: 'Laisser vide pour ne rien pré-remplir.', fallback: () => '' },
+];
+
+const BY_KEY = new Map(DEFINITIONS.map((definition) => [definition.key, definition]));
+
+const parse = (definition, raw) => {
+  if (raw === null || raw === undefined) return definition.fallback();
+  switch (definition.type) {
+    case 'boolean':
+      return raw === '1' || raw === 'true';
+    case 'number': {
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : definition.fallback();
+    }
+    case 'list':
+      try {
+        const value = JSON.parse(raw);
+        return Array.isArray(value) ? value : definition.fallback();
+      } catch {
+        return definition.fallback();
+      }
+    default:
+      return raw;
+  }
+};
+
+const serialize = (definition, value) => {
+  switch (definition.type) {
+    case 'boolean':
+      return value ? '1' : '0';
+    case 'number':
+      return String(Number(value) || 0);
+    case 'list':
+      return JSON.stringify(
+        [].concat(value ?? []).map((item) => String(item).trim()).filter(Boolean),
+      );
+    default:
+      return value === null || value === undefined ? '' : String(value).trim();
+  }
+};
+
+/** Tous les réglages résolus (base > environnement > défaut). */
+export const getSettings = () => {
+  const rows = getDb().prepare('SELECT key, value FROM settings').all();
+  const stored = new Map(rows.map((row) => [row.key, row.value]));
+  const settings = {};
+  for (const definition of DEFINITIONS) {
+    settings[definition.key] = parse(definition, stored.get(definition.key));
+  }
+  return settings;
+};
+
+export const getSetting = (key) => {
+  const definition = BY_KEY.get(key);
+  if (!definition) throw badRequest(`Réglage inconnu « ${key} »`);
+  const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key);
+  return parse(definition, row?.value);
+};
+
+/** Vue destinée au front : les secrets ne sortent jamais de la base. */
+export const describeSettings = () => {
+  const values = getSettings();
+  return DEFINITIONS.map((definition) => {
+    const value = values[definition.key];
+    return {
+      key: definition.key,
+      group: definition.group,
+      label: definition.label,
+      type: definition.type,
+      hint: definition.hint ?? null,
+      placeholder: definition.placeholder ?? null,
+      value: definition.type === 'secret' ? '' : value,
+      configured: definition.type === 'secret' ? Boolean(value) : undefined,
+    };
+  });
+};
+
+/**
+ * Enregistre un lot de réglages.
+ * Un secret reçu vide est ignoré (on ne veut pas effacer une clé par erreur) ;
+ * envoyer `null` l'efface explicitement.
+ */
+export const updateSettings = (patch = {}) => {
+  const db = getDb();
+  const ts = nowIso();
+  const upsert = db.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+  );
+
+  const applied = [];
+  const run = db.transaction(() => {
+    for (const [key, value] of Object.entries(patch)) {
+      const definition = BY_KEY.get(key);
+      if (!definition) throw badRequest(`Réglage inconnu « ${key} »`);
+      if (definition.type === 'secret' && value === '') continue;
+      upsert.run(key, value === null ? '' : serialize(definition, value), ts);
+      applied.push(key);
+    }
+  });
+  run();
+
+  return { applied, settings: describeSettings() };
+};
+
+/** État des connecteurs, affiché dans la page Intégrations. */
+export const connectorStatus = () => {
+  const s = getSettings();
+  return {
+    shopify: {
+      configured: Boolean(s['shopify.shopDomain'] && s['shopify.accessToken']),
+      enabled: s['shopify.enabled'],
+    },
+    etsy: {
+      configured: Boolean(s['etsy.shopId'] && s['etsy.apiKey'] && s['etsy.accessToken']),
+      enabled: s['etsy.enabled'],
+    },
+    chitchats: {
+      configured: Boolean(s['chitchats.clientId'] && s['chitchats.accessToken']),
+      enabled: true,
+    },
+  };
+};

@@ -20,11 +20,13 @@ const buildCard = (part, actions) => {
       ]),
       el('div', { class: 'card-meta' }, [
         el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name]),
+        part.uv && el('span', { class: 'tag uv' }, [icon('uv'), `UV ${part.uv}`]),
         el('span', { class: `tag src-${part.source}` }, SOURCE_LABEL[part.source] ?? part.source),
         el('span', { class: 'tag' }, part.order_number ?? `#${part.order_id}`),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
         part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
       ]),
+      part.comment && el('div', { class: 'card-comment' }, [icon('note'), part.comment]),
       el('div', { class: 'card-foot' }, [
         el('span', { class: 'who' }, part.customer_name ?? '—'),
         el('div', { class: 'card-actions' }, [
@@ -133,20 +135,21 @@ const buildColumn = (status, parts, actions) => {
 
 export const renderBoard = (root, actions) => {
   root.classList.add('is-board');
+  const board = state.meta.boardStatuses ?? [];
   const statuses = state.filters.statuses.size
     ? state.meta.statuses.filter((s) => state.filters.statuses.has(s.key))
-    : state.meta.statuses.filter((s) => s.key !== 'SHIPPED');
+    : state.meta.statuses.filter((s) => board.includes(s.key));
 
   const byStatus = new Map(statuses.map((s) => [s.key, []]));
   for (const part of state.parts) {
     if (byStatus.has(part.status)) byStatus.get(part.status).push(part);
   }
 
-  const board = el(
-    'div',
-    { class: 'board' },
-    statuses.map((s) => buildColumn(s.key, byStatus.get(s.key) ?? [], actions)),
+  root.append(
+    el(
+      'div',
+      { class: 'board' },
+      statuses.map((s) => buildColumn(s.key, byStatus.get(s.key) ?? [], actions)),
+    ),
   );
-
-  root.append(board);
 };

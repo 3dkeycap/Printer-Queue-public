@@ -86,10 +86,10 @@ describe('intégration Chit Chats', () => {
     assert.match(result.reason, /no matching order/);
   });
 
-  it('expédie aussi les pièces déjà en stock', () => {
+  it('expédie aussi les pièces déjà imprimées', () => {
     const order = ingestOrder(makeOrder({ externalId: '3003', orderNumber: '#3003' }));
     const parts = getDb().prepare('SELECT id FROM parts WHERE order_id = ?').all(order.orderId);
-    for (const step of ['FILE_READY', 'PRINTING', 'DONE', 'IN_INVENTORY']) {
+    for (const step of ['PRINTING', 'DONE']) {
       setStatus(parts[0].id, step, { actor: 'test' });
     }
     const result = applyShipment({ id: 'cc_4', status: 'delivered', order_id: '#3003' });

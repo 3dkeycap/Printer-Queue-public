@@ -1,7 +1,7 @@
-import { config, isMock } from '../config.js';
+import { config } from '../config.js';
 import { requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
-import { generateMockOrders } from './mock-data.js';
+import { getSettings } from '../domain/settings.service.js';
 
 const log = createLogger('etsy');
 
@@ -51,21 +51,22 @@ export const normalizeReceipt = (receipt) => ({
   raw: receipt,
 });
 
-export const isConfigured = () =>
-  Boolean(config.etsy.shopId && config.etsy.apiKey && config.etsy.accessToken);
+export const isConfigured = (settings = getSettings()) =>
+  Boolean(settings['etsy.shopId'] && settings['etsy.apiKey'] && settings['etsy.accessToken']);
 
-/** Fetches unshipped, paid receipts. */
-export const fetchOrders = async ({ since, mockSeed = 1, mockCount = 1 } = {}) => {
-  if (isMock()) {
-    log.debug('mock mode, generating orders', { mockSeed, mockCount });
-    return generateMockOrders('etsy', mockSeed, mockCount);
+/** Récupère les commandes payées et non expédiées. */
+export const fetchOrders = async ({ since } = {}) => {
+  const settings = getSettings();
+  if (!settings['etsy.enabled']) {
+    log.info('etsy sync disabled in settings');
+    return [];
   }
-  if (!isConfigured()) {
+  if (!isConfigured(settings)) {
     log.warn('etsy credentials missing, skipping');
     return [];
   }
 
-  const url = new URL(`${config.etsy.apiBase}/shops/${config.etsy.shopId}/receipts`);
+  const url = new URL(`${config.etsy.apiBase}/shops/${settings['etsy.shopId']}/receipts`);
   url.searchParams.set('was_paid', 'true');
   url.searchParams.set('was_shipped', 'false');
   url.searchParams.set('limit', '100');
@@ -73,8 +74,8 @@ export const fetchOrders = async ({ since, mockSeed = 1, mockCount = 1 } = {}) =
 
   const payload = await requestJson(url.toString(), {
     headers: {
-      'x-api-key': config.etsy.apiKey,
-      Authorization: `Bearer ${config.etsy.accessToken}`,
+      'x-api-key': settings['etsy.apiKey'],
+      Authorization: `Bearer ${settings['etsy.accessToken']}`,
     },
   });
 

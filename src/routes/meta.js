@@ -1,14 +1,14 @@
 import { Router } from 'express';
-import { config } from '../config.js';
 import { getDb } from '../db/index.js';
-import { STATUSES } from '../domain/statuses.js';
+import { BOARD_STATUSES, STATUSES } from '../domain/statuses.js';
+import { connectorStatus, getSettings } from '../domain/settings.service.js';
 
 export const metaRouter = Router();
 
 metaRouter.get('/health', (req, res) => {
   try {
     getDb().prepare('SELECT 1').get();
-    res.json({ status: 'ok', mode: config.integrations.mode, uptime: process.uptime() });
+    res.json({ status: 'ok', uptime: process.uptime() });
   } catch (error) {
     res.status(503).json({ status: 'error', error: error.message });
   }
@@ -16,11 +16,16 @@ metaRouter.get('/health', (req, res) => {
 
 /** Everything the front-end needs to render itself (statuses, cron, mode). */
 metaRouter.get('/meta', (req, res) => {
+  const settings = getSettings();
   res.json({
     statuses: STATUSES,
-    mode: config.integrations.mode,
-    syncCron: config.jobs.syncCron,
-    shipmentCron: config.jobs.shipmentCron,
-    version: '1.0.0',
+    boardStatuses: BOARD_STATUSES,
+    uvOptions: settings['production.uvOptions'],
+    commentOptions: settings['production.commentOptions'],
+    defaultUv: settings['production.defaultUv'],
+    syncCron: settings['schedule.syncCron'],
+    shipmentCron: settings['schedule.shipmentCron'],
+    connectors: connectorStatus(),
+    version: '2.0.0',
   });
 });

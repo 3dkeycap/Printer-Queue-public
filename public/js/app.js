@@ -1,28 +1,23 @@
 import { api } from './api.js';
 import { clear, el, icon, modal, swatch, toast } from './ui.js';
-import { queryParams, savePrefs, state, statusMeta } from './store.js';
+import { commentOptions, queryParams, savePrefs, state, statusMeta, uvOptions } from './store.js';
 import { renderBoard } from './views/board.js';
-import { renderTable } from './views/table.js';
-import { renderInventory } from './views/inventory.js';
-import { renderOrders } from './views/orders.js';
+import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { closeDrawer, openDrawer } from './drawer.js';
 
 const NEXT_STATUS = {
-  TO_PRINT: 'FILE_READY',
-  FILE_READY: 'PRINTING',
+  TO_PRINT: 'PRINTING',
   PRINTING: 'DONE',
   FAILED: 'TO_PRINT',
-  DONE: 'IN_INVENTORY',
-  IN_INVENTORY: 'SHIPPED',
+  DONE: 'SHIPPED',
   SHIPPED: null,
 };
 
 const VIEW_META = {
-  board: { title: 'Production', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
-  inventory: { title: 'Inventaire', subtitle: 'Pièces finies en bac et stock de résine par couleur.' },
-  orders: { title: 'Commandes', subtitle: 'Commandes importées depuis Shopify et Etsy.' },
-  integrations: { title: 'Intégrations', subtitle: 'Connecteurs, planification et journal des synchronisations.' },
+  board: { title: 'À imprimer', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
+  all: { title: 'Tout', subtitle: 'Toutes les pièces, tous statuts confondus.' },
+  integrations: { title: 'Intégrations', subtitle: 'Connecteurs, planification et réglages de production.' },
 };
 
 const dom = {
@@ -43,7 +38,7 @@ const actions = {
   nextStatus: (status) => NEXT_STATUS[status] ?? null,
 
   async move(ids, status, options = {}) {
-    // optimistic: repaint immediately, reconcile with the server afterwards
+    // optimiste : on repeint tout de suite, on réconcilie ensuite
     const snapshot = state.parts.map((part) => ({ ...part }));
     for (const part of state.parts) {
       if (ids.includes(part.id)) part.status = status;
@@ -66,11 +61,11 @@ const actions = {
     }
   },
 
-  async patchPart(id, patch) {
+  async patchPart(id, patch, { silent = false } = {}) {
     try {
       await api.patchPart(id, patch);
       await refresh({ silent: true });
-      toast('Pièce mise à jour');
+      if (!silent) toast('Pièce mise à jour');
     } catch (error) {
       toast(error.message, 'err');
     }
@@ -96,7 +91,9 @@ const actions = {
     try {
       const result = await api.sync(source);
       const created = (result.orders ?? []).reduce((sum, run) => sum + (run.partsCreated ?? 0), 0);
-      toast(created ? `${created} nouvelle(s) pièce(s) importée(s)` : 'Synchronisation terminée');
+      const failed = (result.orders ?? []).filter((run) => run.status === 'error');
+      if (failed.length) toast(failed.map((run) => `${run.source} : ${run.message}`).join(' · '), 'err');
+      else toast(created ? `${created} nouvelle(s) pièce(s) importée(s)` : 'Synchronisation terminée');
       await refresh();
     } catch (error) {
       toast(error.message, 'err');
@@ -106,33 +103,56 @@ const actions = {
     }
   },
 
-  async setStock(key, grams) {
+  async saveSettings(patch) {
+    if (!Object.keys(patch).length) return toast('Aucune modification');
     try {
-      await api.patchColor(key, { stock_grams: grams });
-      await refresh({ silent: true });
-      toast('Stock de résine mis à jour');
+      const result = await api.saveSettings(patch);
+      state.settings = result.settings;
+      state.connectors = result.connectors;
+      state.meta = await api.meta();
+      toast('Réglages enregistrés');
+      render();
     } catch (error) {
       toast(error.message, 'err');
     }
   },
 
-  filterByOrder(order) {
-    dom.search.value = order.order_number ?? order.external_id;
-    state.filters.q = dom.search.value;
-    state.filters.statuses.clear();
-    setView('board');
+  async saveColor(key, patch) {
+    if (!Object.keys(patch).length) return;
+    try {
+      await api.patchColor(key, patch);
+      state.colors = (await api.colors()).items;
+      toast('Résine mise à jour');
+    } catch (error) {
+      toast(error.message, 'err');
+    }
   },
 
-  async shipOrder(order) {
+  async addColor() {
+    const name = el('input', { placeholder: 'Bleu ciel' });
+    const hex = el('input', { type: 'color', value: '#8CBFAE', class: 'color-input' });
+    const aliases = el('input', { placeholder: 'sky blue, bleu ciel' });
+
     await modal({
-      title: `Expédier ${order.order_number ?? order.external_id} ?`,
-      body: el('p', { class: 'sub' }, 'Toutes les pièces de cette commande passeront au statut « Expédié ».'),
-      confirmLabel: 'Expédier',
+      title: 'Ajouter une résine',
+      body: el('div', {}, [
+        el('div', { class: 'field' }, [el('label', {}, 'Nom'), name]),
+        el('div', { class: 'field' }, [el('label', {}, 'Teinte'), hex]),
+        el('div', { class: 'field' }, [el('label', {}, 'Alias de détection'), aliases]),
+      ]),
+      confirmLabel: 'Créer',
       onConfirm: async () => {
+        if (!name.value.trim()) return toast('Le nom est obligatoire', 'err');
         try {
-          await api.shipOrder(order.id, { id: `manual-${Date.now()}` });
-          toast('Commande expédiée');
-          await refresh();
+          await api.createColor({
+            name: name.value.trim(),
+            key: name.value.trim(),
+            hex: hex.value,
+            aliases: aliases.value.split(',').map((v) => v.trim()).filter(Boolean),
+          });
+          state.colors = (await api.colors()).items;
+          toast('Résine ajoutée');
+          render();
         } catch (error) {
           toast(error.message, 'err');
         }
@@ -140,23 +160,42 @@ const actions = {
     });
   },
 
+  async deleteColor(key) {
+    try {
+      const result = await api.deleteColor(key);
+      state.colors = (await api.colors()).items;
+      toast(result.deactivated ? `Résine utilisée par ${result.parts} pièce(s) : désactivée` : 'Résine supprimée');
+      render();
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
   async addPart() {
-    const name = el('input', { placeholder: 'Keycap "Tiki Skull"' });
-    const sku = el('input', { placeholder: 'KC-TIKI-R1' });
+    const name = el('input', { placeholder: 'DES Keycap Set Lily58' });
+    const sku = el('input', { placeholder: 'KC-LILY58' });
     const quantity = el('input', { type: 'number', min: '1', value: '1' });
-    const color = el(
-      'select',
-      {},
-      state.colors.map((c) => el('option', { value: c.key }, c.name)),
-    );
+    const customer = el('input', { placeholder: 'Pour qui (facultatif)' });
+    const color = el('select', {}, state.colors.map((c) => el('option', { value: c.key }, c.name)));
+    const uv = el('select', {}, [
+      el('option', { value: '' }, 'Aucun poste UV'),
+      ...uvOptions().map((option) => el('option', { value: option, selected: option === state.meta?.defaultUv }, option)),
+    ]);
+    const comment = el('select', {}, [
+      el('option', { value: '' }, 'Aucun commentaire'),
+      ...commentOptions().map((option) => el('option', { value: option }, option)),
+    ]);
 
     await modal({
       title: 'Ajouter une pièce à produire',
-      body: el('div', { class: 'modal-body', style: { padding: '0' } }, [
-        el('div', { class: 'field' }, [el('label', {}, 'Nom de la pièce'), name]),
+      body: el('div', {}, [
+        el('div', { class: 'field' }, [el('label', {}, 'Pièce'), name]),
         el('div', { class: 'field' }, [el('label', {}, 'SKU'), sku]),
         el('div', { class: 'field' }, [el('label', {}, 'Quantité'), quantity]),
+        el('div', { class: 'field' }, [el('label', {}, 'Pour qui'), customer]),
         el('div', { class: 'field' }, [el('label', {}, 'Résine'), color]),
+        el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uv]),
+        el('div', { class: 'field' }, [el('label', {}, 'Commentaire'), comment]),
       ]),
       confirmLabel: 'Créer',
       onConfirm: async () => {
@@ -166,7 +205,10 @@ const actions = {
             name: name.value.trim(),
             sku: sku.value.trim() || null,
             quantity: Number(quantity.value) || 1,
+            customer: customer.value.trim() || null,
             color_key: color.value,
+            uv: uv.value || null,
+            comment: comment.value || null,
           });
           toast('Pièce(s) ajoutée(s) à la file');
           await refresh();
@@ -181,16 +223,21 @@ const actions = {
 /* ---------------------------------------------------------------- render - */
 
 const renderStats = () => {
-  const summary = state.summary;
-  if (!summary) return;
-  const { totals, byStatus } = summary;
+  // seul le tableau de production porte les compteurs (la page « Tout » n'a
+  // que ses filtres, comme demandé)
+  if (state.view !== 'board' || !state.summary) {
+    dom.stats.hidden = true;
+    return;
+  }
+  dom.stats.hidden = false;
+  const { totals, byStatus } = state.summary;
 
   const tiles = [
     { label: 'À produire', value: totals.parts_active, hint: `${totals.orders_open} commande(s) ouverte(s)`, accent: 'var(--accent)' },
-    { label: 'À imprimer', value: byStatus.TO_PRINT + byStatus.FILE_READY, hint: `${byStatus.FILE_READY} fichier(s) prêt(s)`, accent: statusMeta('FILE_READY').accent },
+    { label: 'À imprimer', value: byStatus.TO_PRINT, hint: 'En attente de machine', accent: statusMeta('TO_PRINT').accent },
     { label: 'En impression', value: byStatus.PRINTING, hint: `${totals.done_today} terminée(s) aujourd'hui`, accent: statusMeta('PRINTING').accent },
     { label: 'Échecs ouverts', value: totals.failed_open, hint: 'À relancer', accent: statusMeta('FAILED').accent },
-    { label: 'En stock', value: byStatus.IN_INVENTORY, hint: 'Prêtes à emballer', accent: statusMeta('IN_INVENTORY').accent },
+    { label: 'Imprimées', value: byStatus.DONE, hint: 'Prêtes à emballer', accent: statusMeta('DONE').accent },
     { label: 'Expédiées', value: totals.shipped_today, hint: "aujourd'hui · Chit Chats", accent: statusMeta('SHIPPED').accent },
     { label: 'Rush', value: totals.parts_rush, hint: 'Pièces prioritaires', accent: 'var(--warn)' },
   ];
@@ -206,31 +253,65 @@ const renderStats = () => {
   );
 };
 
+const chip = (label, isOn, onclick, extra = [], count = null) =>
+  el('button', { class: `chip${isOn ? ' is-on' : ''}`, onclick }, [
+    ...extra,
+    label,
+    count === null ? null : el('span', { class: 'count' }, String(count)),
+  ].filter(Boolean));
+
 const renderToolbar = () => {
-  if (state.view !== 'board') {
+  if (state.view === 'integrations') {
     dom.toolbar.hidden = true;
     return;
   }
   dom.toolbar.hidden = false;
 
-  const colorCounts = new Map((state.summary?.byColor ?? []).map((c) => [c.key, c.active]));
+  const colorCounts = new Map((state.summary?.byColor ?? []).map((c) => [c.key, state.view === 'board' ? c.active : c.total]));
+  const statusCounts = state.summary?.byStatus ?? {};
 
   const colorChips = state.colors
     .filter((color) => colorCounts.get(color.key) > 0 || state.filters.colors.has(color.key))
     .map((color) =>
-      el(
-        'button',
-        {
-          class: `chip${state.filters.colors.has(color.key) ? ' is-on' : ''}`,
-          onclick: () => {
-            if (state.filters.colors.has(color.key)) state.filters.colors.delete(color.key);
-            else state.filters.colors.add(color.key);
-            refresh();
-          },
+      chip(
+        color.name,
+        state.filters.colors.has(color.key),
+        () => {
+          toggleIn(state.filters.colors, color.key);
+          refresh();
         },
-        [swatch(color.hex), color.name, el('span', { class: 'count' }, String(colorCounts.get(color.key) ?? 0))],
+        [swatch(color.hex)],
+        colorCounts.get(color.key) ?? 0,
       ),
     );
+
+  const uvChips = (state.meta?.uvOptions ?? []).map((option) =>
+    chip(
+      `UV ${option}`,
+      state.filters.uv.has(option),
+      () => {
+        toggleIn(state.filters.uv, option);
+        refresh();
+      },
+      [icon('uv')],
+    ),
+  );
+
+  const statusChips =
+    state.view === 'all'
+      ? state.meta.statuses.map((status) =>
+          chip(
+            status.labelFr,
+            state.filters.statuses.has(status.key),
+            () => {
+              toggleIn(state.filters.statuses, status.key);
+              refresh();
+            },
+            [el('span', { class: 'swatch', style: { background: status.accent } })],
+            statusCounts[status.key] ?? 0,
+          ),
+        )
+      : [];
 
   const groupSelect = el(
     'select',
@@ -243,10 +324,11 @@ const renderToolbar = () => {
       },
     },
     [
-      el('option', { value: 'color', selected: state.groupBy === 'color' }, 'Grouper par couleur'),
-      el('option', { value: 'order', selected: state.groupBy === 'order' }, 'Grouper par commande'),
-      el('option', { value: 'none', selected: state.groupBy === 'none' }, 'Aucun regroupement'),
-    ],
+      ['color', 'Grouper par couleur'],
+      ['uv', 'Grouper par UV'],
+      ['order', 'Grouper par commande'],
+      ['none', 'Aucun regroupement'],
+    ].map(([value, label]) => el('option', { value, selected: state.groupBy === value }, label)),
   );
 
   const sortSelect = el(
@@ -260,12 +342,12 @@ const renderToolbar = () => {
       },
     },
     [
-      el('option', { value: 'smart', selected: state.sort === 'smart' }, 'Tri : priorité'),
-      el('option', { value: 'oldest', selected: state.sort === 'oldest' }, 'Tri : plus anciennes'),
-      el('option', { value: 'newest', selected: state.sort === 'newest' }, 'Tri : plus récentes'),
-      el('option', { value: 'color', selected: state.sort === 'color' }, 'Tri : couleur'),
-      el('option', { value: 'updated', selected: state.sort === 'updated' }, 'Tri : activité'),
-    ],
+      ['smart', 'Tri : priorité'],
+      ['oldest', 'Tri : plus anciennes'],
+      ['newest', 'Tri : plus récentes'],
+      ['color', 'Tri : couleur'],
+      ['updated', 'Tri : activité'],
+    ].map(([value, label]) => el('option', { value, selected: state.sort === value }, label)),
   );
 
   const sourceSelect = el(
@@ -278,77 +360,56 @@ const renderToolbar = () => {
       },
     },
     [
-      el('option', { value: '', selected: !state.filters.source }, 'Toutes les sources'),
-      el('option', { value: 'shopify', selected: state.filters.source === 'shopify' }, 'Shopify'),
-      el('option', { value: 'etsy', selected: state.filters.source === 'etsy' }, 'Etsy'),
-      el('option', { value: 'manual', selected: state.filters.source === 'manual' }, 'Interne'),
-    ],
+      ['', 'Toutes les sources'],
+      ['shopify', 'Shopify'],
+      ['etsy', 'Etsy'],
+      ['manual', 'Interne'],
+    ].map(([value, label]) => el('option', { value, selected: state.filters.source === value }, label)),
   );
 
-  const layoutToggle = el('div', { class: 'segmented' }, [
-    el(
-      'button',
-      {
-        class: state.layout === 'board' ? 'is-on' : '',
-        onclick: () => {
-          state.layout = 'board';
-          savePrefs();
-          render();
-        },
-      },
-      [icon('board'), 'Kanban'],
-    ),
-    el(
-      'button',
-      {
-        class: state.layout === 'table' ? 'is-on' : '',
-        onclick: () => {
-          state.layout = 'table';
-          savePrefs();
-          render();
-        },
-      },
-      [icon('table'), 'Tableau'],
-    ),
-  ]);
+  const rushChip = chip('Rush', state.filters.priority, () => {
+    state.filters.priority = !state.filters.priority;
+    refresh();
+  }, [icon('bolt')]);
 
-  const rushChip = el(
-    'button',
-    {
-      class: `chip${state.filters.priority ? ' is-on' : ''}`,
-      onclick: () => {
-        state.filters.priority = !state.filters.priority;
+  const hasFilters =
+    state.filters.colors.size ||
+    state.filters.uv.size ||
+    state.filters.statuses.size ||
+    state.filters.source ||
+    state.filters.priority ||
+    state.filters.q;
+
+  const resetChip = hasFilters
+    ? chip('Réinitialiser', false, () => {
+        state.filters.colors.clear();
+        state.filters.uv.clear();
+        state.filters.statuses.clear();
+        state.filters.source = '';
+        state.filters.priority = false;
+        state.filters.q = '';
+        dom.search.value = '';
         refresh();
-      },
-    },
-    [icon('bolt'), 'Rush'],
-  );
-
-  const resetChip =
-    state.filters.colors.size || state.filters.source || state.filters.priority || state.filters.q
-      ? el(
-          'button',
-          {
-            class: 'chip',
-            onclick: () => {
-              state.filters.colors.clear();
-              state.filters.source = '';
-              state.filters.priority = false;
-              state.filters.q = '';
-              dom.search.value = '';
-              refresh();
-            },
-          },
-          [icon('close'), 'Réinitialiser'],
-        )
-      : null;
+      }, [icon('close')])
+    : null;
 
   clear(dom.toolbar).append(
-    el('span', { class: 'toolbar-label' }, 'Résine'),
-    el('div', { class: 'toolbar-group' }, colorChips.length ? colorChips : el('span', { class: 'cell-sub' }, 'Aucune pièce en production')),
-    el('div', { class: 'toolbar-spacer' }),
-    el('div', { class: 'toolbar-group' }, [rushChip, resetChip, sourceSelect, groupSelect, sortSelect, layoutToggle].filter(Boolean)),
+    ...[
+      el('span', { class: 'toolbar-label' }, 'Résine'),
+      el('div', { class: 'toolbar-group' }, colorChips.length ? colorChips : el('span', { class: 'cell-sub' }, 'Aucune pièce')),
+      uvChips.length ? el('span', { class: 'toolbar-sep' }) : null,
+      uvChips.length ? el('div', { class: 'toolbar-group' }, uvChips) : null,
+      statusChips.length ? el('span', { class: 'toolbar-sep' }) : null,
+      statusChips.length ? el('div', { class: 'toolbar-group' }, statusChips) : null,
+      el('div', { class: 'toolbar-spacer' }),
+      el('div', { class: 'toolbar-group' }, [rushChip, resetChip, sourceSelect, groupSelect, sortSelect].filter(Boolean)),
+    ].filter(Boolean),
   );
+};
+
+const toggleIn = (set, value) => {
+  if (set.has(value)) set.delete(value);
+  else set.add(value);
 };
 
 const renderBulkbar = () => {
@@ -363,16 +424,62 @@ const renderBulkbar = () => {
     el('span', { class: 'label' }, `${ids.length} pièce(s) sélectionnée(s)`),
     el('span', { class: 'toolbar-sep' }),
     ...state.meta.statuses.map((status) =>
-      el(
-        'button',
-        { class: 'chip', onclick: () => actions.move(ids, status.key, { force: true }) },
-        [el('span', { class: 'swatch', style: { background: status.accent } }), status.labelFr],
-      ),
+      el('button', { class: 'chip', onclick: () => actions.move(ids, status.key, { force: true }) }, [
+        el('span', { class: 'swatch', style: { background: status.accent } }),
+        status.labelFr,
+      ]),
+    ),
+    el('span', { class: 'toolbar-sep' }),
+    el(
+      'button',
+      {
+        class: 'chip',
+        onclick: async () => {
+          const value = await pickFromList('Commentaire', commentOptions());
+          if (value !== null) {
+            for (const id of ids) await api.patchPart(id, { comment: value || null });
+            state.selection.clear();
+            await refresh();
+            toast('Commentaire appliqué');
+          }
+        },
+      },
+      [icon('note'), 'Commentaire'],
+    ),
+    el(
+      'button',
+      {
+        class: 'chip',
+        onclick: async () => {
+          const value = await pickFromList('Poste UV', uvOptions());
+          if (value !== null) {
+            for (const id of ids) await api.patchPart(id, { uv: value || null });
+            state.selection.clear();
+            await refresh();
+            toast('UV appliqué');
+          }
+        },
+      },
+      [icon('uv'), 'UV'],
     ),
     el('div', { class: 'toolbar-spacer' }),
     el('button', { class: 'ghost-btn', onclick: () => actions.toggleSelectAll(false) }, 'Désélectionner'),
   );
 };
+
+const pickFromList = (title, options) =>
+  new Promise((resolve) => {
+    const select = el('select', {}, [
+      el('option', { value: '' }, '— vider —'),
+      ...options.map((option) => el('option', { value: option }, option)),
+    ]);
+    modal({
+      title: `${title} pour la sélection`,
+      body: el('div', { class: 'field' }, [el('label', {}, title), select]),
+      confirmLabel: 'Appliquer',
+      onConfirm: () => select.value,
+    }).then((value) => resolve(value === null ? null : value));
+  });
 
 const render = () => {
   const meta = VIEW_META[state.view];
@@ -383,6 +490,7 @@ const render = () => {
     item.classList.toggle('is-active', item.dataset.view === state.view);
   });
 
+  updateConnectorBadge();
   renderStats();
   renderToolbar();
   renderBulkbar();
@@ -395,14 +503,12 @@ const render = () => {
       root.append(
         el('div', { class: 'empty' }, [
           icon('layers'),
-          el('strong', {}, 'La file est vide'),
-          'Lance une synchronisation ou ajoute une pièce manuellement.',
+          el('strong', {}, 'Rien à imprimer'),
+          'Connecte Shopify ou Etsy dans Intégrations, ou ajoute une pièce manuellement.',
         ]),
       );
-    } else if (state.layout === 'board') renderBoard(root, actions);
-    else renderTable(root, actions);
-  } else if (state.view === 'inventory') renderInventory(root, actions);
-  else if (state.view === 'orders') renderOrders(root, actions);
+    } else renderBoard(root, actions);
+  } else if (state.view === 'all') renderAll(root, actions);
   else renderIntegrations(root, actions);
 };
 
@@ -411,18 +517,23 @@ const render = () => {
 const refresh = async ({ silent = false } = {}) => {
   if (!silent) state.loading = true;
   try {
-    const [summary, parts] = await Promise.all([api.summary(), api.parts(queryParams())]);
-    state.summary = summary;
-    state.parts = parts.items;
-
-    if (state.view === 'inventory') {
-      const [inventory, colors] = await Promise.all([api.inventory(), api.colors()]);
-      state.inventory = inventory.items;
+    if (state.view === 'integrations') {
+      const [settings, colors, runs, summary] = await Promise.all([
+        api.settings(),
+        api.colors(),
+        api.runs(),
+        api.summary(),
+      ]);
+      state.settings = settings.items;
+      state.connectors = settings.connectors;
       state.colors = colors.items;
+      state.runs = runs.items;
+      state.summary = summary;
+    } else {
+      const [summary, parts] = await Promise.all([api.summary(), api.parts(queryParams())]);
+      state.summary = summary;
+      state.parts = parts.items;
     }
-    if (state.view === 'orders') state.orders = (await api.orders({ limit: 100 })).items;
-    if (state.view === 'integrations') state.runs = (await api.runs()).items;
-
     updateNavCounts();
     render();
   } catch (error) {
@@ -434,12 +545,7 @@ const refresh = async ({ silent = false } = {}) => {
 
 const updateNavCounts = () => {
   const totals = state.summary?.totals ?? {};
-  const byStatus = state.summary?.byStatus ?? {};
-  const counts = {
-    board: totals.parts_active ?? 0,
-    inventory: byStatus.IN_INVENTORY ?? 0,
-    orders: totals.orders_open ?? 0,
-  };
+  const counts = { board: totals.parts_active ?? 0, all: totals.parts_total ?? 0 };
   document.querySelectorAll('.nav-count').forEach((node) => {
     const value = counts[node.dataset.count];
     node.textContent = value ? String(value) : '';
@@ -459,6 +565,18 @@ const applyTheme = () => {
   document.documentElement.dataset.theme = state.theme;
   const isDark = state.theme === 'dark';
   clear(dom.themeBtn).append(icon(isDark ? 'sun' : 'moon'), el('span', {}, isDark ? 'Thème beige' : 'Thème nuit'));
+};
+
+const updateConnectorBadge = () => {
+  const connectors = state.meta?.connectors ?? {};
+  const ready = Object.values(connectors).filter((connector) => connector.configured).length;
+  const total = Object.keys(connectors).length;
+  const badge = document.getElementById('mode-badge');
+  badge.classList.toggle('is-live', ready === total && total > 0);
+  document.getElementById('mode-label').textContent =
+    total === 0 ? '—' : ready === total ? 'Connecteurs actifs' : `${ready}/${total} connecteur(s)`;
+  document.getElementById('cron-line').textContent =
+    `sync ${state.meta?.syncCron ?? '—'} · envois ${state.meta?.shipmentCron ?? '—'}`;
 };
 
 const bindEvents = () => {
@@ -501,9 +619,11 @@ const bindEvents = () => {
     if (VIEW_META[view] && view !== state.view) setView(view);
   });
 
-  // keep the board fresh while the worker imports orders in the background
+  // le worker importe en arrière-plan : on rafraîchit sans déranger l'opérateur
   setInterval(() => {
-    if (document.visibilityState === 'visible' && !state.selection.size) refresh({ silent: true });
+    if (document.visibilityState === 'visible' && !state.selection.size && state.view !== 'integrations') {
+      refresh({ silent: true });
+    }
   }, 30000);
 };
 
@@ -514,12 +634,7 @@ const boot = async () => {
   const [meta, colors] = await Promise.all([api.meta(), api.colors()]);
   state.meta = meta;
   state.colors = colors.items;
-  state.colorIndex = new Map(colors.items.map((color) => [color.key, color]));
-
-  const badge = document.getElementById('mode-badge');
-  badge.classList.toggle('is-live', meta.mode === 'live');
-  document.getElementById('mode-label').textContent = meta.mode === 'live' ? 'API live' : 'Mode démo (mock)';
-  document.getElementById('cron-line').textContent = `sync ${meta.syncCron} · envois ${meta.shipmentCron}`;
+  updateConnectorBadge();
 
   const initial = location.hash.replace('#', '');
   state.view = VIEW_META[initial] ? initial : 'board';

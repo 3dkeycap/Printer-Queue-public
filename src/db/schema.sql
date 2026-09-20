@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS parts (
   status            TEXT NOT NULL DEFAULT 'TO_PRINT',
   priority          INTEGER NOT NULL DEFAULT 0,     -- 0 normal, 1 rush
   printer           TEXT,
+  uv                TEXT,                           -- poste / recette UV (liste réglable)
+  comment           TEXT,                           -- commentaire choisi dans la liste réglable
   notes             TEXT,
   fail_count        INTEGER NOT NULL DEFAULT 0,
   status_changed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -143,7 +145,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE VIEW IF NOT EXISTS v_parts_full AS
 SELECT
   p.id, p.order_id, p.order_item_id, p.unit_index, p.name, p.sku, p.variant_title,
-  p.color_key, p.status, p.priority, p.printer, p.notes, p.fail_count,
+  p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count,
   p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
   o.source, o.external_id AS order_external_id, o.order_number, o.customer_name,
   o.placed_at, o.is_priority AS order_priority, o.tracking_number, o.carrier,

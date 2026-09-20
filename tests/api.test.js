@@ -40,10 +40,12 @@ describe('API HTTP', () => {
     assert.equal(body.status, 'ok');
   });
 
-  it('expose les statuts au front-end', async () => {
+  it('expose les statuts et les listes réglables au front-end', async () => {
     const { body } = await call('/api/meta');
-    assert.equal(body.statuses.length, 7);
-    assert.equal(body.statuses[0].key, 'TO_PRINT');
+    assert.equal(body.statuses.length, 5);
+    assert.deepEqual(body.boardStatuses, ['TO_PRINT', 'PRINTING', 'FAILED', 'DONE']);
+    assert.ok(body.uvOptions.includes('Standard'));
+    assert.ok(Array.isArray(body.commentOptions));
   });
 
   it('liste les pièces du tableau de production', async () => {
@@ -61,10 +63,10 @@ describe('API HTTP', () => {
   });
 
   it('change le statut d\'une pièce', async () => {
-    const { body } = await call('/api/parts/1/status', { method: 'POST', body: { status: 'FILE_READY' } });
-    assert.equal(body.status, 'FILE_READY');
+    const { body } = await call('/api/parts/1/status', { method: 'POST', body: { status: 'PRINTING' } });
+    assert.equal(body.status, 'PRINTING');
     const events = await call('/api/parts/1/events');
-    assert.equal(events.body.items[0].to_status, 'FILE_READY');
+    assert.equal(events.body.items[0].to_status, 'PRINTING');
     assert.equal(events.body.items[0].actor, 'dashboard');
   });
 
@@ -82,20 +84,38 @@ describe('API HTTP', () => {
   it('traite un lot de pièces', async () => {
     const { body } = await call('/api/parts/bulk/status', {
       method: 'POST',
-      body: { ids: [2, 3], status: 'FILE_READY' },
+      body: { ids: [2, 3], status: 'PRINTING' },
     });
     assert.equal(body.updated.length, 2);
     assert.equal(body.errors.length, 0);
   });
 
-  it('crée des pièces manuelles (stock interne)', async () => {
+  it('crée des pièces manuelles avec UV et commentaire', async () => {
     const { status, body } = await call('/api/parts', {
       method: 'POST',
-      body: { name: 'Keycap "Tiki" (stock)', quantity: 4, color_key: 'beige' },
+      body: {
+        name: 'Keycap "Tiki" (stock)',
+        quantity: 4,
+        color_key: 'beige',
+        uv: 'A',
+        comment: 'Réimpression',
+        customer: '5348',
+      },
     });
     assert.equal(status, 201);
     assert.equal(body.items.length, 4);
     assert.equal(body.items[0].source, 'manual');
+    assert.equal(body.items[0].uv, 'A');
+    assert.equal(body.items[0].comment, 'Réimpression');
+    assert.equal(body.items[0].customer_name, '5348');
+  });
+
+  it('modifie le poste UV et le commentaire d\'une pièce', async () => {
+    const { body } = await call('/api/parts/2', { method: 'PATCH', body: { uv: 'B', comment: 'Attente client' } });
+    assert.equal(body.uv, 'B');
+    assert.equal(body.comment, 'Attente client');
+    const filtered = await call('/api/parts?uv=B');
+    assert.equal(filtered.body.total, 1);
   });
 
   it('rejette une couleur de résine inconnue', async () => {
@@ -107,6 +127,7 @@ describe('API HTTP', () => {
     const { body } = await call('/api/stats/summary');
     assert.equal(body.totals.parts_total, 7);
     assert.ok(body.byColor.some((color) => color.key === 'glow'));
+    assert.ok(body.byUv.some((row) => row.uv === 'A'));
     assert.equal(body.byStatus.SHIPPED, 1);
   });
 

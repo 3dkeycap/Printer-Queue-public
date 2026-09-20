@@ -1,5 +1,164 @@
-import { el, formatDate, fromNow, icon } from '../ui.js';
+import { el, formatDate, fromNow, icon, swatch } from '../ui.js';
 import { state } from '../store.js';
+
+const GROUPS = [
+  { key: 'shopify', title: 'Shopify', hint: 'App personnalisée avec le scope read_orders.' },
+  { key: 'etsy', title: 'Etsy', hint: 'Open API v3, scope transactions_r.' },
+  { key: 'chitchats', title: 'Chit Chats', hint: 'Un colis scanné bascule les pièces en « Expédié ».' },
+  { key: 'schedule', title: 'Planification', hint: 'Expressions cron appliquées par le worker (prise en compte < 1 min).' },
+  { key: 'production', title: 'Production', hint: 'Listes déroulantes disponibles sur chaque pièce.' },
+];
+
+/** Construit le champ correspondant au type de réglage. */
+const field = (definition, draft) => {
+  const id = `set-${definition.key}`;
+  let input;
+
+  if (definition.type === 'boolean') {
+    input = el('label', { class: 'switch' }, [
+      el('input', {
+        type: 'checkbox',
+        id,
+        checked: definition.value,
+        onchange: (event) => {
+          draft[definition.key] = event.target.checked;
+        },
+      }),
+      el('span', {}, definition.value ? 'Activé' : 'Désactivé'),
+    ]);
+    input.querySelector('input').addEventListener('change', (event) => {
+      input.querySelector('span').textContent = event.target.checked ? 'Activé' : 'Désactivé';
+    });
+  } else if (definition.type === 'list') {
+    input = el(
+      'textarea',
+      {
+        id,
+        rows: String(Math.max(3, definition.value.length + 1)),
+        placeholder: 'Une valeur par ligne',
+        oninput: (event) => {
+          draft[definition.key] = event.target.value.split('\n').map((v) => v.trim()).filter(Boolean);
+        },
+      },
+      definition.value.join('\n'),
+    );
+  } else {
+    input = el('input', {
+      id,
+      type: definition.type === 'secret' ? 'password' : definition.type === 'number' ? 'number' : 'text',
+      value: definition.type === 'secret' ? '' : definition.value ?? '',
+      placeholder:
+        definition.type === 'secret'
+          ? definition.configured
+            ? '•••••••••• (enregistré)'
+            : 'Non configuré'
+          : definition.placeholder ?? '',
+      oninput: (event) => {
+        draft[definition.key] = definition.type === 'number' ? Number(event.target.value) : event.target.value;
+      },
+    });
+  }
+
+  return el('div', { class: 'field' }, [
+    el('label', { for: id }, definition.label),
+    input,
+    definition.hint ? el('span', { class: 'field-hint' }, definition.hint) : null,
+  ]);
+};
+
+const groupCard = (group, actions) => {
+  const definitions = state.settings.filter((item) => item.group === group.key);
+  if (!definitions.length) return null;
+
+  const draft = {};
+  const connector = state.connectors[group.key];
+
+  const save = el(
+    'button',
+    {
+      class: 'primary-btn',
+      onclick: async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        await actions.saveSettings(draft);
+        button.disabled = false;
+      },
+    },
+    [icon('save'), 'Enregistrer'],
+  );
+
+  return el('article', { class: 'panel settings-panel' }, [
+    el('header', { class: 'panel-head' }, [
+      el('h3', {}, group.title),
+      connector
+        ? el(
+            'span',
+            {
+              class: 'status-pill',
+              style: { '--pill': connector.configured ? 'var(--ok)' : 'var(--warn)' },
+            },
+            [el('span', { class: 'dot' }), connector.configured ? 'Configuré' : 'À configurer'],
+          )
+        : null,
+    ]),
+    group.hint ? el('p', { class: 'sub' }, group.hint) : null,
+    el('div', { class: 'settings-grid' }, definitions.map((definition) => field(definition, draft))),
+    group.key === 'shopify'
+      ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/shopify`)
+      : null,
+    group.key === 'etsy'
+      ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/etsy`)
+      : null,
+    group.key === 'chitchats'
+      ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/chitchats`)
+      : null,
+    el('div', { class: 'panel-foot' }, [
+      ['shopify', 'etsy', 'chitchats'].includes(group.key)
+        ? el(
+            'button',
+            { class: 'ghost-btn', onclick: () => actions.sync(group.key) },
+            [icon('refresh'), 'Synchroniser maintenant'],
+          )
+        : null,
+      save,
+    ]),
+  ]);
+};
+
+const colorRow = (color, actions) => {
+  const draft = {};
+  const bind = (key, node, transform = (v) => v) => {
+    node.addEventListener('change', () => {
+      draft[key] = transform(node.value);
+      actions.saveColor(color.key, draft);
+    });
+    return node;
+  };
+
+  return el('tr', {}, [
+    el('td', {}, bind('hex', el('input', { type: 'color', class: 'color-input', value: color.hex }))),
+    el('td', {}, bind('name', el('input', { class: 'cell-input', value: color.name }))),
+    el('td', {}, bind('aliases', el('input', {
+      class: 'cell-input',
+      value: (color.aliases ?? []).join(', '),
+      placeholder: 'alias séparés par des virgules',
+    }), (value) => value.split(',').map((v) => v.trim()).filter(Boolean))),
+    el('td', {}, bind('stock_grams', el('input', { type: 'number', class: 'cell-input num', value: String(color.stock_grams ?? 0) }), Number)),
+    el('td', {}, bind('low_stock_grams', el('input', { type: 'number', class: 'cell-input num', value: String(color.low_stock_grams ?? 0) }), Number)),
+    el('td', {}, el('label', { class: 'switch' }, [
+      el('input', {
+        type: 'checkbox',
+        checked: color.is_active,
+        onchange: (event) => actions.saveColor(color.key, { is_active: event.target.checked }),
+      }),
+    ])),
+    el('td', {}, el('button', {
+      class: 'mini-btn danger',
+      title: 'Supprimer (désactivée si des pièces l\'utilisent)',
+      onclick: () => actions.deleteColor(color.key),
+    }, icon('trash'))),
+  ]);
+};
 
 const runRow = (run) =>
   el('tr', {}, [
@@ -19,7 +178,10 @@ const runRow = (run) =>
         'span',
         {
           class: 'status-pill',
-          style: { '--pill': run.status === 'success' ? 'var(--ok)' : run.status === 'error' ? 'var(--danger)' : 'var(--warn)' },
+          style: {
+            '--pill':
+              run.status === 'success' ? 'var(--ok)' : run.status === 'error' ? 'var(--danger)' : 'var(--warn)',
+          },
         },
         [el('span', { class: 'dot' }), run.status],
       ),
@@ -27,62 +189,31 @@ const runRow = (run) =>
     el('td', { class: 'cell-sub' }, run.message ?? ''),
   ]);
 
-const card = (title, lines, action) =>
-  el('article', { class: 'panel' }, [
-    el('h3', {}, [icon('plug'), title]),
-    ...lines.map((line) => el('p', { class: 'sub' }, line)),
-    action ?? null,
-  ]);
-
 export const renderIntegrations = (root, actions) => {
-  const mode = state.meta?.mode ?? 'mock';
-
   root.append(
-    el('div', { class: 'section-title' }, 'Connecteurs'),
-    el('div', { class: 'panel-grid' }, [
-      card(
-        'Shopify',
-        [
-          `Mode : ${mode}`,
-          'Poll des commandes non honorées + webhook orders/create.',
-          'POST /api/webhooks/shopify (HMAC SHA-256).',
-        ],
-        el('button', { class: 'ghost-btn', style: { marginTop: '12px' }, onclick: () => actions.sync('shopify') }, [
-          icon('refresh'),
-          'Synchroniser Shopify',
-        ]),
-      ),
-      card(
-        'Etsy',
-        [
-          `Mode : ${mode}`,
-          'Poll des receipts payés et non expédiés (Open API v3).',
-          'POST /api/webhooks/etsy pour un relais personnalisé.',
-        ],
-        el('button', { class: 'ghost-btn', style: { marginTop: '12px' }, onclick: () => actions.sync('etsy') }, [
-          icon('refresh'),
-          'Synchroniser Etsy',
-        ]),
-      ),
-      card(
-        'Chit Chats',
-        [
-          'Webhook : POST /api/webhooks/chitchats (header X-Webhook-Secret).',
-          'Réconciliation automatique toutes les 15 min.',
-          'Un colis scanné ⇒ les pièces de la commande passent à SHIPPED.',
-        ],
-        el('button', { class: 'ghost-btn', style: { marginTop: '12px' }, onclick: () => actions.sync('chitchats') }, [
-          icon('truck'),
-          'Réconcilier les envois',
-        ]),
-      ),
-      card('Planification', [
-        `Commandes : ${state.meta?.syncCron ?? '—'}`,
-        `Envois : ${state.meta?.shipmentCron ?? '—'}`,
-        'Exécuté par le conteneur « worker ».',
+    el('div', { class: 'section-title' }, 'Connecteurs et réglages'),
+    el('div', { class: 'settings-columns' }, GROUPS.map((group) => groupCard(group, actions)).filter(Boolean)),
+
+    el('div', { class: 'section-title' }, 'Résines'),
+    el('div', { class: 'table-wrap' }, [
+      el('table', { class: 'grid' }, [
+        el('thead', {}, el('tr', {}, [
+          el('th', { style: { width: '54px' } }, 'Teinte'),
+          el('th', {}, 'Nom'),
+          el('th', {}, 'Alias de détection'),
+          el('th', { style: { width: '110px' } }, 'Stock (g)'),
+          el('th', { style: { width: '110px' } }, 'Seuil bas'),
+          el('th', { style: { width: '70px' } }, 'Active'),
+          el('th', { style: { width: '50px' } }, ''),
+        ])),
+        el('tbody', {}, state.colors.map((color) => colorRow(color, actions))),
       ]),
     ]),
-    el('div', { class: 'section-title' }, 'Dernières exécutions'),
+    el('div', { class: 'panel-foot left' }, [
+      el('button', { class: 'ghost-btn', onclick: () => actions.addColor() }, [icon('plus'), 'Ajouter une résine']),
+    ]),
+
+    el('div', { class: 'section-title' }, 'Journal des synchronisations'),
     el('div', { class: 'table-wrap' }, [
       el('table', { class: 'grid' }, [
         el('thead', {}, el('tr', {}, [

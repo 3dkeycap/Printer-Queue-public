@@ -2,10 +2,13 @@
 #  Resin Print Queue — plug & play stack
 #
 #    docker compose up -d --build        -> http://localhost:8080
-#    docker compose --profile demo run --rm seed    (jeu de données de démo)
 #
-#  Aucune configuration n'est obligatoire : sans .env l'application démarre en
-#  mode « mock » et fabrique des commandes réalistes toutes les 5 minutes.
+#  Aucun fichier .env n'est nécessaire pour démarrer : les identifiants des
+#  boutiques, les crons et les listes UV / commentaires se saisissent ensuite
+#  dans la page « Intégrations » du dashboard (stockés en base).
+#
+#  Vider la production (commandes + pièces) :
+#    docker compose exec app node scripts/reset-data.js --yes
 # ---------------------------------------------------------------------------
 
 x-app-env: &app-env
@@ -15,7 +18,6 @@ x-app-env: &app-env
   DATABASE_PATH: /data/printer-queue.db
   DASHBOARD_USER: ${DASHBOARD_USER:-admin}
   DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
-  INTEGRATION_MODE: ${INTEGRATION_MODE:-mock}
   SYNC_CRON: ${SYNC_CRON:-*/5 * * * *}
   SHIPMENT_CRON: ${SHIPMENT_CRON:-*/15 * * * *}
   SYNC_LOOKBACK_DAYS: ${SYNC_LOOKBACK_DAYS:-14}
@@ -66,16 +68,6 @@ services:
     depends_on:
       app:
         condition: service_healthy
-
-  # ---- Jeu de données de démonstration (profil optionnel) -----------------
-  seed:
-    build: .
-    image: resin-print-queue:latest
-    profiles: ["demo"]
-    command: ["node", "scripts/seed-demo.js"]
-    environment: *app-env
-    volumes:
-      - pq-data:/data
 
 volumes:
   pq-data:

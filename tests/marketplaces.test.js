@@ -5,7 +5,6 @@ import { useTempDb } from './helpers.js';
 useTempDb('marketplaces');
 const { normalizeOrder } = await import('../src/integrations/shopify.js');
 const { normalizeReceipt } = await import('../src/integrations/etsy.js');
-const { generateMockOrders } = await import('../src/integrations/mock-data.js');
 
 const SHOPIFY_ORDER = {
   id: 5544332211,
@@ -97,26 +96,5 @@ describe('normalisation Etsy', () => {
     assert.equal(order.items[0].variantTitle, 'Color Bleu nuit / Profile SA');
     assert.equal(order.items[0].colorHints[0], 'Bleu nuit');
     assert.equal(order.items[0].quantity, 3);
-  });
-});
-
-describe('générateur de données de démonstration', () => {
-  it('est déterministe pour une graine donnée', () => {
-    const a = generateMockOrders('shopify', 7, 2);
-    const b = generateMockOrders('shopify', 7, 2);
-    assert.deepEqual(a, b);
-  });
-
-  it('produit des commandes distinctes d\'une graine à l\'autre', () => {
-    const a = generateMockOrders('shopify', 1, 1)[0];
-    const b = generateMockOrders('shopify', 2, 1)[0];
-    assert.notEqual(a.externalId, b.externalId);
-  });
-
-  it('respecte le format normalisé attendu par l\'ingestion', () => {
-    const [order] = generateMockOrders('etsy', 3, 1);
-    assert.equal(order.source, 'etsy');
-    assert.ok(order.items.length >= 1);
-    assert.ok(order.items.every((item) => item.quantity >= 1 && item.externalId && item.title));
   });
 });

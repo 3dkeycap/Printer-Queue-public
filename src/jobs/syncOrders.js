@@ -1,9 +1,9 @@
-import { config, isMock } from '../config.js';
 import { getDb, getSetting, nowIso, setSetting } from '../db/index.js';
 import { ingestOrders } from '../domain/ingest.js';
 import { createLogger } from '../lib/logger.js';
 import * as etsy from '../integrations/etsy.js';
 import * as shopify from '../integrations/shopify.js';
+import { getSettings } from '../domain/settings.service.js';
 
 const log = createLogger('sync:orders');
 
@@ -50,22 +50,15 @@ export const syncSource = async (source, { trigger = 'cron' } = {}) => {
 
   const runId = startRun(source, trigger);
   const cursorKey = `cursor:${source}`;
+  const lookbackDays = getSettings()['schedule.lookbackDays'];
   const since =
-    getSetting(cursorKey) ??
-    new Date(Date.now() - config.integrations.lookbackDays * 86400000).toISOString();
+    getSetting(cursorKey) ?? new Date(Date.now() - lookbackDays * 86400000).toISOString();
 
   try {
-    // In mock mode the seed advances on every run so each cycle brings new orders.
-    const mockSeed = Number(getSetting(`mock_seed:${source}`, '0')) + 1;
-    const orders = await integration.fetchOrders({
-      since,
-      mockSeed,
-      mockCount: source === 'shopify' ? 2 : 1,
-    });
-
+    const orders = await integration.fetchOrders({ since });
     const summary = ingestOrders(orders);
-    if (isMock()) setSetting(`mock_seed:${source}`, mockSeed);
-    // Re-poll with a small overlap so an order created during the request is not missed.
+    // On re-interroge avec un léger recouvrement pour ne pas rater une commande
+    // créée pendant la requête précédente.
     setSetting(cursorKey, new Date(Date.now() - 10 * 60000).toISOString());
 
     finishRun(runId, 'success', summary);

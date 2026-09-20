@@ -32,8 +32,7 @@ export const config = {
   },
 
   integrations: {
-    // 'mock' keeps the whole stack runnable without a single credential.
-    mode: (process.env.INTEGRATION_MODE || 'mock').toLowerCase(),
+    // valeur initiale : tout est ensuite modifiable depuis la page Intégrations
     lookbackDays: int(process.env.SYNC_LOOKBACK_DAYS, 14),
   },
 
@@ -65,5 +64,3 @@ export const config = {
     shipAllParts: bool(process.env.SHIP_ALL_PARTS_ON_SHIPMENT, true),
   },
 };
-
-export const isMock = () => config.integrations.mode !== 'live';

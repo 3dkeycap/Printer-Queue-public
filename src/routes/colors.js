@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncRoute, badRequest, notFound } from '../lib/errors.js';
-import { createColor, listColors, updateColor } from '../domain/colors.js';
+import { createColor, deleteColor, listColors, updateColor } from '../domain/colors.js';
 
 export const colorsRouter = Router();
 
@@ -14,6 +14,13 @@ colorsRouter.post(
     const { key, name } = req.body ?? {};
     if (!key && !name) throw badRequest('`key` or `name` is required');
     res.status(201).json(createColor(req.body));
+  }),
+);
+
+colorsRouter.delete(
+  '/:key',
+  asyncRoute((req, res) => {
+    res.json(deleteColor(req.params.key));
   }),
 );
 

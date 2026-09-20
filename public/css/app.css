@@ -274,7 +274,7 @@ select.select:focus { outline: none; border-color: var(--accent-soft); }
 .mini-btn .icon { width: 14px; height: 14px; }
 
 /* ---------------------------------------------------------------- table -- */
-.table-wrap { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+.table-wrap { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow-x: auto; background: var(--surface); }
 table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.grid th {
   text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
@@ -291,19 +291,13 @@ table.grid tr.group-row td { background: var(--surface-3); font-size: 11.5px; te
 .status-pill .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--pill); }
 input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
 
-/* ------------------------------------------------------------ inventory -- */
+/* ---------------------------------------------------------- panneaux ----- */
 .panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 .panel { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: 16px; box-shadow: var(--shadow-sm); }
 .panel h3 { font-size: 13.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 .panel .sub { font-size: 12px; color: var(--muted); }
 .section-title { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .section-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.meter { height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; margin-top: 10px; }
-.meter span { display: block; height: 100%; border-radius: 99px; background: var(--meter-color, var(--accent)); }
-.stock-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--muted); }
-.stock-input { width: 92px; height: 30px; padding: 0 9px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface-2); font-size: 12.5px; text-align: right; }
-.stock-input:focus { outline: none; border-color: var(--accent-soft); }
-.low-badge { font-size: 11px; color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: 99px; padding: 1px 8px; }
 
 /* --------------------------------------------------------------- drawer -- */
 .drawer-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); backdrop-filter: blur(2px); z-index: 60; animation: fade 0.18s ease; }
@@ -382,3 +376,47 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
   .bulkbar { left: 16px; right: 16px; }
   .toolbar { top: 0; position: static; }
 }
+
+/* ------------------------------------------------------- UV & commentaire - */
+.tag.uv { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+[data-theme="light"] .tag.uv { color: #7a5c14; border-color: #d3c08d; }
+.card-comment {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px; margin-left: 8px;
+  padding: 5px 8px; border-radius: var(--radius-sm); font-size: 11.5px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-2)); color: var(--text-soft);
+  border: 1px dashed color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+.card-comment .icon { width: 14px; height: 14px; flex: none; }
+
+/* ------------------------------------------------- édition dans le tableau - */
+.cell-select, .cell-input {
+  width: 100%; min-width: 96px; height: 30px; padding: 0 8px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--surface-2); font-size: 12.5px; color: var(--text-soft);
+  appearance: none;
+}
+.cell-select:hover, .cell-input:hover { border-color: var(--line-strong); }
+.cell-select:focus, .cell-input:focus { outline: none; border-color: var(--accent-soft); color: var(--text); }
+.cell-input.num { text-align: right; }
+.cell-select.status {
+  border-color: color-mix(in srgb, var(--pill) 45%, var(--line));
+  background: color-mix(in srgb, var(--pill) 18%, var(--surface-2));
+  color: var(--text); font-weight: 500;
+}
+.color-input { width: 40px; height: 30px; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.row-actions { display: flex; align-items: center; gap: 6px; }
+.table-foot { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+/* ------------------------------------------------------------- réglages --- */
+.settings-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; align-items: start; }
+.settings-panel { display: flex; flex-direction: column; gap: 12px; }
+.panel-head { display: flex; align-items: center; gap: 10px; }
+.panel-head h3 { font-size: 14px; }
+.panel-head .status-pill { margin-left: auto; }
+.settings-grid { display: flex; flex-direction: column; gap: 12px; }
+.panel-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 4px; }
+.panel-foot.left { justify-content: flex-start; margin-top: 12px; }
+.field-hint { font-size: 11.5px; color: var(--muted); }
+.field-hint.mono { font-family: var(--mono); font-size: 11px; word-break: break-all; }
+.switch { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-soft); }
+.switch input { width: 16px; height: 16px; }
