@@ -279,9 +279,20 @@ correspond pas exactement à ce qui est enregistré dans le Partner Dashboard.
   avant de réessayer.
 
 **La synchro tourne sans erreur mais renvoie toujours 0 commande** (`orders fetched,
-count: 0` dans les logs, alors que la boutique a des commandes non honorées) : ne pas
-deviner, lancer le diagnostic qui interroge Shopify directement et affiche sa vraie
-réponse :
+count: 0` dans les logs, alors que la boutique a bien des commandes non honorées) :
+
+Une mise à jour a corrigé un bug réel qui provoquait exactement ce symptôme : le curseur de
+synchro (`cursor:shopify` / `cursor:etsy`, qui mémorise « jusqu'où on a déjà cherché »)
+avançait sur l'horloge murale à *chaque* cycle de 5 minutes, même quand 0 commande était
+trouvée ou que la boutique n'était pas encore configurée. La fenêtre de recherche se
+rétrécissait ainsi progressivement à quelques minutes au lieu des 14 jours prévus, et les
+commandes placées avant la connexion de la boutique ne remontaient plus jamais. Mettre à
+jour vers cette version répare le curseur automatiquement au premier démarrage (`stale sync
+cursors reset` dans les logs) et relance un balayage complet sur toute la fenêtre de
+rattrapage — rien à faire de plus qu'un redéploiement.
+
+Si ça persiste après la mise à jour, lancer le diagnostic qui interroge Shopify directement
+et affiche sa vraie réponse plutôt que de deviner :
 
 ```bash
 docker compose exec app node scripts/diagnose-shopify.js

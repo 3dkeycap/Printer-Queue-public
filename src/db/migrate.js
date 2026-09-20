@@ -62,6 +62,31 @@ const purgeLegacyMockData = (db) => {
   setSetting(MOCK_DATA_PURGED_KEY, '1');
 };
 
+const CURSOR_RATCHET_FIXED_KEY = 'internal.cursorRatchetFixed';
+
+/**
+ * Répare une bonne fois pour toutes les curseurs de synchro (`cursor:shopify`,
+ * `cursor:etsy`) corrompus par un bug corrigé dans cette version : le curseur
+ * avançait sur l'horloge murale à chaque cycle, même quand 0 commande était
+ * trouvée ou que la boutique n'était pas encore configurée. Résultat : la
+ * fenêtre de recherche se rétrécissait à quelques minutes et ne revoyait plus
+ * jamais les commandes plus anciennes, même après avoir enfin connecté la
+ * boutique. On efface simplement le curseur pour forcer un nouveau balayage
+ * complet sur la fenêtre de rattrapage configurée (14 jours par défaut).
+ */
+const resetCorruptedSyncCursors = (db) => {
+  if (getSetting(CURSOR_RATCHET_FIXED_KEY)) return;
+
+  const info = db.prepare(`DELETE FROM settings WHERE key LIKE 'cursor:%'`).run();
+  if (info.changes) {
+    log.info('stale sync cursors reset (fixes a bug that shrank the lookback window every cycle)', {
+      cursors: info.changes,
+    });
+  }
+
+  setSetting(CURSOR_RATCHET_FIXED_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -81,6 +106,7 @@ export const migrate = () => {
   }
 
   purgeLegacyMockData(db);
+  resetCorruptedSyncCursors(db);
 
   const insertColor = db.prepare(
     `INSERT INTO resin_colors (key, name, hex, aliases, sort_order, updated_at)

@@ -57,9 +57,23 @@ export const syncSource = async (source, { trigger = 'cron' } = {}) => {
   try {
     const orders = await integration.fetchOrders({ since });
     const summary = ingestOrders(orders);
-    // On re-interroge avec un léger recouvrement pour ne pas rater une commande
-    // créée pendant la requête précédente.
-    setSetting(cursorKey, new Date(Date.now() - 10 * 60000).toISOString());
+
+    // On n'avance le curseur QUE si on a vraiment vu des commandes, et on le
+    // base sur leur date réelle (pas sur l'heure actuelle). Avancer sur une
+    // horloge murale même quand `orders` est vide (identifiants absents,
+    // boutique pas encore configurée, aucune commande dans la fenêtre...)
+    // rétrécissait la fenêtre de recherche à chaque tick pour ne plus jamais
+    // revoir les commandes plus anciennes : un bug réel qui a fait disparaître
+    // des commandes existantes une fois la boutique enfin connectée.
+    if (orders.length) {
+      const overlapMs = 10 * 60000;
+      const latestPlacedAt = orders.reduce(
+        (max, order) => (order.placedAt && order.placedAt > max ? order.placedAt : max),
+        orders[0].placedAt ?? since,
+      );
+      const nextCursor = new Date(new Date(latestPlacedAt).getTime() - overlapMs).toISOString();
+      if (!since || nextCursor > since) setSetting(cursorKey, nextCursor);
+    }
 
     finishRun(runId, 'success', summary);
     log.info('sync done', { source, ...summary });
