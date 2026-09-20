@@ -37,6 +37,7 @@ export const DEFINITIONS = [
   // --- Production ---------------------------------------------------------
   { key: 'production.uvOptions', group: 'production', label: 'Options UV', type: 'list', hint: 'Une valeur par ligne. Affichée sur chaque carte.', fallback: () => ['Standard', 'A', 'B', 'C'] },
   { key: 'production.commentOptions', group: 'production', label: 'Commentaires prédéfinis', type: 'list', hint: 'Liste déroulante disponible sur chaque pièce.', fallback: () => ['Réimpression', 'Support à revoir', 'Attente client', 'Pièce cassée', 'Prioritaire', 'Échantillon'] },
+  { key: 'production.printerOptions', group: 'production', label: 'Imprimantes', type: 'list', hint: 'Une valeur par ligne. Liste déroulante pour assigner une pièce à une imprimante.', fallback: () => ['Mars 4 Ultra #1', 'Mars 4 Ultra #2', 'Mars 4 Ultra #3', 'Mars 4 Ultra #4'] },
   { key: 'production.defaultUv', group: 'production', label: 'Valeur UV par défaut', type: 'text', hint: 'Laisser vide pour ne rien pré-remplir.', fallback: () => '' },
 ];
 

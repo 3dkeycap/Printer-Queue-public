@@ -172,18 +172,6 @@ p { margin: 0; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------------------------------------------------------------- stats -- */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 18px 26px 4px; }
-.stat {
-  position: relative; overflow: hidden; padding: 13px 15px; border: 1px solid var(--line);
-  border-radius: var(--radius-lg); background: linear-gradient(160deg, var(--surface), var(--bg-elevated));
-  box-shadow: var(--shadow-sm);
-}
-.stat::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--stat-accent, var(--accent)); opacity: 0.85; }
-.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.stat-value { font-size: 25px; font-weight: 600; letter-spacing: -0.03em; margin-top: 3px; font-variant-numeric: tabular-nums; }
-.stat-hint { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-
 /* -------------------------------------------------------------- toolbar -- */
 .toolbar {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
@@ -371,7 +359,6 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 @media (max-width: 760px) {
   .topbar { flex-direction: column; align-items: stretch; }
   .search { width: 100%; }
-  .stats { grid-template-columns: repeat(2, 1fr); }
   .view, .toolbar, .topbar { padding-left: 16px; padding-right: 16px; }
   .bulkbar { left: 16px; right: 16px; }
   .toolbar { top: 0; position: static; }

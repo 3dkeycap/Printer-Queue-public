@@ -22,6 +22,7 @@ metaRouter.get('/meta', (req, res) => {
     boardStatuses: BOARD_STATUSES,
     uvOptions: settings['production.uvOptions'],
     commentOptions: settings['production.commentOptions'],
+    printerOptions: settings['production.printerOptions'],
     defaultUv: settings['production.defaultUv'],
     syncCron: settings['schedule.syncCron'],
     shipmentCron: settings['schedule.shipmentCron'],

@@ -88,3 +88,4 @@ export const statusMeta = (key) =>
 
 export const uvOptions = () => state.meta?.uvOptions ?? [];
 export const commentOptions = () => state.meta?.commentOptions ?? [];
+export const printerOptions = () => state.meta?.printerOptions ?? [];

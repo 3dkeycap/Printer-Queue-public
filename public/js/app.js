@@ -22,7 +22,6 @@ const VIEW_META = {
 
 const dom = {
   view: document.getElementById('view'),
-  stats: document.getElementById('stats'),
   toolbar: document.getElementById('toolbar'),
   bulkbar: document.getElementById('bulkbar'),
   title: document.getElementById('view-title'),
@@ -221,37 +220,6 @@ const actions = {
 };
 
 /* ---------------------------------------------------------------- render - */
-
-const renderStats = () => {
-  // seul le tableau de production porte les compteurs (la page « Tout » n'a
-  // que ses filtres, comme demandé)
-  if (state.view !== 'board' || !state.summary) {
-    dom.stats.hidden = true;
-    return;
-  }
-  dom.stats.hidden = false;
-  const { totals, byStatus } = state.summary;
-
-  const tiles = [
-    { label: 'À produire', value: totals.parts_active, hint: `${totals.orders_open} commande(s) ouverte(s)`, accent: 'var(--accent)' },
-    { label: 'À imprimer', value: byStatus.TO_PRINT, hint: 'En attente de machine', accent: statusMeta('TO_PRINT').accent },
-    { label: 'En impression', value: byStatus.PRINTING, hint: `${totals.done_today} terminée(s) aujourd'hui`, accent: statusMeta('PRINTING').accent },
-    { label: 'Échecs ouverts', value: totals.failed_open, hint: 'À relancer', accent: statusMeta('FAILED').accent },
-    { label: 'Imprimées', value: byStatus.DONE, hint: 'Prêtes à emballer', accent: statusMeta('DONE').accent },
-    { label: 'Expédiées', value: totals.shipped_today, hint: "aujourd'hui · Chit Chats", accent: statusMeta('SHIPPED').accent },
-    { label: 'Rush', value: totals.parts_rush, hint: 'Pièces prioritaires', accent: 'var(--warn)' },
-  ];
-
-  clear(dom.stats).append(
-    ...tiles.map((tile) =>
-      el('article', { class: 'stat', style: { '--stat-accent': tile.accent } }, [
-        el('div', { class: 'stat-label' }, tile.label),
-        el('div', { class: 'stat-value' }, String(tile.value ?? 0)),
-        el('div', { class: 'stat-hint' }, tile.hint),
-      ]),
-    ),
-  );
-};
 
 const chip = (label, isOn, onclick, extra = [], count = null) =>
   el('button', { class: `chip${isOn ? ' is-on' : ''}`, onclick }, [
@@ -491,7 +459,6 @@ const render = () => {
   });
 
   updateConnectorBadge();
-  renderStats();
   renderToolbar();
   renderBulkbar();
 

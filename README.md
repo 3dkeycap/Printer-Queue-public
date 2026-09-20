@@ -30,8 +30,9 @@ les réglages sont stockés en base.
 | Print Fail | statut **Échec** |
 | Printed Successfully | statut **Imprimé** |
 | Done (colis parti) | statut **Expédié** (posé automatiquement par Chit Chats) |
-| Comment | liste déroulante **Commentaire** (options réglables) |
+| Comment | liste déroulante **Commentaire** (options réglables dans Intégrations) |
 | Uv (a/b/c) | liste déroulante **UV**, affichée sur chaque carte (options réglables) |
+| — (assignation manuelle) | liste déroulante **Imprimante** (options réglables), sur la carte, le tableau et la fiche |
 | What / Quantity | une ligne **par pièce physique** : quantité 3 = 3 lignes |
 | For Who | colonne **Pour qui** (client de la commande) |
 | Onglets White / Black / Grey… | filtre et regroupement **par couleur de résine** |
@@ -205,14 +206,15 @@ Chaque changement est écrit dans `part_events` avec son auteur (`dashboard`, `w
 * **Regroupement par couleur de résine** actif par défaut : on imprime un bac entier de
   « Glow in the dark » d'un coup. Regroupement possible aussi par UV ou par commande.
 * Chaque carte affiche la **résine**, le **poste UV**, le **commentaire**, la source, le
-  numéro de commande, l'imprimante et le drapeau rush.
+  numéro de commande, l'**imprimante assignée** et le drapeau rush.
 * Filtres : pastilles de couleur et d'UV avec compteurs, source, rush, recherche plein
   texte (`/` pour y accéder au clavier).
 
 **Page « Tout »**
 
-* Toutes les pièces, tous statuts confondus, en **tableau éditable** : statut, UV et
-  commentaire se changent directement dans la ligne, comme dans la feuille de calcul.
+* Toutes les pièces, tous statuts confondus, en **tableau éditable** : statut, UV,
+  commentaire et imprimante se changent directement dans la ligne, comme dans la feuille
+  de calcul.
 * Uniquement des filtres en haut de page (aucun compteur), groupes par couleur / UV /
   commande.
 * Sélection multiple (cases à cocher) puis changement de statut, d'UV ou de commentaire

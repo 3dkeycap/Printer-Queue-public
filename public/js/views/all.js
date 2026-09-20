@@ -1,5 +1,5 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
-import { commentOptions, groupParts, state, statusMeta, uvOptions } from '../store.js';
+import { commentOptions, groupParts, printerOptions, state, statusMeta, uvOptions } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -54,6 +54,7 @@ const row = (part, actions) =>
       el('td', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
       el('td', {}, select(uvOptions(), part.uv, (value) => actions.patchPart(part.id, { uv: value }, { silent: true }), 'UV…')),
       el('td', {}, select(commentOptions(), part.comment, (value) => actions.patchPart(part.id, { comment: value }, { silent: true }), 'Commentaire…')),
+      el('td', {}, select(printerOptions(), part.printer, (value) => actions.patchPart(part.id, { printer: value }, { silent: true }), 'Imprimante…')),
       el('td', {}, [
         el('div', {}, part.order_number ?? `#${part.order_id}`),
         el('div', { class: 'cell-sub' }, SOURCE_LABEL[part.source] ?? part.source),
@@ -62,10 +63,7 @@ const row = (part, actions) =>
         el('div', {}, part.customer_name ?? '—'),
         el('div', { class: 'cell-sub' }, fromNow(part.placed_at)),
       ]),
-      el('td', {}, [
-        el('div', {}, `#${part.unit_index}`),
-        part.printer ? el('div', { class: 'cell-sub' }, part.printer) : null,
-      ]),
+      el('td', {}, `#${part.unit_index}`),
       el('td', {}, [
         el('div', { class: 'row-actions' }, [
           (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
@@ -92,7 +90,7 @@ export const renderAll = (root, actions) => {
     if (group.label) {
       body.append(
         el('tr', { class: 'group-row' }, [
-          el('td', { colspan: '10' }, [
+          el('td', { colspan: '11' }, [
             el('span', { class: 'tag' }, [group.hex ? swatch(group.hex) : null, group.label].filter(Boolean)),
             ' ',
             `${group.items.length} pièce(s)`,
@@ -120,6 +118,7 @@ export const renderAll = (root, actions) => {
             el('th', {}, 'Résine'),
             el('th', {}, 'UV'),
             el('th', {}, 'Commentaire'),
+            el('th', {}, 'Imprimante'),
             el('th', {}, 'Commande'),
             el('th', {}, 'Pour qui'),
             el('th', {}, 'Unité'),
