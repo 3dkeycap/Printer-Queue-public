@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { getDb, nowIso } from './index.js';
+import { getDb, getSetting, nowIso, setSetting } from './index.js';
 import { createLogger } from '../lib/logger.js';
 import { LEGACY_STATUS_MAP } from '../domain/statuses.js';
 
@@ -23,6 +23,45 @@ const addColumnIfMissing = (db, table, column, definition) => {
   return true;
 };
 
+const MOCK_DATA_PURGED_KEY = 'internal.mockDataPurged';
+
+/**
+ * Nettoyage automatique et définitif des commandes fabriquées par l'ancien
+ * générateur de démo (`INTEGRATION_MODE=mock`, retiré du code depuis). Ces
+ * commandes marquaient leur payload brut avec `"mock": true` - un marqueur
+ * qu'aucune commande Shopify ou Etsy réelle ne peut porter, donc ce nettoyage
+ * ne touche jamais une vraie commande.
+ *
+ * Ne s'exécute qu'une seule fois (flag en base) : au premier démarrage de
+ * chaque conteneur après cette mise à jour, sur une base qui contiendrait
+ * encore des données du mode démo d'une version antérieure.
+ */
+const purgeLegacyMockData = (db) => {
+  if (getSetting(MOCK_DATA_PURGED_KEY)) return;
+
+  const stale = db
+    .prepare(`SELECT id FROM orders WHERE raw_payload LIKE '%"mock":true%' OR raw_payload LIKE '%"mock": true%'`)
+    .all();
+
+  if (stale.length) {
+    const partsCount = db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM parts WHERE order_id IN (${stale.map(() => '?').join(',')})`,
+      )
+      .get(...stale.map((o) => o.id)).n;
+
+    const del = db.prepare('DELETE FROM orders WHERE id = ?');
+    const run = db.transaction(() => {
+      for (const order of stale) del.run(order.id);
+    });
+    run();
+
+    log.info('legacy demo orders purged automatically', { orders: stale.length, parts: partsCount });
+  }
+
+  setSetting(MOCK_DATA_PURGED_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -40,6 +79,8 @@ export const migrate = () => {
     const info = db.prepare('UPDATE parts SET status = ? WHERE status = ?').run(replacement, legacy);
     if (info.changes) log.info('legacy status migrated', { legacy, replacement, parts: info.changes });
   }
+
+  purgeLegacyMockData(db);
 
   const insertColor = db.prepare(
     `INSERT INTO resin_colors (key, name, hex, aliases, sort_order, updated_at)

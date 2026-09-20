@@ -156,7 +156,12 @@ Ouvrir ensuite **Intégrations** et saisir les identifiants Shopify / Etsy / Chi
 la première synchronisation part dans les 5 minutes (ou immédiatement avec le bouton
 « Synchroniser »).
 
-Pour repartir d'une base vide (après des essais, par exemple) :
+> Une base qui contient encore des commandes de l'ancien mode démo (retiré du code) est
+> nettoyée **automatiquement et une seule fois** au premier démarrage après une mise à
+> jour — repère-le dans les logs à la ligne `legacy demo orders purged automatically`.
+> Rien à faire de ton côté ; ça ne touche jamais une vraie commande Shopify/Etsy.
+
+Pour repartir d'une base vide de ta propre initiative (après des essais, par exemple) :
 
 ```bash
 docker compose exec app node scripts/reset-data.js --yes
