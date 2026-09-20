@@ -31,6 +31,7 @@ export const state = {
   settings: [],
   connectors: {},
   selection: new Set(),
+  focusedColumn: null, // clé de statut affichée seule, en grille, pour une vue d'ensemble
   loading: false,
 };
 

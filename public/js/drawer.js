@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { clear, el, formatDate, fromNow, icon, swatch, toast } from './ui.js';
-import { commentOptions, printerOptions, state, statusMeta, uvOptions } from './store.js';
+import { printerOptions, state, statusMeta, uvOptions } from './store.js';
+import { buildCommentSelect } from './comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -53,8 +54,7 @@ export const openDrawer = async (partId, actions) => {
 
   const uvSelect = buildSelect(uvOptions(), part.uv, 'Aucun poste UV', (value) =>
     actions.patchPart(part.id, { uv: value }));
-  const commentSelect = buildSelect(commentOptions(), part.comment, 'Aucun commentaire', (value) =>
-    actions.patchPart(part.id, { comment: value }));
+  const commentSelect = buildCommentSelect(part, actions, { placeholder: 'Aucun commentaire' });
   const printerSelect = buildSelect(printerOptions(), part.printer, 'Aucune imprimante assignée', (value) =>
     actions.patchPart(part.id, { printer: value }));
 

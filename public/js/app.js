@@ -82,6 +82,11 @@ const actions = {
     render();
   },
 
+  toggleColumnFocus(status) {
+    state.focusedColumn = state.focusedColumn === status ? null : status;
+    render();
+  },
+
   openPart: (id) => openDrawer(id, actions),
 
   async sync(source = 'all') {
@@ -126,6 +131,32 @@ const actions = {
     } catch (error) {
       toast(error.message, 'err');
     }
+  },
+
+  async addCustomComment(partId) {
+    const input = el('input', { placeholder: 'Attente client, pièce cassée…' });
+
+    await modal({
+      title: 'Ajouter un commentaire',
+      body: el('div', { class: 'field' }, [el('label', {}, 'Commentaire'), input]),
+      confirmLabel: 'Ajouter',
+      onConfirm: async () => {
+        const value = input.value.trim();
+        if (!value) return toast('Le commentaire est obligatoire', 'err');
+        try {
+          const options = commentOptions();
+          if (!options.includes(value)) {
+            await api.saveSettings({ 'production.commentOptions': [...options, value] });
+            state.meta = await api.meta();
+          }
+          await actions.patchPart(partId, { comment: value }, { silent: true });
+          toast('Commentaire ajouté');
+          render();
+        } catch (error) {
+          toast(error.message, 'err');
+        }
+      },
+    });
   },
 
   async saveColor(key, patch) {

@@ -81,9 +81,9 @@ const buildCard = (part, actions) => {
   return card;
 };
 
-const buildColumn = (status, parts, actions) => {
+const buildColumn = (status, parts, actions, { focused }) => {
   const meta = statusMeta(status);
-  const body = el('div', { class: 'column-body' });
+  const body = el('div', { class: `column-body${focused ? ' is-grid' : ''}` });
 
   if (!parts.length) {
     body.append(el('div', { class: 'column-empty' }, 'Rien ici'));
@@ -102,14 +102,30 @@ const buildColumn = (status, parts, actions) => {
     }
   }
 
-  const column = el('section', { class: 'column', style: { '--col-accent': meta.accent }, dataset: { status } }, [
-    el('header', { class: 'column-head', title: meta.hint }, [
-      el('span', { class: 'column-dot' }),
-      el('h3', {}, meta.labelFr),
-      el('span', { class: 'count' }, String(parts.length)),
-    ]),
-    body,
-  ]);
+  const column = el(
+    'section',
+    { class: `column${focused ? ' is-focused' : ''}`, style: { '--col-accent': meta.accent }, dataset: { status } },
+    [
+      el('header', { class: 'column-head', title: meta.hint }, [
+        el('span', { class: 'column-dot' }),
+        el('h3', {}, meta.labelFr),
+        el('span', { class: 'count' }, String(parts.length)),
+        el(
+          'button',
+          {
+            class: 'mini-btn column-focus-btn',
+            title: focused ? "Revenir à la vue complète" : "Agrandir cette colonne pour tout voir d'un coup",
+            onclick: (event) => {
+              event.stopPropagation();
+              actions.toggleColumnFocus(status);
+            },
+          },
+          icon(focused ? 'shrink' : 'expand'),
+        ),
+      ]),
+      body,
+    ],
+  );
 
   column.addEventListener('dragover', (event) => {
     event.preventDefault();
@@ -136,9 +152,15 @@ const buildColumn = (status, parts, actions) => {
 export const renderBoard = (root, actions) => {
   root.classList.add('is-board');
   const board = state.meta.boardStatuses ?? [];
-  const statuses = state.filters.statuses.size
+  let statuses = state.filters.statuses.size
     ? state.meta.statuses.filter((s) => state.filters.statuses.has(s.key))
     : state.meta.statuses.filter((s) => board.includes(s.key));
+
+  // Vue « agrandie » : une seule colonne, en grille, pour une vision globale
+  // de tout ce qu'elle contient d'un coup plutôt qu'une liste étroite.
+  const focused = state.focusedColumn;
+  const isFocusable = focused && statuses.some((s) => s.key === focused);
+  if (isFocusable) statuses = statuses.filter((s) => s.key === focused);
 
   const byStatus = new Map(statuses.map((s) => [s.key, []]));
   for (const part of state.parts) {
@@ -148,8 +170,10 @@ export const renderBoard = (root, actions) => {
   root.append(
     el(
       'div',
-      { class: 'board' },
-      statuses.map((s) => buildColumn(s.key, byStatus.get(s.key) ?? [], actions)),
+      { class: `board${isFocusable ? ' is-focused-view' : ''}` },
+      statuses.map((s) =>
+        buildColumn(s.key, byStatus.get(s.key) ?? [], actions, { focused: isFocusable && s.key === focused }),
+      ),
     ),
   );
 };
