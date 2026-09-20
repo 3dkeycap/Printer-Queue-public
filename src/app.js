@@ -6,6 +6,7 @@ import { basicAuth } from './lib/auth.js';
 import { HttpError } from './lib/errors.js';
 import { createLogger } from './lib/logger.js';
 import { colorsRouter } from './routes/colors.js';
+import { etsyOAuthRouter } from './routes/etsyOAuth.js';
 import { metaRouter } from './routes/meta.js';
 import { ordersRouter } from './routes/orders.js';
 import { partsRouter } from './routes/parts.js';
@@ -65,6 +66,7 @@ export const createApp = () => {
 
   app.use('/api/webhooks', webhooksRouter);
   app.use('/api/integrations/shopify/oauth', shopifyOAuthRouter);
+  app.use('/api/integrations/etsy/oauth', etsyOAuthRouter);
   app.use('/api', metaRouter);
   app.use('/api/parts', partsRouter);
   app.use('/api/orders', ordersRouter);

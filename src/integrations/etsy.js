@@ -2,6 +2,7 @@ import { config } from '../config.js';
 import { requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
 import { getSettings } from '../domain/settings.service.js';
+import { ensureFreshEtsyToken } from './etsyOAuth.js';
 
 const log = createLogger('etsy');
 
@@ -66,7 +67,14 @@ export const fetchOrders = async ({ since } = {}) => {
     return [];
   }
 
-  const url = new URL(`${config.etsy.apiBase}/shops/${settings['etsy.shopId']}/receipts`);
+  // Le token d'accès expire toutes les heures chez Etsy, bien avant le
+  // prochain cycle du cron (5 min) ne s'en aperçoive autrement : on le
+  // renouvelle ici de manière proactive quand un refresh token est
+  // disponible (connexion faite via le bouton OAuth).
+  await ensureFreshEtsyToken();
+  const freshSettings = getSettings();
+
+  const url = new URL(`${config.etsy.apiBase}/shops/${freshSettings['etsy.shopId']}/receipts`);
   url.searchParams.set('was_paid', 'true');
   url.searchParams.set('was_shipped', 'false');
   url.searchParams.set('limit', '100');
@@ -74,8 +82,8 @@ export const fetchOrders = async ({ since } = {}) => {
 
   const payload = await requestJson(url.toString(), {
     headers: {
-      'x-api-key': settings['etsy.apiKey'],
-      Authorization: `Bearer ${settings['etsy.accessToken']}`,
+      'x-api-key': freshSettings['etsy.apiKey'],
+      Authorization: `Bearer ${freshSettings['etsy.accessToken']}`,
     },
   });
 

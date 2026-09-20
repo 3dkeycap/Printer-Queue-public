@@ -116,12 +116,12 @@ const actions = {
     }
   },
 
-  async disconnectShopify() {
+  async disconnectOAuth(provider, label) {
     try {
-      const result = await api.disconnectShopify();
+      const result = await api.disconnectOAuth(provider);
       state.settings = result.settings;
       state.connectors = result.connectors;
-      toast('Boutique Shopify déconnectée');
+      toast(`${label} déconnecté`);
       render();
     } catch (error) {
       toast(error.message, 'err');
@@ -606,16 +606,22 @@ const bindEvents = () => {
   }, 30000);
 };
 
-/** Retour du flux OAuth Shopify : ?shopify_status=connected|error#integrations */
+const OAUTH_PROVIDERS = { shopify: 'Shopify', etsy: 'Etsy' };
+
+/** Retour d'un flux OAuth : ?<provider>_status=connected|error#integrations */
 const consumeOAuthRedirect = () => {
   const params = new URLSearchParams(location.search);
-  const status = params.get('shopify_status');
-  if (!status) return;
+  let touched = false;
 
-  if (status === 'connected') toast('Boutique Shopify connectée');
-  else toast(params.get('shopify_message') || 'Connexion Shopify refusée', 'err');
+  for (const [provider, label] of Object.entries(OAUTH_PROVIDERS)) {
+    const status = params.get(`${provider}_status`);
+    if (!status) continue;
+    touched = true;
+    if (status === 'connected') toast(`${label} connecté`);
+    else toast(params.get(`${provider}_message`) || `Connexion ${label} refusée`, 'err');
+  }
 
-  history.replaceState(null, '', location.pathname + location.hash);
+  if (touched) history.replaceState(null, '', location.pathname + location.hash);
 };
 
 const boot = async () => {

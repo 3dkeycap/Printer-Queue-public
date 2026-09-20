@@ -39,9 +39,18 @@ export const DEFINITIONS = [
   { key: 'shopify.enabled', group: 'shopify', label: 'Synchronisation active', type: 'boolean', fallback: () => true },
 
   // --- Etsy ---------------------------------------------------------------
-  { key: 'etsy.shopId', group: 'etsy', label: 'Shop ID', type: 'text', fallback: () => config.etsy.shopId },
-  { key: 'etsy.apiKey', group: 'etsy', label: 'Clé API (keystring)', type: 'secret', fallback: () => config.etsy.apiKey },
-  { key: 'etsy.accessToken', group: 'etsy', label: "Token d'accès OAuth", type: 'secret', fallback: () => config.etsy.accessToken },
+  // --- Etsy (OAuth 2.0 + PKCE, obligatoire sur l'Open API v3) --------------
+  { key: 'etsy.shopId', group: 'etsy', label: 'Shop ID', type: 'text', hint: 'Visible dans l\'URL de ton tableau de bord Etsy (Shop Manager).', fallback: () => config.etsy.shopId },
+  { key: 'etsy.apiKey', group: 'etsy', label: 'Clé API (Keystring)', type: 'secret', hint: 'Aussi utilisée comme Client ID pour la connexion OAuth ci-dessous.', fallback: () => config.etsy.apiKey },
+  { key: 'etsy.scopes', group: 'etsy', label: 'Scopes OAuth', type: 'text', fallback: () => 'transactions_r' },
+  {
+    key: 'etsy.accessToken',
+    group: 'etsy',
+    label: "Token d'accès",
+    type: 'secret',
+    hint: 'Rempli et renouvelé automatiquement par « Connecter via OAuth » ci-dessous (expire toutes les heures chez Etsy, sans action de ta part).',
+    fallback: () => config.etsy.accessToken,
+  },
   { key: 'etsy.enabled', group: 'etsy', label: 'Synchronisation active', type: 'boolean', fallback: () => true },
 
   // --- Chit Chats ---------------------------------------------------------

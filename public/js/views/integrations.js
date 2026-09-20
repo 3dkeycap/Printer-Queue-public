@@ -103,10 +103,8 @@ const groupCard = (group, actions) => {
     ]),
     group.hint ? el('p', { class: 'sub' }, group.hint) : null,
     el('div', { class: 'settings-grid' }, definitions.map((definition) => field(definition, draft))),
-    group.key === 'shopify' ? shopifyOAuthBlock(actions) : null,
-    group.key === 'etsy'
-      ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/etsy`)
-      : null,
+    group.key === 'shopify' ? oauthBlock(actions, { provider: 'shopify', label: 'Shopify' }) : null,
+    group.key === 'etsy' ? oauthBlock(actions, { provider: 'etsy', label: 'Etsy' }) : null,
     group.key === 'chitchats'
       ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/chitchats`)
       : null,
@@ -124,24 +122,24 @@ const groupCard = (group, actions) => {
 };
 
 /**
- * Bloc OAuth 2.0 de la carte Shopify : bouton de connexion (navigation
- * complète vers Shopify, jamais un fetch), déconnexion, webhook et rappel de
- * la redirect URL à enregistrer dans le Partner Dashboard.
+ * Bloc OAuth 2.0 générique (Shopify, Etsy...) : bouton de connexion
+ * (navigation complète vers le fournisseur, jamais un fetch), déconnexion,
+ * webhook et rappel de la redirect URL à enregistrer côté fournisseur.
  */
-const shopifyOAuthBlock = (actions) => {
+const oauthBlock = (actions, { provider, label }) => {
   const rawPublicUrl = state.settings.find((item) => item.key === 'app.publicUrl')?.value || '';
   // Un / de fin (fréquent en copiant depuis la barre d'adresse) ne doit pas
   // produire un double slash : c'est exactement l'URL que le serveur enverra
-  // à Shopify, elle doit matcher au caractère près ce qui est collé côté
-  // Partner Dashboard.
+  // au fournisseur, elle doit matcher au caractère près ce qui est enregistré
+  // de son côté (Partner Dashboard Shopify, app Etsy...).
   const base = rawPublicUrl.replace(/\/+$/, '') || location.origin;
-  const redirectUrl = `${base}/api/integrations/shopify/oauth/callback`;
-  const connected = state.connectors.shopify?.configured;
+  const redirectUrl = `${base}/api/integrations/${provider}/oauth/callback`;
+  const connected = state.connectors[provider]?.configured;
 
   return el('div', { class: 'oauth-block' }, [
-    el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/shopify`),
+    el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/${provider}`),
     el('div', { class: 'oauth-redirect-row' }, [
-      el('p', { class: 'field-hint mono' }, `Redirect URL OAuth (Partner Dashboard) : ${redirectUrl}`),
+      el('p', { class: 'field-hint mono' }, `Redirect URL OAuth : ${redirectUrl}`),
       el(
         'button',
         {
@@ -152,10 +150,10 @@ const shopifyOAuthBlock = (actions) => {
             // terminé : on garde une référence au bouton pour le setTimeout.
             const button = event.currentTarget;
             await navigator.clipboard.writeText(redirectUrl);
-            const label = button.textContent;
+            const previousLabel = button.textContent;
             button.textContent = 'Copié';
             setTimeout(() => {
-              button.textContent = label;
+              button.textContent = previousLabel;
             }, 1500);
           },
         },
@@ -167,16 +165,16 @@ const shopifyOAuthBlock = (actions) => {
         'a',
         {
           class: 'primary-btn',
-          href: '/api/integrations/shopify/oauth/start',
-          // Une vraie navigation, pas un fetch : Shopify a besoin d'afficher
-          // son propre écran de connexion/autorisation au marchand.
+          href: `/api/integrations/${provider}/oauth/start`,
+          // Une vraie navigation, pas un fetch : le fournisseur a besoin
+          // d'afficher son propre écran de connexion/autorisation.
         },
         [icon('plug'), connected ? 'Reconnecter via OAuth' : 'Connecter via OAuth'],
       ),
       connected
         ? el(
             'button',
-            { class: 'ghost-btn', onclick: () => actions.disconnectShopify() },
+            { class: 'ghost-btn', onclick: () => actions.disconnectOAuth(provider, label) },
             'Se déconnecter',
           )
         : null,

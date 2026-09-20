@@ -2,9 +2,13 @@ import crypto from 'node:crypto';
 import { requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
 import { badRequest } from '../lib/errors.js';
+import { normalizeBaseUrl } from '../lib/url.js';
 import { getSettings } from '../domain/settings.service.js';
 
 const log = createLogger('shopify:oauth');
+
+// Ré-exporté pour compatibilité (utilisé ailleurs via ce module historiquement).
+export { normalizeBaseUrl };
 
 /** Accepte "ma-boutique", "ma-boutique.myshopify.com" ou une URL complète. */
 export const normalizeShopDomain = (input) => {
@@ -15,14 +19,6 @@ export const normalizeShopDomain = (input) => {
 };
 
 const isValidShopDomain = (domain) => /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(domain);
-
-/**
- * Retire les `/` de fin. L'URL publique est souvent collée avec un slash final
- * (copiée depuis la barre d'adresse) ; sans ce nettoyage, la concaténation
- * produirait un double slash et l'URL ne matcherait plus jamais ce qui est
- * enregistré dans le Partner Dashboard, avec un rejet "Unauthorized Access".
- */
-export const normalizeBaseUrl = (url) => String(url ?? '').trim().replace(/\/+$/, '');
 
 /**
  * Construit l'URL d'autorisation Shopify (étape 1 du flux OAuth).

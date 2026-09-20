@@ -322,12 +322,33 @@ résine de même nom : elle est automatiquement dirigée vers une entrée sépar
 commande qui en contient. Fonctionne avec n'importe quelle couleur suivant « Nylon », sans
 liste à préconfigurer.
 
-### Etsy
+### Etsy (OAuth 2.0 + PKCE)
 
-1. App Open API v3 avec le scope `transactions_r`.
-2. Page Intégrations → *Etsy* : shop ID, clé API, token d'accès OAuth.
-3. Etsy ne propose pas de webhook de commande : le poll de 5 minutes fait le travail
-   (`/api/webhooks/etsy` reste disponible pour un relais type Zapier).
+Comme Shopify, l'Open API v3 d'Etsy exige OAuth 2.0 — avec en plus PKCE, obligatoire sur
+tout le flux. L'application gère les deux bouts (redirection, échange du code, et le
+renouvellement automatique du token qui expire **toutes les heures** chez Etsy) — il n'y a
+qu'à créer l'app et cliquer un bouton.
+
+1. Sur [etsy.com/developers](https://www.etsy.com/developers/register), créer une app et
+   noter sa **Keystring** (= la clé API = le Client ID OAuth, une seule et même valeur chez
+   Etsy).
+2. Page Intégrations → *Etsy*, renseigner :
+   - **URL publique de ce serveur** (partagée avec Shopify, à ne saisir qu'une fois) ;
+   - **Shop ID** (visible dans l'URL du Shop Manager) ;
+   - **Clé API (Keystring)**.
+3. Cliquer **Enregistrer**, copier la « Redirect URL OAuth » et l'ajouter dans la config de
+   l'app côté Etsy (callback URL autorisée).
+4. Cliquer **Connecter via OAuth** : retour automatique sur le dashboard une fois autorisé,
+   token d'accès et de rafraîchissement remplis tout seuls.
+
+Le token d'accès expire au bout d'une heure ; l'application le renouvelle **avant chaque
+synchronisation** grâce au refresh token (valable 90 jours chez Etsy), sans aucune
+intervention. Une ancienne connexion par token collé à la main continue de fonctionner mais
+ne se renouvelle pas automatiquement (pas de refresh token) — elle finira par expirer et
+demandera de passer par « Connecter via OAuth ».
+
+Etsy ne propose pas de webhook de commande : le poll de 5 minutes fait le travail
+(`/api/webhooks/etsy` reste disponible pour un relais type Zapier).
 
 La couleur vient de la variation dont le nom vaut `Color` / `Couleur` / `Resin`.
 
@@ -369,9 +390,9 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `POST` | `/api/sync/run?source=all\|shopify\|etsy\|chitchats` | Synchronisation manuelle |
 | `GET` | `/api/sync/runs` · `/api/sync/webhooks` | Journal des exécutions et des webhooks |
 | `POST` | `/api/webhooks/{chitchats,shopify,etsy}` | Entrées webhook |
-| `GET` | `/api/integrations/shopify/oauth/start` | Démarre le flux OAuth (navigation, pas un fetch) |
-| `GET` | `/api/integrations/shopify/oauth/callback` | Retour Shopify : vérifie state + HMAC, échange le code |
-| `POST` | `/api/integrations/shopify/oauth/disconnect` | Efface le token pour forcer une nouvelle connexion |
+| `GET` | `/api/integrations/{shopify,etsy}/oauth/start` | Démarre le flux OAuth (navigation, pas un fetch) |
+| `GET` | `/api/integrations/{shopify,etsy}/oauth/callback` | Retour du fournisseur : vérifie state (+ HMAC pour Shopify, PKCE pour Etsy), échange le code |
+| `POST` | `/api/integrations/{shopify,etsy}/oauth/disconnect` | Efface le token pour forcer une nouvelle connexion |
 
 ---
 

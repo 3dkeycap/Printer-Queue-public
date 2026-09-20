@@ -7,18 +7,22 @@ const safeEqual = (a, b) => {
   return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
 };
 
+/** /api/integrations/<provider>/oauth/... */
+const OAUTH_CALLBACK_PATH = /^\/api\/integrations\/[^/]+\/oauth(\/|$)/;
+
 /**
  * Optional HTTP Basic auth: enabled only when DASHBOARD_PASSWORD is set.
- * Webhooks are exempt (they carry their own secret/HMAC), and so is the
- * Shopify OAuth callback: it's a top-level redirect initiated by Shopify's
- * server, not the dashboard's own authenticated session, and it carries its
- * own protection (anti-CSRF state + HMAC signature).
+ * Webhooks are exempt (they carry their own secret/HMAC), and so is every
+ * provider's OAuth callback (Shopify, Etsy...): it's a top-level redirect
+ * initiated by the provider's own server, not the dashboard's authenticated
+ * session, and each one carries its own protection (anti-CSRF state, plus
+ * an HMAC signature for Shopify / a PKCE verifier for Etsy).
  */
 export const basicAuth = (req, res, next) => {
   if (!config.auth.enabled) return next();
   if (
     req.path.startsWith('/api/webhooks') ||
-    req.path.startsWith('/api/integrations/shopify/oauth') ||
+    OAUTH_CALLBACK_PATH.test(req.path) ||
     req.path === '/api/health'
   ) {
     return next();

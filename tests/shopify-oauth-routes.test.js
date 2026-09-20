@@ -135,10 +135,15 @@ describe('routes OAuth Shopify', () => {
     assert.equal(location.searchParams.get('shopify_status'), 'error');
   });
 
-  it('/disconnect efface le token pour forcer une nouvelle connexion', async () => {
+  it('/disconnect efface le token et renvoie connectors (sans planter la page Intégrations)', async () => {
     updateSettings({ 'shopify.accessToken': 'shpat_to_be_cleared' });
     const response = await fetch(`${base}/api/integrations/shopify/oauth/disconnect`, { method: 'POST' });
     assert.equal(response.status, 200);
+
+    const body = await response.json();
+    assert.ok(body.connectors && typeof body.connectors === 'object', 'le front lit result.connectors juste après');
+    assert.equal(body.connectors.shopify.configured, false);
+
     assert.equal(getSettings()['shopify.accessToken'], '');
   });
 });

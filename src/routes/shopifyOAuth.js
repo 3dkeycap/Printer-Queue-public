@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { asyncRoute, badRequest } from '../lib/errors.js';
 import { createLogger } from '../lib/logger.js';
 import { getSetting, setSetting } from '../db/index.js';
-import { getSettings, updateSettings } from '../domain/settings.service.js';
+import { connectorStatus, getSettings, updateSettings } from '../domain/settings.service.js';
 import {
   OAUTH_STATE_TTL_MS,
   buildAuthorizeUrl,
@@ -85,6 +85,6 @@ shopifyOAuthRouter.post(
   '/disconnect',
   asyncRoute((req, res) => {
     const result = updateSettings({ 'shopify.accessToken': null });
-    res.json(result);
+    res.json({ ...result, connectors: connectorStatus() });
   }),
 );
