@@ -1,0 +1,21 @@
+[
+  { "key": "unassigned", "name": "Non assigné", "hex": "#7C7364", "sort_order": 0, "aliases": [] },
+  { "key": "black", "name": "Noir", "hex": "#1C1B19", "sort_order": 10, "aliases": ["noir", "black", "jet black", "matte black", "nero"] },
+  { "key": "white", "name": "Blanc", "hex": "#F2EEE5", "sort_order": 20, "aliases": ["blanc", "white", "ivory", "bone"] },
+  { "key": "grey", "name": "Gris", "hex": "#9C968B", "sort_order": 30, "aliases": ["gris", "grey", "gray", "graphite", "slate"] },
+  { "key": "beige", "name": "Beige", "hex": "#D9C7A3", "sort_order": 40, "aliases": ["beige", "sand", "sable", "cream", "tan"] },
+  { "key": "clear", "name": "Transparent", "hex": "#BFD8DE", "sort_order": 50, "aliases": ["clear", "transparent", "cristal", "crystal", "translucent"] },
+  { "key": "red", "name": "Rouge", "hex": "#B33F36", "sort_order": 60, "aliases": ["rouge", "red", "crimson", "scarlet"] },
+  { "key": "orange", "name": "Orange", "hex": "#CE7B36", "sort_order": 70, "aliases": ["orange", "amber", "sunset"] },
+  { "key": "yellow", "name": "Jaune", "hex": "#D8B341", "sort_order": 80, "aliases": ["jaune", "yellow", "lemon"] },
+  { "key": "green", "name": "Vert", "hex": "#6E8F63", "sort_order": 90, "aliases": ["vert", "green", "forest", "olive"] },
+  { "key": "mint", "name": "Menthe", "hex": "#8CBFAE", "sort_order": 100, "aliases": ["mint", "menthe", "seafoam", "pastel green"] },
+  { "key": "blue", "name": "Bleu", "hex": "#5B7FA6", "sort_order": 110, "aliases": ["bleu", "blue", "azure", "sky"] },
+  { "key": "navy", "name": "Bleu nuit", "hex": "#33445E", "sort_order": 120, "aliases": ["navy", "bleu nuit", "midnight", "deep blue"] },
+  { "key": "purple", "name": "Violet", "hex": "#7E6CA8", "sort_order": 130, "aliases": ["violet", "purple", "lilac", "lavender", "mauve"] },
+  { "key": "pink", "name": "Rose", "hex": "#C98697", "sort_order": 140, "aliases": ["rose", "pink", "blush", "sakura"] },
+  { "key": "glow", "name": "Glow in the dark", "hex": "#A8DD6B", "sort_order": 150, "aliases": ["glow", "glow in the dark", "gitd", "phosphorescent", "luminous"] },
+  { "key": "gold", "name": "Or", "hex": "#C0A15A", "sort_order": 160, "aliases": ["or", "gold", "brass", "bronze", "doré"] },
+  { "key": "silver", "name": "Argent", "hex": "#B9BCC0", "sort_order": 170, "aliases": ["argent", "silver", "chrome", "metal grey"] },
+  { "key": "marble", "name": "Marbre", "hex": "#DDD6CA", "sort_order": 180, "aliases": ["marble", "marbre", "granite", "stone"] }
+]

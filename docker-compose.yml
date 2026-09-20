@@ -1,0 +1,82 @@
+# ---------------------------------------------------------------------------
+#  Resin Print Queue — plug & play stack
+#
+#    docker compose up -d --build        -> http://localhost:8080
+#    docker compose --profile demo run --rm seed    (jeu de données de démo)
+#
+#  Aucune configuration n'est obligatoire : sans .env l'application démarre en
+#  mode « mock » et fabrique des commandes réalistes toutes les 5 minutes.
+# ---------------------------------------------------------------------------
+
+x-app-env: &app-env
+  NODE_ENV: production
+  TZ: ${TZ:-America/Toronto}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DATABASE_PATH: /data/printer-queue.db
+  DASHBOARD_USER: ${DASHBOARD_USER:-admin}
+  DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-}
+  INTEGRATION_MODE: ${INTEGRATION_MODE:-mock}
+  SYNC_CRON: ${SYNC_CRON:-*/5 * * * *}
+  SHIPMENT_CRON: ${SHIPMENT_CRON:-*/15 * * * *}
+  SYNC_LOOKBACK_DAYS: ${SYNC_LOOKBACK_DAYS:-14}
+  SHOPIFY_SHOP_DOMAIN: ${SHOPIFY_SHOP_DOMAIN:-}
+  SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
+  SHOPIFY_API_VERSION: ${SHOPIFY_API_VERSION:-2024-10}
+  SHOPIFY_WEBHOOK_SECRET: ${SHOPIFY_WEBHOOK_SECRET:-}
+  ETSY_SHOP_ID: ${ETSY_SHOP_ID:-}
+  ETSY_API_KEY: ${ETSY_API_KEY:-}
+  ETSY_ACCESS_TOKEN: ${ETSY_ACCESS_TOKEN:-}
+  CHITCHATS_CLIENT_ID: ${CHITCHATS_CLIENT_ID:-}
+  CHITCHATS_ACCESS_TOKEN: ${CHITCHATS_ACCESS_TOKEN:-}
+  CHITCHATS_API_BASE: ${CHITCHATS_API_BASE:-https://chitchats.com/api/v1}
+  CHITCHATS_WEBHOOK_SECRET: ${CHITCHATS_WEBHOOK_SECRET:-}
+  SHIP_ALL_PARTS_ON_SHIPMENT: ${SHIP_ALL_PARTS_ON_SHIPMENT:-true}
+
+services:
+  # ---- Dashboard + API (sert aussi le front-end statique) ------------------
+  app:
+    build: .
+    image: resin-print-queue:latest
+    container_name: rpq-app
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: 8080
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - pq-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---- Worker : cron des commandes (5 min) + réconciliation Chit Chats ----
+  worker:
+    build: .
+    image: resin-print-queue:latest
+    container_name: rpq-worker
+    restart: unless-stopped
+    command: ["node", "src/jobs/worker.js"]
+    environment: *app-env
+    volumes:
+      - pq-data:/data
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # ---- Jeu de données de démonstration (profil optionnel) -----------------
+  seed:
+    build: .
+    image: resin-print-queue:latest
+    profiles: ["demo"]
+    command: ["node", "scripts/seed-demo.js"]
+    environment: *app-env
+    volumes:
+      - pq-data:/data
+
+volumes:
+  pq-data:
+    name: rpq-data

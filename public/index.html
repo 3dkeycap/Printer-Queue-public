@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resin Print Queue — Atelier</title>
+    <meta name="description" content="File d'attente d'impression et inventaire pour une ferme d'imprimantes 3D résine." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230F0E0C'/><path d='M9 12h14v4H9zM11 17h10v6H11z' fill='%23D9C7A3'/></svg>" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none">
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+      <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8v8l-9 5-9-5V8l9-5 9 5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
+      <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21V3Z"/><path d="M9 8h6M9 12h6"/></symbol>
+      <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v6M15 3v6M6 9h12v3a6 6 0 0 1-12 0V9ZM12 18v3"/></symbol>
+      <symbol id="i-printer" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 19H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 15h10v6H7z"/></symbol>
+      <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13h5l1 3h6l1-3h5"/><path d="M5 5h14l2 8v6H3v-6l2-8Z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 2 20h20L12 4Z"/><path d="M12 10v4M12 17h.01"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+      <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4.5L3 9"/><path d="M4 13a8 8 0 0 0 14 4.5L21 15"/><path d="M3 4v5h5M21 20v-5h-5"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+      <symbol id="i-board" viewBox="0 0 24 24"><path d="M3 4h5v16H3zM9.5 4h5v10h-5zM16 4h5v13h-5z"/></symbol>
+      <symbol id="i-table" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 10h18M9 10v9"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.4 6 10.5A6 6 0 0 1 6 13.5C6 9.4 12 3 12 3Z"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark"><svg class="icon"><use href="#i-drop" /></svg></div>
+          <div class="brand-text">
+            <strong>Resin Queue</strong>
+            <span>Atelier · 3D résine</span>
+          </div>
+        </div>
+
+        <nav class="nav" id="nav">
+          <button class="nav-item is-active" data-view="board">
+            <svg class="icon"><use href="#i-layers" /></svg><span>Production</span>
+            <em class="nav-count" data-count="board"></em>
+          </button>
+          <button class="nav-item" data-view="inventory">
+            <svg class="icon"><use href="#i-box" /></svg><span>Inventaire</span>
+            <em class="nav-count" data-count="inventory"></em>
+          </button>
+          <button class="nav-item" data-view="orders">
+            <svg class="icon"><use href="#i-receipt" /></svg><span>Commandes</span>
+            <em class="nav-count" data-count="orders"></em>
+          </button>
+          <button class="nav-item" data-view="integrations">
+            <svg class="icon"><use href="#i-plug" /></svg><span>Intégrations</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <div class="mode-badge" id="mode-badge">
+            <span class="dot"></span><span id="mode-label">…</span>
+          </div>
+          <p class="cron-line" id="cron-line"></p>
+          <button class="ghost-btn theme-toggle" id="theme-toggle" title="Basculer le thème">
+            <svg class="icon"><use href="#i-sun" /></svg><span>Thème beige</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar-title">
+            <h1 id="view-title">Production</h1>
+            <p id="view-subtitle">Chaque carte&nbsp;= une pièce physique à imprimer.</p>
+          </div>
+          <div class="topbar-actions">
+            <label class="search">
+              <svg class="icon"><use href="#i-search" /></svg>
+              <input id="search" type="search" placeholder="Rechercher pièce, SKU, commande, client…" />
+            </label>
+            <button class="ghost-btn" id="add-part-btn">
+              <svg class="icon"><use href="#i-plus" /></svg><span>Pièce</span>
+            </button>
+            <button class="primary-btn" id="sync-btn">
+              <svg class="icon"><use href="#i-refresh" /></svg><span>Synchroniser</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="stats" id="stats"></section>
+        <section class="toolbar" id="toolbar" hidden></section>
+        <section class="view" id="view"></section>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+    <aside class="drawer" id="drawer" hidden aria-live="polite"></aside>
+    <div class="bulkbar" id="bulkbar" hidden></div>
+    <div class="toasts" id="toasts"></div>
+    <dialog class="modal" id="modal"></dialog>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
