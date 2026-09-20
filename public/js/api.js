@@ -44,6 +44,7 @@ export const api = {
 
   settings: () => request('/api/settings'),
   saveSettings: (body) => request('/api/settings', { method: 'PUT', body }),
+  disconnectShopify: () => request('/api/integrations/shopify/oauth/disconnect', { method: 'POST' }),
 
   summary: () => request('/api/stats/summary'),
   runs: () => request('/api/sync/runs'),

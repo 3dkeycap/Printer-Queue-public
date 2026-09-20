@@ -103,9 +103,7 @@ const groupCard = (group, actions) => {
     ]),
     group.hint ? el('p', { class: 'sub' }, group.hint) : null,
     el('div', { class: 'settings-grid' }, definitions.map((definition) => field(definition, draft))),
-    group.key === 'shopify'
-      ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/shopify`)
-      : null,
+    group.key === 'shopify' ? shopifyOAuthBlock(actions) : null,
     group.key === 'etsy'
       ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/etsy`)
       : null,
@@ -121,6 +119,44 @@ const groupCard = (group, actions) => {
           )
         : null,
       save,
+    ]),
+  ]);
+};
+
+/**
+ * Bloc OAuth 2.0 de la carte Shopify : bouton de connexion (navigation
+ * complète vers Shopify, jamais un fetch), déconnexion, webhook et rappel de
+ * la redirect URL à enregistrer dans le Partner Dashboard.
+ */
+const shopifyOAuthBlock = (actions) => {
+  const publicUrl = state.settings.find((item) => item.key === 'app.publicUrl')?.value || '';
+  const connected = state.connectors.shopify?.configured;
+
+  return el('div', { class: 'oauth-block' }, [
+    el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/shopify`),
+    el(
+      'p',
+      { class: 'field-hint mono' },
+      `Redirect URL OAuth (Partner Dashboard) : ${publicUrl || location.origin}/api/integrations/shopify/oauth/callback`,
+    ),
+    el('div', { class: 'oauth-actions' }, [
+      el(
+        'a',
+        {
+          class: 'primary-btn',
+          href: '/api/integrations/shopify/oauth/start',
+          // Une vraie navigation, pas un fetch : Shopify a besoin d'afficher
+          // son propre écran de connexion/autorisation au marchand.
+        },
+        [icon('plug'), connected ? 'Reconnecter via OAuth' : 'Connecter via OAuth'],
+      ),
+      connected
+        ? el(
+            'button',
+            { class: 'ghost-btn', onclick: () => actions.disconnectShopify() },
+            'Se déconnecter',
+          )
+        : null,
     ]),
   ]);
 };

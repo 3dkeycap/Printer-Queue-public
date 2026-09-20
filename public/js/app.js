@@ -116,6 +116,18 @@ const actions = {
     }
   },
 
+  async disconnectShopify() {
+    try {
+      const result = await api.disconnectShopify();
+      state.settings = result.settings;
+      state.connectors = result.connectors;
+      toast('Boutique Shopify déconnectée');
+      render();
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
   async saveColor(key, patch) {
     if (!Object.keys(patch).length) return;
     try {
@@ -594,9 +606,22 @@ const bindEvents = () => {
   }, 30000);
 };
 
+/** Retour du flux OAuth Shopify : ?shopify_status=connected|error#integrations */
+const consumeOAuthRedirect = () => {
+  const params = new URLSearchParams(location.search);
+  const status = params.get('shopify_status');
+  if (!status) return;
+
+  if (status === 'connected') toast('Boutique Shopify connectée');
+  else toast(params.get('shopify_message') || 'Connexion Shopify refusée', 'err');
+
+  history.replaceState(null, '', location.pathname + location.hash);
+};
+
 const boot = async () => {
   applyTheme();
   bindEvents();
+  consumeOAuthRedirect();
 
   const [meta, colors] = await Promise.all([api.meta(), api.colors()]);
   state.meta = meta;

@@ -44,10 +44,20 @@ export const config = {
 
   shopify: {
     shopDomain: process.env.SHOPIFY_SHOP_DOMAIN || '',
+    // Client ID / Client Secret de l'app OAuth (Partner Dashboard). Le secret
+    // sert aussi à vérifier la signature HMAC des webhooks Shopify.
+    apiKey: process.env.SHOPIFY_API_KEY || '',
+    apiSecret: process.env.SHOPIFY_API_SECRET || '',
+    scopes: process.env.SHOPIFY_SCOPES || 'read_orders',
+    // Rempli automatiquement par le flux OAuth ; peut aussi être collé à la
+    // main pour une app privée existante qui n'utilise pas OAuth.
     accessToken: process.env.SHOPIFY_ACCESS_TOKEN || '',
     apiVersion: process.env.SHOPIFY_API_VERSION || '2024-10',
-    webhookSecret: process.env.SHOPIFY_WEBHOOK_SECRET || '',
   },
+
+  // URL publique de ce déploiement (reverse proxy compris), utilisée pour
+  // construire l'URL de redirection OAuth. Ex: https://queue.3dkeycap.com
+  appUrl: (process.env.APP_URL || '').replace(/\/+$/, ''),
 
   etsy: {
     shopId: process.env.ETSY_SHOP_ID || '',

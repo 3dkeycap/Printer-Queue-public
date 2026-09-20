@@ -10,6 +10,7 @@ import { metaRouter } from './routes/meta.js';
 import { ordersRouter } from './routes/orders.js';
 import { partsRouter } from './routes/parts.js';
 import { settingsRouter } from './routes/settings.js';
+import { shopifyOAuthRouter } from './routes/shopifyOAuth.js';
 import { statsRouter } from './routes/stats.js';
 import { syncRouter } from './routes/sync.js';
 import { webhooksRouter } from './routes/webhooks.js';
@@ -63,6 +64,7 @@ export const createApp = () => {
   app.use(basicAuth);
 
   app.use('/api/webhooks', webhooksRouter);
+  app.use('/api/integrations/shopify/oauth', shopifyOAuthRouter);
   app.use('/api', metaRouter);
   app.use('/api/parts', partsRouter);
   app.use('/api/orders', ordersRouter);

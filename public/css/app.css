@@ -407,3 +407,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .field-hint.mono { font-family: var(--mono); font-size: 11px; word-break: break-all; }
 .switch { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-soft); }
 .switch input { width: 16px; height: 16px; }
+
+.oauth-block { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; border-top: 1px dashed var(--line); margin-top: 2px; }
+.oauth-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.oauth-actions .primary-btn { text-decoration: none; }

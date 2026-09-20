@@ -9,11 +9,33 @@ import { badRequest } from '../lib/errors.js';
  * permet de tout configurer sans redéployer.
  */
 export const DEFINITIONS = [
-  // --- Shopify ------------------------------------------------------------
+  // --- Shopify (OAuth 2.0) -------------------------------------------------
+  // Shopify exige maintenant une app OAuth (le token d'accès direct des
+  // anciennes « apps privées » n'est plus proposé aux nouvelles boutiques).
+  // Client ID / Client secret viennent du Partner Dashboard ; le secret sert
+  // aussi à vérifier la signature HMAC des webhooks Shopify.
   { key: 'shopify.shopDomain', group: 'shopify', label: 'Domaine de la boutique', type: 'text', placeholder: 'ma-boutique.myshopify.com', fallback: () => config.shopify.shopDomain },
-  { key: 'shopify.accessToken', group: 'shopify', label: "Token d'accès Admin API", type: 'secret', fallback: () => config.shopify.accessToken },
+  {
+    key: 'app.publicUrl',
+    group: 'shopify',
+    label: 'URL publique de ce serveur',
+    type: 'text',
+    placeholder: 'https://queue.3dkeycap.com',
+    hint: "Nécessaire pour l'OAuth Shopify : à enregistrer telle quelle + « /api/integrations/shopify/oauth/callback » comme redirect URL dans le Partner Dashboard.",
+    fallback: () => config.appUrl,
+  },
+  { key: 'shopify.apiKey', group: 'shopify', label: "Client ID (API key)", type: 'text', hint: 'Depuis le Partner Dashboard → votre app → Client credentials.', fallback: () => config.shopify.apiKey },
+  { key: 'shopify.apiSecret', group: 'shopify', label: 'Client secret', type: 'secret', hint: 'Sert aussi à vérifier la signature des webhooks Shopify.', fallback: () => config.shopify.apiSecret },
+  { key: 'shopify.scopes', group: 'shopify', label: 'Scopes OAuth', type: 'text', fallback: () => config.shopify.scopes },
+  {
+    key: 'shopify.accessToken',
+    group: 'shopify',
+    label: "Token d'accès",
+    type: 'secret',
+    hint: "Rempli automatiquement par « Connecter via OAuth » ci-dessous. Peut aussi être collé à la main pour une ancienne app privée.",
+    fallback: () => config.shopify.accessToken,
+  },
   { key: 'shopify.apiVersion', group: 'shopify', label: 'Version API', type: 'text', fallback: () => config.shopify.apiVersion },
-  { key: 'shopify.webhookSecret', group: 'shopify', label: 'Secret webhook (HMAC)', type: 'secret', fallback: () => config.shopify.webhookSecret },
   { key: 'shopify.enabled', group: 'shopify', label: 'Synchronisation active', type: 'boolean', fallback: () => true },
 
   // --- Etsy ---------------------------------------------------------------

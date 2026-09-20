@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
-import { config } from '../config.js';
 import { getDb, nowIso } from '../db/index.js';
+import { getSettings } from '../domain/settings.service.js';
 import { asyncRoute } from '../lib/errors.js';
 import { createLogger } from '../lib/logger.js';
 import { normalizeShipment, verifyWebhookSecret } from '../integrations/chitchats.js';
@@ -51,11 +51,15 @@ webhooksRouter.post(
   }),
 );
 
-/** Optional Shopify orders/create hook: parts appear instantly, no 5 min wait. */
+/**
+ * Optional Shopify orders/create hook: parts appear instantly, no 5 min wait.
+ * Shopify signs webhook bodies with the app's OAuth Client secret (there is
+ * no separate webhook secret to configure).
+ */
 webhooksRouter.post(
   '/shopify',
   asyncRoute((req, res) => {
-    const secret = config.shopify.webhookSecret;
+    const secret = getSettings()['shopify.apiSecret'];
     if (secret) {
       const digest = crypto.createHmac('sha256', secret).update(req.rawBody ?? Buffer.alloc(0)).digest('base64');
       const provided = String(req.headers['x-shopify-hmac-sha256'] ?? '');

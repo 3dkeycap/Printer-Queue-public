@@ -234,13 +234,34 @@ Tout se saisit dans la page **Intégrations** ; les valeurs sont stockées en ba
 secrets ne sont jamais renvoyés au navigateur (le champ affiche « enregistré »). Laisser
 un champ secret vide conserve la valeur existante.
 
-### Shopify
+### Shopify (OAuth 2.0)
 
-1. Créer une app personnalisée avec le scope `read_orders`.
-2. Page Intégrations → *Shopify* : domaine de la boutique + token d'accès Admin API.
-3. (Optionnel, pour l'instantané) webhook `orders/create` →
-   `https://votre-domaine/api/webhooks/shopify`, avec le secret HMAC saisi au même
-   endroit (signature SHA-256 vérifiée).
+Shopify n'émet plus de token d'accès direct pour les nouvelles boutiques : la connexion
+passe par OAuth 2.0. L'application gère tout le flux (redirection, vérification de la
+signature, échange du code) — il n'y a qu'à créer l'app et cliquer un bouton.
+
+1. Sur [partners.shopify.com](https://partners.shopify.com), créer une app et noter son
+   **Client ID** et son **Client secret** (Configuration → Client credentials).
+2. Page Intégrations → *Shopify*, renseigner dans l'ordre :
+   - **URL publique de ce serveur** (ex. `https://queue.3dkeycap.com`) ;
+   - **Domaine de la boutique** (`ma-boutique.myshopify.com`) ;
+   - **Client ID** et **Client secret**.
+3. Cliquer **Enregistrer**, puis copier la « Redirect URL OAuth » affichée sous les champs
+   et la coller dans le Partner Dashboard → Configuration → App URL / Allowed redirection
+   URL(s).
+4. Cliquer **Connecter via OAuth** : le navigateur va sur Shopify, le marchand approuve les
+   accès, puis revient automatiquement sur le dashboard — le token d'accès est rempli tout
+   seul et la pastille passe à « Configuré ».
+5. (Optionnel, pour l'instantané) webhook `orders/create` →
+   `https://votre-domaine/api/webhooks/shopify`. Il est signé avec le **Client secret** de
+   l'app, déjà renseigné ci-dessus — aucun secret webhook séparé à configurer.
+
+« Se déconnecter » efface le token pour forcer une nouvelle autorisation (utile si l'app a
+été révoquée côté Shopify, ou pour changer de boutique).
+
+Une app privée existante qui a encore un token classique peut continuer à le coller
+directement dans le champ **Token d'accès** : le flux OAuth n'écrase rien tant qu'on ne
+clique pas sur « Connecter ».
 
 La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` / `Colour` /
 `Couleur` / `Resin`, puis `variant_title`, puis le SKU.
@@ -292,6 +313,9 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `POST` | `/api/sync/run?source=all\|shopify\|etsy\|chitchats` | Synchronisation manuelle |
 | `GET` | `/api/sync/runs` · `/api/sync/webhooks` | Journal des exécutions et des webhooks |
 | `POST` | `/api/webhooks/{chitchats,shopify,etsy}` | Entrées webhook |
+| `GET` | `/api/integrations/shopify/oauth/start` | Démarre le flux OAuth (navigation, pas un fetch) |
+| `GET` | `/api/integrations/shopify/oauth/callback` | Retour Shopify : vérifie state + HMAC, échange le code |
+| `POST` | `/api/integrations/shopify/oauth/disconnect` | Efface le token pour forcer une nouvelle connexion |
 
 ---
 
