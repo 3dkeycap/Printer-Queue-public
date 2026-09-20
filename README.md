@@ -138,6 +138,7 @@ seules les pièces manquantes sont ajoutées.
 │   ├── css/app.css             thème beige & noir, clair / sombre
 │   └── js/                     api, store, drawer, views/{board,all,integrations}
 ├── scripts/reset-data.js       purge des commandes et des pièces
+├── scripts/diagnose-shopify.js interroge Shopify en direct (0 commande sans erreur ?)
 └── tests/                      58 tests (node:test)
 ```
 
@@ -276,6 +277,20 @@ correspond pas exactement à ce qui est enregistré dans le Partner Dashboard.
   toute variation — https vs http, `/` de fin, sous-domaine) ;
 - si l'app est encore en brouillon, la publier (ou l'installer via un lien d'installation)
   avant de réessayer.
+
+**La synchro tourne sans erreur mais renvoie toujours 0 commande** (`orders fetched,
+count: 0` dans les logs, alors que la boutique a des commandes non honorées) : ne pas
+deviner, lancer le diagnostic qui interroge Shopify directement et affiche sa vraie
+réponse :
+
+```bash
+docker compose exec app node scripts/diagnose-shopify.js
+```
+
+Il distingue trois cas : accès aux données protégées pas encore effectif (erreur 401/403
+explicite), commandes existantes mais aucune n'est réellement « non honorée », ou boutique
+sans commande du tout dans les 60 derniers jours. `read_orders` suffit amplement — inutile
+(et pas souhaitable) de demander tous les scopes disponibles dans le Partner Dashboard.
 
 La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` / `Colour` /
 `Couleur` / `Resin`, puis `variant_title`, puis le SKU.
