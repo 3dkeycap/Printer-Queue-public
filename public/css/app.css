@@ -695,3 +695,7 @@ tr.is-open-shop > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 .card-foot .who { flex: 1 1 90px; min-width: 0; }
 .card-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; min-width: 0; }
 .card-actions .mini-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; flex: none; }
+/* grille (colonne agrandie) : chaque rangée prend la hauteur de son contenu,
+   au lieu d'être écrasée pour tenir dans la hauteur de l'écran */
+.column-body.is-grid { grid-auto-rows: max-content; align-items: start; }
+.column-body.is-grid > .card { height: auto; min-height: max-content; }
