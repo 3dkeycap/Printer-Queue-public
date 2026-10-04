@@ -585,3 +585,7 @@ Boutiques → Shopify → Reconnecter via OAuth) si les photos n'apparaissent pa
 (déplaçable, loin du chat Sidekick de la nouvelle interface), fenêtre de l'extension avec un gros
 bouton « Ouvrir sur Chit Chats », numéro de commande lu sur la page (marche sans l'app), et
 mise à jour en un clic depuis GitHub (icône → Mettre à jour).
+
+**Extension v1.2 — lien live** : Shopify et Chit Chats côte à côte ; « 🔗 Link » sur Shopify puis
+« 🔗 Link » sur l'onglet Chit Chats, et chaque commande ouverte dans Shopify s'affiche dans Chit
+Chats. « Stop live » pour couper. Détails dans [`chrome-extension/README.md`](chrome-extension/README.md).

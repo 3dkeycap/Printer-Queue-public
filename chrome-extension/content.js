@@ -23,6 +23,39 @@
   };
 
   const notifyUrl = () => chrome.runtime.sendMessage({ type: 'url', url: location.href }).catch(() => {});
+  const send = (message) => chrome.runtime.sendMessage(message).catch(() => null);
+
+  const orderIdFromPath = () => ORDER_URL.exec(location.pathname)?.[1] ?? null;
+
+  /*
+   * Après un changement de commande, l'admin Shopify (une seule page) met à
+   * jour l'URL avant le titre : on attend que le numéro affiché change pour ne
+   * jamais envoyer l'ancienne commande à Chit Chats.
+   */
+  let knownOrder = { id: null, number: null };
+  const freshOrderNumber = async () => {
+    const id = orderIdFromPath();
+    if (!id) return null;
+    if (knownOrder.id === id && knownOrder.number) return knownOrder.number;
+    const previous = knownOrder.number;
+    const deadline = Date.now() + 4000;
+    let number = pageOrderNumber();
+    while ((!number || (knownOrder.id !== id && number === previous)) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      if (orderIdFromPath() !== id) return null; // on a encore changé de page entre-temps
+      number = pageOrderNumber();
+    }
+    // titre jamais mis à jour : mieux vaut ne rien envoyer que l'ancienne commande
+    if (knownOrder.id !== id && previous && number === previous) return null;
+    knownOrder = { id, number };
+    return number;
+  };
+
+  /** Lien live : la commande ouverte ici s'affiche dans l'onglet Chit Chats lié. */
+  const syncLinkedOrder = async () => {
+    const number = await freshOrderNumber();
+    if (number) send({ type: 'link-order', orderNumber: number });
+  };
 
   const openChitChats = async (info) => {
     try {
@@ -40,10 +73,12 @@
 
   const render = async () => {
     if (!isOrderPage()) return removeDock();
-    const info = await chrome.runtime
-      .sendMessage({ type: 'resolve', pageOrderNumber: pageOrderNumber() })
-      .catch(() => null);
+    const number = await freshOrderNumber();
+    const info = await send({ type: 'resolve', pageOrderNumber: number });
     if (!info?.chitchatsUrl || !isOrderPage()) return removeDock();
+    const status = (await send({ type: 'link-status' })) ?? {};
+    const link = status.link;
+    const mine = link && link.shopifyTabId === status.tabId;
 
     const { dockTop = 42 } = await chrome.storage.local.get('dockTop');
     if (!dock) {
@@ -61,13 +96,13 @@
     grip.textContent = '⋮⋮';
     grip.style.cssText = 'display:flex;align-items:center;padding:0 5px;background:#163f8f;color:#9db7ea;cursor:ns-resize;font-size:11px;letter-spacing:-2px;';
 
-    const status = info.app?.ok ? '#3ccf7a' : info.app?.error ? '#f07a7a' : '#c7cfdd';
+    const appDot = info.app?.ok ? '#3ccf7a' : info.app?.error ? '#f07a7a' : '#c7cfdd';
     const button = document.createElement('button');
     button.type = 'button';
     button.title = `Ouvrir ${info.orderNumber ?? 'la commande'} sur Chit Chats (le numéro est copié)`;
     button.style.cssText =
       'all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px 10px 11px;background:#1f5fd6;color:#fff;';
-    button.innerHTML = `<span style="width:8px;height:8px;border-radius:99px;background:${status}"></span>`;
+    button.innerHTML = `<span style="width:8px;height:8px;border-radius:99px;background:${appDot}"></span>`;
     button.append(`Chit Chats ${info.orderNumber ?? ''}`.trim());
     button.addEventListener('click', () => openChitChats(info));
 
@@ -87,7 +122,42 @@
       grip.addEventListener('pointerup', up, { once: true });
     });
 
-    dock.replaceChildren(grip, button);
+    // --- lien live avec un onglet Chit Chats -------------------------------
+    const linkPart = document.createElement('span');
+    linkPart.style.cssText = 'display:flex;align-items:stretch;border-left:1px solid rgba(255,255,255,.25);';
+    const linkButton = (label, title, color, onClick) => {
+      const node = document.createElement('button');
+      node.type = 'button';
+      node.title = title;
+      node.textContent = label;
+      node.style.cssText = `all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 12px;background:${color};color:#fff;`;
+      node.addEventListener('click', onClick);
+      return node;
+    };
+
+    if (mine && link.state === 'live') {
+      const live = document.createElement('span');
+      live.textContent = '● Live';
+      live.title = "Chaque commande ouverte ici s'affiche dans l'onglet Chit Chats lié";
+      live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;';
+      linkPart.append(
+        live,
+        linkButton('Stop live', 'Couper le lien avec Chit Chats', '#b43a3a', () => send({ type: 'link-stop' })),
+      );
+    } else if (mine && link.state === 'pending') {
+      linkPart.append(
+        linkButton('Clique « Link » sur Chit Chats… ✕', 'Annuler', '#8a6414', () => send({ type: 'link-stop' })),
+      );
+    } else {
+      linkPart.append(
+        linkButton('🔗 Link', 'Lier un onglet Chit Chats : il suivra les commandes ouvertes ici', '#163f8f', async () => {
+          const result = await send({ type: 'link-start' });
+          if (result?.warning) alert(result.warning);
+        }),
+      );
+    }
+
+    dock.replaceChildren(grip, button, linkPart);
   };
 
   // l'admin Shopify change d'URL et de titre sans recharger la page
@@ -96,6 +166,7 @@
       lastUrl = location.href;
       notifyUrl();
       render();
+      syncLinkedOrder();
     }
   }, 800);
   new MutationObserver(() => {
@@ -106,7 +177,8 @@
   render();
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === 'presence') render();
+    if (message?.type === 'presence' || message?.type === 'link-changed') render();
+    if (message?.type === 'link-sync') syncLinkedOrder();
     if (message?.type === 'page-order') {
       sendResponse({ orderNumber: pageOrderNumber(), isOrder: isOrderPage() });
     }

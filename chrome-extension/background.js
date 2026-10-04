@@ -170,11 +170,92 @@ const handleUrl = (tabId, url) =>
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url !== undefined || changeInfo.status === 'complete') handleUrl(tabId, tab.url);
 });
-chrome.tabs.onRemoved.addListener((tabId) => serial(() => close(tabId)));
+chrome.tabs.onRemoved.addListener((tabId) => {
+  serial(() => close(tabId));
+  unlinkIfInvolved(tabId);
+});
+
+/* ------------------------------------------------- lien live Shopify → Chit Chats
+ * Deux onglets côte à côte : quand le lien est « live », chaque commande
+ * ouverte dans l'onglet Shopify s'affiche dans l'onglet Chit Chats (sens
+ * unique). Étapes : « Link » sur Shopify → « Link » sur l'onglet Chit Chats
+ * choisi → live ; « Stop live » sur Shopify (ou fermer un des onglets) coupe.
+ */
+
+const getLink = async () => (await chrome.storage.session.get('link')).link ?? null;
+const setLink = (link) => chrome.storage.session.set({ link });
+
+const chitchatsTabs = () => chrome.tabs.query({ url: 'https://chitchats.com/*' }).catch(() => []);
+
+/** Prévient tous les onglets concernés pour qu'ils redessinent leurs boutons. */
+const broadcastLink = async () => {
+  const link = await getLink();
+  const targets = new Set((await chitchatsTabs()).map((tab) => tab.id));
+  if (link?.shopifyTabId) targets.add(link.shopifyTabId);
+  for (const id of targets) tellPage(id, { type: 'link-changed', link });
+};
+
+const unlinkIfInvolved = async (tabId) => {
+  const link = await getLink();
+  if (link && (link.shopifyTabId === tabId || link.chitchatsTabId === tabId)) {
+    await setLink(null);
+    await broadcastLink();
+  }
+};
+
+/** Affiche la commande dans l'onglet Chit Chats lié (si elle a changé). */
+const followOrder = async (orderNumber) => {
+  const link = await getLink();
+  if (link?.state !== 'live' || !orderNumber) return;
+  const url = await buildChitChatsUrl(orderNumber);
+  if (!url || link.lastOrder === orderNumber) return;
+  try {
+    await chrome.tabs.update(link.chitchatsTabId, { url });
+    await setLink({ ...link, lastOrder: orderNumber });
+  } catch {
+    // l'onglet Chit Chats n'existe plus
+    await setLink(null);
+    await broadcastLink();
+  }
+};
+
+const handleLinkMessage = async (message, sender) => {
+  const tabId = sender.tab?.id;
+  const link = await getLink();
+  switch (message.type) {
+    case 'link-status':
+      return { link, tabId };
+    case 'link-start': // depuis l'onglet Shopify
+      await setLink({ state: 'pending', shopifyTabId: tabId, chitchatsTabId: null, lastOrder: null });
+      await broadcastLink();
+      if (!(await chitchatsTabs()).length) return { warning: 'Ouvre un onglet Chit Chats à côté, puis clique « Link » dedans.' };
+      return { ok: true };
+    case 'link-accept': // depuis l'onglet Chit Chats choisi
+      if (link?.state !== 'pending') return { error: 'Clique d\'abord « Link » sur la page Shopify.' };
+      await setLink({ ...link, state: 'live', chitchatsTabId: tabId, lastOrder: null });
+      await broadcastLink();
+      // la commande ouverte en ce moment s'affiche tout de suite
+      tellPage(link.shopifyTabId, { type: 'link-sync' });
+      return { ok: true };
+    case 'link-stop':
+      await setLink(null);
+      await broadcastLink();
+      return { ok: true };
+    case 'link-order': // l'onglet Shopify affiche une (autre) commande
+      if (link?.state === 'live' && link.shopifyTabId === tabId) await followOrder(message.orderNumber);
+      return { ok: true };
+    default:
+      return null;
+  }
+};
 
 // le script de la page signale aussi ses changements d'URL (plus fiable dans une SPA)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === 'url' && sender.tab?.id !== undefined) handleUrl(sender.tab.id, message.url);
+  if (String(message?.type ?? '').startsWith('link-')) {
+    handleLinkMessage(message, sender).then(sendResponse);
+    return true;
+  }
   // numéro de commande + lien Chit Chats, pour le bouton de la page et la fenêtre de l'extension
   if (message?.type === 'resolve') {
     const tabId = message.tabId ?? sender.tab?.id;
