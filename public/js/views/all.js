@@ -31,6 +31,24 @@ const statusSelect = (part, actions) => {
   return node;
 };
 
+/**
+ * Import dans Chit Chats : true (envoi créé ou relié), false (pas encore
+ * importée), Échec (avec la raison en infobulle). Rien pour les pièces internes.
+ */
+const chitchatsCell = (part) => {
+  if (part.source === 'manual') return el('span', { class: 'cell-sub' }, '—');
+  if (['imported', 'linked'].includes(part.chitchats_import_status) || part.chitchats_shipment_id) {
+    return el('span', { class: 'cc-state is-true', title: part.chitchats_import_status === 'linked' ? 'Envoi déjà présent dans Chit Chats, relié' : 'Envoi créé dans Chit Chats' }, 'true');
+  }
+  if (part.chitchats_import_status === 'error') {
+    return el('span', { class: 'cc-state is-failed', title: part.chitchats_import_error ?? 'Raison inconnue' }, [
+      el('strong', {}, 'failed'),
+      el('span', { class: 'cc-reason' }, part.chitchats_import_error ?? ''),
+    ]);
+  }
+  return el('span', { class: 'cc-state is-false', title: 'Pas encore importée (import automatique toutes les heures)' }, 'false');
+};
+
 /** « Ouvert sur Shopify » (extension Chrome), comme sur les cartes du tableau. */
 const openBadge = (open) =>
   el('div', { class: 'row-open-shop' }, [
@@ -88,6 +106,7 @@ const row = (part, actions) => {
         el('div', {}, part.customer_name ?? '—'),
         el('div', { class: 'cell-sub' }, fromNow(part.placed_at)),
       ]),
+      el('td', {}, chitchatsCell(part)),
       el('td', {}, `#${part.unit_index}`),
       el('td', {}, [
         el('div', { class: 'row-actions' }, [
@@ -116,7 +135,7 @@ export const renderAll = (root, actions) => {
     if (group.label) {
       body.append(
         el('tr', { class: 'group-row' }, [
-          el('td', { colspan: '11' }, [
+          el('td', { colspan: '12' }, [
             el('span', { class: 'tag' }, [group.hex ? swatch(group.hex) : null, group.label].filter(Boolean)),
             ' ',
             `${group.items.length} pièce(s)`,
@@ -147,6 +166,7 @@ export const renderAll = (root, actions) => {
             el('th', {}, 'Imprimante'),
             el('th', {}, 'Commande'),
             el('th', {}, 'Pour qui'),
+            el('th', {}, 'Chit Chats'),
             el('th', {}, 'Unité'),
             el('th', {}, ''),
           ]),

@@ -676,3 +676,8 @@ tr.is-open-shop > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 .row-open-shop { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 5px; font-size: 11.5px; color: var(--text); white-space: nowrap; }
 .row-open-shop .mini-btn { display: inline-flex; align-items: center; gap: 4px; }
 .row-open-shop .open-label { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--ok) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.cc-state { display: inline-flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); max-width: 220px; }
+.cc-state.is-true { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.cc-state.is-false { color: var(--muted); }
+.cc-state.is-failed { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.cc-state .cc-reason { font-family: var(--font); font-size: 11px; color: var(--text-soft); white-space: normal; line-height: 1.3; }
