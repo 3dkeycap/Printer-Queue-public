@@ -59,3 +59,6 @@ Il faut le Client ID Chit Chats dans les réglages de l'extension.
 Si l'app a détecté que l'**import de cette commande dans Chit Chats a échoué**, la barre en bas de
 l'onglet Chit Chats devient rouge et dit pourquoi (ex. « line_items required ») : c'est pour ça que
 la commande n'apparaît pas dans Chit Chats. Une commande pas encore importée est signalée en orange.
+
+La boîte « 📦 J'ai packé » garde ton choix : ouverte, elle se rouvre toute seule sur chaque
+commande (et après un rechargement) ; fermée (bouton ▴ ou ×), elle reste fermée.

@@ -171,13 +171,20 @@
 
     dock.replaceChildren(...[grip, info.chitchatsUrl && button, packButton, info.chitchatsUrl && linkPart].filter(Boolean));
     globalThis.ResinQueuePack?.place();
+
+    // boîte du bac laissée ouverte : elle se rouvre sur cette commande
+    const pack = globalThis.ResinQueuePack;
+    const orderId = orderIdFromPath();
+    if (pack && orderId && pack.openOrder() !== orderId && (await pack.wantsOpen())) pack.open(orderId, dock);
   };
 
   // l'admin Shopify change d'URL et de titre sans recharger la page
   setInterval(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
-      globalThis.ResinQueuePack?.close();
+      // on quitte la commande : la boîte se ferme sans changer le choix mémorisé
+      // (si elle était ouverte, elle se rouvre sur la commande suivante)
+      if (!isOrderPage()) globalThis.ResinQueuePack?.close();
       notifyUrl();
       render();
       syncLinkedOrder();

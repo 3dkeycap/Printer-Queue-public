@@ -116,6 +116,16 @@
     }, 200);
   };
 
+  /*
+   * Ouverte ou fermée par la personne : l'état est mémorisé. Ouverte, la boîte
+   * se rouvre toute seule sur chaque commande ; fermée, elle reste fermée.
+   */
+  const remember = (open) => chrome.storage.local.set({ packOpen: open });
+  const userClose = () => {
+    remember(false);
+    close();
+  };
+
   const fmt = (iso) => (iso ? new Date(iso).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }) : '');
 
   const statusText = (item) =>
@@ -137,7 +147,7 @@
 
     if (view?.error) {
       panel.append(
-        h('header', {}, [h('div', {}, [h('h2', {}, "J'ai packé la commande")]), h('button', { class: 'x', onclick: close, title: 'Fermer' }, '×')]),
+        h('header', {}, [h('div', {}, [h('h2', {}, "J'ai packé la commande")]), h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×')]),
         h('div', { class: 'body' }, [h('div', { class: 'box bad' }, view.error)]),
       );
       return;
@@ -285,7 +295,7 @@
     panel.append(
       h('header', {}, [
         h('div', {}, [h('h2', {}, `📦 Bac — commande ${order.number ?? ''}`)]),
-        h('button', { class: 'x', onclick: close, title: 'Fermer' }, '×'),
+        h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×'),
       ]),
       h('div', { class: 'body' }, [
         order.shippedAt ? h('div', { class: 'box bad' }, `Attention : commande déjà marquée expédiée le ${fmt(order.shippedAt)}.`) : null,
@@ -319,10 +329,15 @@
     close,
     place,
     isOpen: () => Boolean(currentOrder),
-    /** « J'ai packé » : ouvre / referme la boîte sous la barre. */
+    openOrder: () => currentOrder,
+    wantsOpen: async () => Boolean((await chrome.storage.local.get('packOpen')).packOpen),
+    /** « J'ai packé » : ouvre / referme la boîte sous la barre (choix mémorisé). */
     toggle(orderExternalId, anchorNode) {
-      if (currentOrder === orderExternalId) close();
-      else open(orderExternalId, anchorNode);
+      if (currentOrder === orderExternalId) userClose();
+      else {
+        remember(true);
+        open(orderExternalId, anchorNode);
+      }
     },
   };
 })();
