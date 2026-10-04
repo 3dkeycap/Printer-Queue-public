@@ -114,3 +114,19 @@ describe('import des commandes dans Chit Chats', () => {
     assert.equal(payload.line_items.length, 1);
   });
 });
+
+describe('envois déjà présents dans Chit Chats', () => {
+  it('relie les commandes de tout âge à leur envoi existant, et explique les autres', async () => {
+    const { linkExistingShipments, chitchatsState, chitchatsContext } = await import('../src/domain/chitchatsImport.js');
+    migrate();
+    ingestOrder(makeOrder({ placedAt: '2025-01-01T00:00:00.000Z', externalId: 'OLD1', orderNumber: '#900', totalPrice: 10, raw: { id: 9 } }));
+    ingestOrder(makeOrder({ placedAt: '2025-01-02T00:00:00.000Z', externalId: 'OLD2', orderNumber: '#901', totalPrice: 10, raw: { id: 9 } }));
+    const client = { list: async (page) => (page === 1 ? [{ id: 'CC900', order_id: '900' }] : []) };
+    assert.equal(await linkExistingShipments(client), 1);
+    const ctx = chitchatsContext();
+    assert.equal(chitchatsState(orderRow('OLD1'), ctx).state, 'true');
+    const old = chitchatsState(orderRow('OLD2'), ctx);
+    assert.equal(old.state, 'false');
+    assert.match(old.reason, /trop ancienne/);
+  });
+});

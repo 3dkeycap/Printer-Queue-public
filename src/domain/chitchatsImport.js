@@ -199,6 +199,7 @@ const api = (settings) => {
   const headers = { Authorization: settings['chitchats.accessToken'], 'Content-Type': 'application/json' };
   return {
     search: (q) => requestJson(`${base}/shipments?q=${encodeURIComponent(q)}&limit=25`, { headers, retries: 1 }),
+    list: (page) => requestJson(`${base}/shipments?limit=100&page=${page}`, { headers, retries: 1 }),
     create: (payload) =>
       requestJson(`${base}/shipments`, { method: 'POST', headers, body: JSON.stringify(payload), retries: 1 }),
   };
@@ -214,11 +215,123 @@ const record = (orderId, { status, error = null, shipmentId = null }) =>
     )
     .run({ orderId, status, error, shipmentId: shipmentId ? String(shipmentId) : null, ts: nowIso() });
 
-/** Commandes à envoyer : ouvertes, pas encore dans Chit Chats, dans la fenêtre de rattrapage. */
+/** Début de la fenêtre d'import (réglable, 30 jours par défaut). */
+const importSince = (settings) =>
+  new Date(Date.now() - Math.max(Number(settings['chitchats.importWindowDays']) || 30, 1) * 86400000).toISOString();
+
+const listOf = (payload) => (Array.isArray(payload) ? payload : payload?.shipments ?? payload?.data ?? []);
+const cleanRef = (value) => String(value ?? '').trim().replace(/^#/, '');
+
+/**
+ * Relie d'un coup les commandes locales aux envois DÉJÀ présents dans Chit
+ * Chats (import natif Shopify/Etsy de Chit Chats, envoi créé à la main…),
+ * quel que soit leur âge : on lit les derniers envois et on rapproche par
+ * numéro de commande. Sans ça, ces commandes restaient « false » pour toujours.
+ */
+export const linkExistingShipments = async (client, { pages = 5 } = {}) => {
+  if (!client.list) return 0;
+  const db = getDb();
+  const open = db
+    .prepare(
+      `SELECT id, order_number, external_id FROM orders
+        WHERE source IN ('shopify', 'etsy') AND chitchats_shipment_id IS NULL`,
+    )
+    .all();
+  if (!open.length) return 0;
+  const byRef = new Map();
+  for (const order of open) {
+    if (order.order_number) byRef.set(cleanRef(order.order_number), order);
+    byRef.set(cleanRef(order.external_id), order);
+  }
+
+  let linked = 0;
+  for (let page = 1; page <= pages && byRef.size; page += 1) {
+    let shipments;
+    try {
+      shipments = listOf(await client.list(page));
+    } catch (error) {
+      log.warn('could not list chit chats shipments', { page, error: error.message });
+      break;
+    }
+    for (const shipment of shipments) {
+      const order = byRef.get(cleanRef(shipment.order_id));
+      if (!order || !shipment.id) continue;
+      record(order.id, { status: 'linked', shipmentId: shipment.id });
+      byRef.delete(cleanRef(order.order_number));
+      byRef.delete(cleanRef(order.external_id));
+      linked += 1;
+    }
+    if (shipments.length < 100) break;
+  }
+  if (linked) log.info('orders linked to existing chit chats shipments', { linked });
+  return linked;
+};
+
+/**
+ * Pourquoi une commande est (ou n'est pas) dans Chit Chats, en clair.
+ * state : true | failed | shipped | false | na
+ */
+export const chitchatsState = (row, ctx) => {
+  if (row.source === 'manual') return { state: 'na', reason: 'Pièce interne : rien à expédier par Chit Chats' };
+  if (row.chitchats_shipment_id || ['imported', 'linked'].includes(row.chitchats_import_status)) {
+    return {
+      state: 'true',
+      reason: row.chitchats_import_status === 'imported' ? 'Envoi créé dans Chit Chats par l\'app' : 'Envoi trouvé dans Chit Chats et relié',
+    };
+  }
+  if (row.chitchats_import_status === 'error') return { state: 'failed', reason: row.chitchats_import_error ?? 'Raison inconnue' };
+  if (row.order_shipped_at || row.status === 'SHIPPED') {
+    return { state: 'shipped', reason: 'Déjà expédiée, sans envoi Chit Chats connu de l\'app : rien à importer' };
+  }
+  if (!ctx.configured) return { state: 'false', reason: 'Chit Chats n\'est pas configuré (Client ID / token)' };
+  const placed = row.placed_at ?? row.created_at;
+  if (placed && placed < ctx.since) {
+    return {
+      state: 'false',
+      reason: `Commande trop ancienne (plus de ${ctx.windowDays} jours) : pas créée dans Chit Chats. Élargis « Importer les commandes des derniers (jours) » dans Réglages → Boutiques → Chit Chats.`,
+    };
+  }
+  if (!ctx.autoImport) return { state: 'false', reason: "Import automatique désactivé (Réglages → Boutiques → Chit Chats)" };
+  return { state: 'false', reason: `Pas encore importée : prochain import automatique ${ctx.nextRun}` };
+};
+
+/** Contexte commun pour chitchatsState (une seule lecture des réglages). */
+export const chitchatsContext = (settings = getSettings()) => ({
+  configured: Boolean(settings['chitchats.clientId'] && settings['chitchats.accessToken']),
+  autoImport: Boolean(settings['chitchats.autoImport']),
+  since: importSince(settings),
+  windowDays: Math.max(Number(settings['chitchats.importWindowDays']) || 30, 1),
+  nextRun: settings['schedule.chitchatsImportCron'] === '0 * * * *' ? 'à la prochaine heure' : `(cron ${settings['schedule.chitchatsImportCron']})`,
+});
+
+/** Résumé : combien de commandes ouvertes ne sont pas dans Chit Chats, et pourquoi. */
+export const chitchatsDiagnosis = () => {
+  const ctx = chitchatsContext();
+  const rows = getDb()
+    .prepare(
+      `SELECT o.*, o.shipped_at AS order_shipped_at,
+              CASE WHEN EXISTS (SELECT 1 FROM parts p WHERE p.order_id = o.id AND p.status <> 'SHIPPED') THEN 'OPEN' ELSE 'SHIPPED' END AS status
+         FROM orders o WHERE o.source IN ('shopify', 'etsy')`,
+    )
+    .all();
+  const reasons = new Map();
+  const totals = { true: 0, failed: 0, shipped: 0, false: 0 };
+  for (const row of rows) {
+    const { state, reason } = chitchatsState(row, ctx);
+    if (state in totals) totals[state] += 1;
+    if (state === 'false' || state === 'failed') {
+      const key = state === 'failed' ? `Échec : ${reason}` : reason.replace(/prochain import automatique .*$/, 'prochain import automatique');
+      reasons.set(key, (reasons.get(key) ?? 0) + 1);
+    }
+  }
+  return { totals, reasons: [...reasons].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count) };
+};
+
+/** Commandes à envoyer : ouvertes, pas encore dans Chit Chats, dans la fenêtre d'import. */
 const pendingOrders = (settings, onlyOrderId) => {
   const db = getDb();
   if (onlyOrderId) return db.prepare('SELECT * FROM orders WHERE id = ?').all(Number(onlyOrderId));
-  const since = new Date(Date.now() - Number(settings['schedule.lookbackDays'] || 14) * 86400000).toISOString();
+  const since = importSince(settings);
   return db
     .prepare(
       `SELECT * FROM orders
@@ -282,14 +395,16 @@ export const importOrdersToChitChats = async ({ trigger = 'cron', orderId = null
   );
 
   const counts = { imported: 0, linked: 0, error: 0 };
-  const orders = pendingOrders(settings, orderId);
   const apiClient = client ?? api(settings);
+  // d'abord : relier tout ce que Chit Chats a déjà (n'importe quel âge)
+  if (!orderId) counts.linked += await linkExistingShipments(apiClient);
+  const orders = pendingOrders(settings, orderId);
   for (const order of orders) {
     const result = await importOrder(order, settings, apiClient);
     counts[result.status] += 1;
   }
 
-  const message = `${counts.imported} importée(s), ${counts.linked} déjà présente(s), ${counts.error} en erreur`;
+  const message = `${counts.imported} importée(s), ${counts.linked} déjà présente(s) et reliée(s), ${counts.error} en erreur`;
   const finishedAt = nowIso();
   db.prepare(
     `UPDATE sync_runs SET status = @status, finished_at = @finishedAt, duration_ms = @ms,

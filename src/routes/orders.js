@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import { asyncRoute } from '../lib/errors.js';
-import { importOrdersToChitChats } from '../domain/chitchatsImport.js';
+import { chitchatsDiagnosis, importOrdersToChitChats } from '../domain/chitchatsImport.js';
 import { getOrder, listOrders, markOrderShipped } from '../domain/orders.service.js';
 
 export const ordersRouter = Router();
 
 ordersRouter.get('/', (req, res) => {
   res.json({ items: listOrders(req.query) });
+});
+
+/** Combien de commandes ne sont pas dans Chit Chats, et pourquoi. */
+ordersRouter.get('/chitchats-diagnosis', (req, res) => {
+  res.json(chitchatsDiagnosis());
 });
 
 ordersRouter.get(

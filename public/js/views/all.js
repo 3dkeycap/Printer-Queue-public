@@ -36,17 +36,14 @@ const statusSelect = (part, actions) => {
  * importée), Échec (avec la raison en infobulle). Rien pour les pièces internes.
  */
 const chitchatsCell = (part) => {
-  if (part.source === 'manual') return el('span', { class: 'cell-sub' }, '—');
-  if (['imported', 'linked'].includes(part.chitchats_import_status) || part.chitchats_shipment_id) {
-    return el('span', { class: 'cc-state is-true', title: part.chitchats_import_status === 'linked' ? 'Envoi déjà présent dans Chit Chats, relié' : 'Envoi créé dans Chit Chats' }, 'true');
+  const state = part.chitchats_state ?? 'false';
+  const reason = part.chitchats_reason ?? '';
+  if (state === 'na') return el('span', { class: 'cell-sub', title: reason }, '—');
+  if (state === 'failed') {
+    return el('span', { class: 'cc-state is-failed', title: reason }, [el('strong', {}, 'failed'), el('span', { class: 'cc-reason' }, reason)]);
   }
-  if (part.chitchats_import_status === 'error') {
-    return el('span', { class: 'cc-state is-failed', title: part.chitchats_import_error ?? 'Raison inconnue' }, [
-      el('strong', {}, 'failed'),
-      el('span', { class: 'cc-reason' }, part.chitchats_import_error ?? ''),
-    ]);
-  }
-  return el('span', { class: 'cc-state is-false', title: 'Pas encore importée (import automatique toutes les heures)' }, 'false');
+  const label = { true: 'true', shipped: 'expédiée', false: 'false' }[state] ?? state;
+  return el('span', { class: `cc-state is-${state}`, title: reason }, label);
 };
 
 /** « Ouvert sur Shopify » (extension Chrome), comme sur les cartes du tableau. */

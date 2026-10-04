@@ -700,3 +700,4 @@ tr.is-open-shop > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 .column-body.is-grid { grid-auto-rows: max-content; align-items: start; }
 .column-body.is-grid > .card { height: auto; min-height: max-content; }
 .tag.not-printed { margin-top: 4px; color: var(--muted); border-style: dashed; }
+.cc-state.is-shipped { color: var(--muted); border-style: dashed; }

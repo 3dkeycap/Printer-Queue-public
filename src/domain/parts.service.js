@@ -1,6 +1,7 @@
 import { getDb, nowIso } from '../db/index.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
 import { hiddenColorKeys } from './addons.js';
+import { chitchatsContext, chitchatsState } from './chitchatsImport.js';
 import { chitchatsShipUrl } from './presence.js';
 import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
@@ -134,6 +135,7 @@ export const listParts = (query = {}) => {
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
               o.tracking_number, o.carrier,
               o.chitchats_import_status, o.chitchats_import_error, o.chitchats_shipment_id,
+              o.shipped_at AS order_shipped_at, o.created_at AS order_created_at,
               COALESCE(c.name, 'Non assigné') AS color_name,
               COALESCE(c.hex, '#7C7364') AS color_hex,
               COALESCE(c.sort_order, 999) AS color_sort,
@@ -154,7 +156,13 @@ export const listParts = (query = {}) => {
     )
     .get(params).n;
 
-  return { items: rows.map(hydrate), total, limit, offset };
+  // pourquoi chaque pièce est (ou pas) dans Chit Chats, pour la colonne de « Tout »
+  const ctx = chitchatsContext();
+  const items = rows.map((row) => {
+    const cc = chitchatsState({ ...row, created_at: row.order_created_at }, ctx);
+    return { ...hydrate(row), chitchats_state: cc.state, chitchats_reason: cc.reason };
+  });
+  return { items, total, limit, offset };
 };
 
 /**
