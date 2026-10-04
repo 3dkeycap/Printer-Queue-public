@@ -32,8 +32,15 @@ export const createApp = () => {
           scriptSrc: ["'self'"],
           imgSrc: ["'self'", 'data:'],
           connectSrc: ["'self'"],
+          // L'appli est servie en HTTP sur le réseau local (http://192.168.x.x:8080) :
+          // sans ça le navigateur force https et CSS/JS/API cassent (sauf sur localhost).
+          upgradeInsecureRequests: null,
         },
       },
+      // idem : HSTS / COOP n'ont de sens qu'en HTTPS
+      strictTransportSecurity: false,
+      crossOriginOpenerPolicy: false,
+      originAgentCluster: false,
       crossOriginEmbedderPolicy: false,
     }),
   );
