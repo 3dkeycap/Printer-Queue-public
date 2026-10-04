@@ -603,3 +603,20 @@ de « À imprimer » et restent dans « Tout » avec l'étiquette « Pas imprim�
 le bouton « Pas imprimé ici » les sort de la file ou les y remet. « Enlever tout maintenant » fait
 pareil (rien n'est supprimé). Les anciennes lignes de commande qui n'avaient pas de pièce en
 reçoivent une automatiquement à la mise à jour.
+
+## Bac (« J'ai packé »), commandes traitées, délais, notes client
+
+- **J'ai packé la commande** (extension Chrome, v1.3) : sur une commande Shopify, le bouton
+  « 📦 J'ai packé » ouvre une fenêtre avec toute la commande (note client, articles, Chit Chats,
+  historique). On indique pour chaque article combien sont dans le bac (− / +), pourquoi il en
+  manque (liste réglable + « Autre… »), et qui on est (liste de personnes, ajoutables depuis
+  l'extension ou Réglages → Atelier). Les pièces mises dans le bac passent en **Imprimé** avec le tag
+  « Packé par X ». On peut compléter plus tard : chaque passage reste dans l'historique. Visible
+  dans « Tout » (colonne **Bac**) et sur les cartes.
+- **Commande traitée dans Shopify / Etsy** → toutes ses pièces passent en Expédié automatiquement
+  (à chaque synchro), avec le numéro de suivi si la boutique le donne.
+- **Délais** : l'âge de la commande sur chaque carte (orange après 3 jours, rouge après 7 —
+  réglable dans Réglages → Atelier) et un filtre **En retard**.
+- **Note du client** (Shopify) et **personnalisation** (propriétés de ligne Shopify, variations
+  « Personalization » Etsy) : sur la carte, dans la fiche, dans « Tout » et dans la fenêtre du bac.
+- La position de défilement est gardée quand l'app se rafraîchit (plus de retour en haut de liste).

@@ -1,6 +1,6 @@
 import { attachImagePreview, el, icon, swatch } from '../ui.js';
 import { commentList } from '../comment-select.js';
-import { groupParts, openChitChats, presenceFor, state, statusMeta } from '../store.js';
+import { groupParts, openChitChats, orderAge, presenceFor, state, statusMeta } from '../store.js';
 
 /** Raison courte pour l'étiquette ; le détail complet est dans l'infobulle et la fiche. */
 const shortReason = (reason) => {
@@ -34,6 +34,10 @@ const buildCard = (stack, actions) => {
   const count = stack.length;
   const allSelected = ids.every((id) => state.selection.has(id));
   const open = presenceFor(part.order_id);
+  // la plus ancienne commande de la pile donne l'âge affiché
+  const age = stack.map(orderAge).reduce((max, item) => (item.days > max.days ? item : max));
+  const packedBy = [...new Set(stack.filter((item) => item.packed_by).map((item) => item.packed_by))];
+  const missing = stack.find((item) => !item.packed_at && item.pack?.missing)?.pack?.missing ?? null;
   const next = actions.nextStatus(part.status);
   const card = el(
     'article',
@@ -51,6 +55,8 @@ const buildCard = (stack, actions) => {
           : el('span', { class: 'card-unit' }, `#${part.unit_index}`),
       ]),
       el('div', { class: 'card-meta' }, [
+        part.status !== 'SHIPPED' &&
+          el('span', { class: `tag age age-${age.level}`, title: `Commande reçue il y a ${age.days} jour(s)` }, [icon('inbox'), `${age.days} j`]),
         el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name]),
         part.uv && el('span', { class: 'tag uv' }, [icon('uv'), `UV ${part.uv}`]),
         el('span', { class: `tag src-${part.source}` }, SOURCE_LABEL[part.source] ?? part.source),
@@ -83,6 +89,13 @@ const buildCard = (stack, actions) => {
               },
               [icon('truck'), 'Ouvrir sur Chit Chats'],
             ),
+        ]),
+      part.order_note &&
+        el('div', { class: 'card-note', title: part.order_note }, [icon('note'), part.order_note]),
+      (packedBy.length || missing) &&
+        el('div', { class: 'card-pack' }, [
+          packedBy.length ? el('span', { class: 'tag pack-ok' }, [icon('box'), `Dans le bac · ${packedBy.join(', ')}`]) : null,
+          missing ? el('span', { class: 'tag pack-missing', title: missing.reason ?? '' }, [icon('alert'), `Manque au bac${missing.reason ? ` : ${missing.reason}` : ''}`]) : null,
         ]),
       part.comment &&
         el('div', { class: 'card-comments' }, commentList(part).map((comment) => el('span', { class: 'comment-tag' }, [icon('note'), comment]))),

@@ -105,6 +105,34 @@ export const attachProductImages = async (orders, settings) => {
   return orders;
 };
 
+/**
+ * Commandes déjà traitées dans Shopify parmi une liste d'id : la synchro ne
+ * lit que les commandes non traitées, donc sans ça une commande expédiée
+ * depuis Shopify restait ouverte dans l'app pour toujours.
+ * Renvoie [{ id, trackingNumber, carrier }].
+ */
+export const fetchFulfilledOrders = async (ids, settings = getSettings()) => {
+  const fulfilled = [];
+  const list = [...new Set(ids.map(String).filter((id) => /^\d+$/.test(id)))];
+  for (let i = 0; i < list.length; i += 250) {
+    const url = new URL(`https://${settings['shopify.shopDomain']}/admin/api/${settings['shopify.apiVersion']}/orders.json`);
+    url.searchParams.set('ids', list.slice(i, i + 250).join(','));
+    url.searchParams.set('status', 'any');
+    url.searchParams.set('limit', '250');
+    url.searchParams.set('fields', 'id,fulfillment_status,fulfillments');
+    const payload = await requestJson(url.toString(), {
+      headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'] },
+      retries: 1,
+    });
+    for (const order of payload?.orders ?? []) {
+      if (order.fulfillment_status !== 'fulfilled') continue;
+      const last = (order.fulfillments ?? []).at(-1) ?? {};
+      fulfilled.push({ id: String(order.id), trackingNumber: last.tracking_number ?? null, carrier: last.tracking_company ?? null });
+    }
+  }
+  return fulfilled;
+};
+
 /** Shopify order -> normalised order. Exported for the webhook route + tests. */
 export const normalizeOrder = (order) => ({
   source: 'shopify',

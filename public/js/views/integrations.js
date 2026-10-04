@@ -252,6 +252,14 @@ const tabAtelier = (draft, touch, actions) => {
         }),
       ],
     ),
+    section("Bac (« J'ai packé » dans l'extension Chrome)", "Sur une commande Shopify, l'extension permet de dire ce qui a été mis dans le bac, ce qui manque et pourquoi, et qui l'a fait.", [
+      f('production.packers', { label: 'Personnes', placeholder: 'Ex. Alex — puis Entrée', hint: "Aussi ajoutables directement depuis l'extension." }),
+      f('production.missingReasons', { label: 'Raisons « pièce manquante »', hint: 'Un texte libre reste possible (« Autre… »).' }),
+    ]),
+    section('Délais', "L'âge de chaque commande s'affiche sur les cartes ; le filtre « En retard » montre celles qui dépassent le seuil rouge.", [
+      f('production.lateWarnDays', { label: 'Orange après (jours)', hint: null }),
+      f('production.lateDays', { label: 'Rouge / « En retard » après (jours)', hint: null }),
+    ]),
     section('Imprimantes', 'Les machines proposées dans la liste « Imprimante » de chaque pièce.', [
       f('production.printerOptions', { label: 'Liste des imprimantes', placeholder: 'Ex. Mars 5 Ultra #1 — puis Entrée', hint: null }),
     ]),

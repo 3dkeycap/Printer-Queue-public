@@ -485,6 +485,11 @@ const renderToolbar = () => {
     ),
   );
 
+  const lateChip = chip('En retard', state.filters.late, () => {
+    state.filters.late = !state.filters.late;
+    refresh();
+  }, [icon('alert')], facets.late ?? 0);
+
   const rushChip = chip('Rush', state.filters.priority, () => {
     state.filters.priority = !state.filters.priority;
     refresh();
@@ -502,6 +507,7 @@ const renderToolbar = () => {
         state.filters.statuses.clear();
         state.filters.source = '';
         state.filters.priority = false;
+        state.filters.late = false;
         state.filters.q = '';
         dom.search.value = '';
         refresh();
@@ -515,7 +521,7 @@ const renderToolbar = () => {
       statusChips.length ? el('span', { class: 'toolbar-sep' }) : null,
       statusChips.length ? el('div', { class: 'toolbar-group' }, statusChips) : null,
       el('div', { class: 'toolbar-spacer' }),
-      el('div', { class: 'toolbar-group' }, [hiddenChip, rushChip, resetChip, sourceSelect, groupSelect, sortSelect].filter(Boolean)),
+      el('div', { class: 'toolbar-group' }, [hiddenChip, lateChip, rushChip, resetChip, sourceSelect, groupSelect, sortSelect].filter(Boolean)),
     ].filter(Boolean),
   );
 };
@@ -612,6 +618,9 @@ const render = () => {
   renderToolbar();
   renderBulkbar();
 
+  // le rafraîchissement automatique (extension, synchro…) redessine la vue :
+  // on garde la position de défilement au lieu de remonter en haut de la liste
+  const scroll = captureScroll();
   const root = clear(dom.view);
   root.classList.remove('is-board');
 
@@ -633,6 +642,34 @@ const render = () => {
     } else renderBoard(root, actions);
   } else if (state.view === 'all') renderAll(root, actions);
   else renderIntegrations(root, actions);
+  restoreScroll(scroll);
+};
+
+/** Positions de défilement : page, tableau horizontal, chaque colonne, tableau « Tout ». */
+const captureScroll = () => ({
+  view: state.view,
+  page: [window.scrollX, window.scrollY],
+  main: document.querySelector('.main')?.scrollTop ?? 0,
+  board: document.querySelector('.board')?.scrollLeft ?? 0,
+  columns: Object.fromEntries(
+    [...document.querySelectorAll('.column')].map((column) => [column.dataset.status, column.querySelector('.column-body')?.scrollTop ?? 0]),
+  ),
+  table: [document.querySelector('.table-wrap')?.scrollLeft ?? 0, document.querySelector('.table-wrap')?.scrollTop ?? 0],
+});
+
+const restoreScroll = (saved) => {
+  if (!saved || saved.view !== state.view) return;
+  const board = document.querySelector('.board');
+  if (board) board.scrollLeft = saved.board;
+  for (const column of document.querySelectorAll('.column')) {
+    const body = column.querySelector('.column-body');
+    if (body && saved.columns[column.dataset.status] !== undefined) body.scrollTop = saved.columns[column.dataset.status];
+  }
+  const table = document.querySelector('.table-wrap');
+  if (table) [table.scrollLeft, table.scrollTop] = saved.table;
+  const main = document.querySelector('.main');
+  if (main) main.scrollTop = saved.main;
+  window.scrollTo(saved.page[0], saved.page[1]);
 };
 
 /* ----------------------------------------------------------------- data -- */

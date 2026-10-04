@@ -75,7 +75,8 @@
     if (!isOrderPage()) return removeDock();
     const number = await freshOrderNumber();
     const info = await send({ type: 'resolve', pageOrderNumber: number });
-    if (!info?.chitchatsUrl || !isOrderPage()) return removeDock();
+    // le bouton reste affiché sur toute commande (le pack ne dépend pas de Chit Chats)
+    if (!info || !isOrderPage()) return removeDock();
     const status = (await send({ type: 'link-status' })) ?? {};
     const link = status.link;
     const mine = link && link.shopifyTabId === status.tabId;
@@ -157,13 +158,22 @@
       );
     }
 
-    dock.replaceChildren(grip, button, linkPart);
+    // « J'ai packé la commande » : ouvre la fenêtre du bac
+    const packButton = document.createElement('button');
+    packButton.type = 'button';
+    packButton.textContent = "📦 J'ai packé";
+    packButton.title = 'Indiquer ce qui est dans le bac de cette commande';
+    packButton.style.cssText = 'all:unset;cursor:pointer;display:flex;align-items:center;padding:10px 12px;background:#7a4fd0;color:#fff;border-left:1px solid rgba(255,255,255,.25);';
+    packButton.addEventListener('click', () => globalThis.ResinQueuePack?.open(orderIdFromPath()));
+
+    dock.replaceChildren(...[grip, info.chitchatsUrl && button, packButton, info.chitchatsUrl && linkPart].filter(Boolean));
   };
 
   // l'admin Shopify change d'URL et de titre sans recharger la page
   setInterval(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
+      globalThis.ResinQueuePack?.close();
       notifyUrl();
       render();
       syncLinkedOrder();

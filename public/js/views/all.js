@@ -1,5 +1,5 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
-import { groupParts, openChitChats, presenceFor, printerOptions, state, statusMeta, uvOptions } from '../store.js';
+import { groupParts, openChitChats, orderAge, presenceFor, printerOptions, state, statusMeta, uvOptions } from '../store.js';
 import { buildCommentTags } from '../comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -44,6 +44,20 @@ const chitchatsCell = (part) => {
   }
   const label = { true: 'true', shipped: 'expédiée', false: 'false' }[state] ?? state;
   return el('span', { class: `cc-state is-${state}`, title: reason }, label);
+};
+
+/** Bac : pièce mise dans le bac (par qui), ou manquante (et pourquoi). */
+const packCell = (part) => {
+  if (part.packed_at) {
+    return el('span', { class: 'cc-state is-true', title: `Mise dans le bac le ${new Date(part.packed_at).toLocaleString('fr-CA')}` }, `bac · ${part.packed_by ?? '?'}`);
+  }
+  if (part.pack?.missing) {
+    return el('span', { class: 'cc-state is-failed', title: `Dernier pack : ${part.pack.packer ?? '?'}` }, [
+      el('strong', {}, 'manque'),
+      el('span', { class: 'cc-reason' }, part.pack.missing.reason ?? 'raison non précisée'),
+    ]);
+  }
+  return el('span', { class: 'cell-sub' }, '—');
 };
 
 /** « Ouvert sur Shopify » (extension Chrome), comme sur les cartes du tableau. */
@@ -104,8 +118,10 @@ const row = (part, actions) => {
       ]),
       el('td', {}, [
         el('div', {}, part.customer_name ?? '—'),
-        el('div', { class: 'cell-sub' }, fromNow(part.placed_at)),
+        el('div', { class: `cell-sub age-text age-${part.status === 'SHIPPED' ? 'ok' : orderAge(part).level}` }, fromNow(part.placed_at)),
+        part.order_note ? el('div', { class: 'cell-note', title: part.order_note }, ['💬 ', part.order_note]) : null,
       ]),
+      el('td', {}, packCell(part)),
       el('td', {}, chitchatsCell(part)),
       el('td', {}, `#${part.unit_index}`),
       el('td', {}, [
@@ -135,7 +151,7 @@ export const renderAll = (root, actions) => {
     if (group.label) {
       body.append(
         el('tr', { class: 'group-row' }, [
-          el('td', { colspan: '12' }, [
+          el('td', { colspan: '13' }, [
             el('span', { class: 'tag' }, [group.hex ? swatch(group.hex) : null, group.label].filter(Boolean)),
             ' ',
             `${group.items.length} pièce(s)`,
@@ -166,6 +182,7 @@ export const renderAll = (root, actions) => {
             el('th', {}, 'Imprimante'),
             el('th', {}, 'Commande'),
             el('th', {}, 'Pour qui'),
+            el('th', {}, 'Bac'),
             el('th', {}, 'Chit Chats'),
             el('th', {}, 'Unité'),
             el('th', {}, ''),

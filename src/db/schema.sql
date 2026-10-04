@@ -156,3 +156,15 @@ FROM parts p
 JOIN orders o ON o.id = p.order_id
 LEFT JOIN resin_colors c ON c.key = p.color_key
 LEFT JOIN order_items oi ON oi.id = p.order_item_id;
+
+-- « J'ai packé la commande » (extension Chrome) : un passage = qui, quand, quoi.
+CREATE TABLE IF NOT EXISTS packs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id    INTEGER NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
+  packer      TEXT,
+  items       TEXT NOT NULL DEFAULT '[]',   -- [{ order_item_id, title, packed, total, reason }]
+  complete    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_packs_order ON packs (order_id, id DESC);

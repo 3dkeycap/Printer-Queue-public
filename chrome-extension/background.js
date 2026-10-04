@@ -89,23 +89,28 @@ const serial = (task) => {
 
 /* ----------------------------------------------------------------- appel app */
 
-const report = async (tabId, orderExternalId, state) => {
+/** Appel à l'app (adresse + mot de passe des réglages). Renvoie le JSON, ou { error }. */
+const appFetch = async (path, { method = 'GET', body } = {}) => {
   const config = await getConfig();
-  if (!config.appUrl) return { error: 'App non configurée' };
+  if (!config.appUrl) return { error: "Adresse de l'app non configurée (Réglages de l'extension)" };
   const headers = { 'Content-Type': 'application/json' };
   if (config.authPassword) headers.Authorization = `Basic ${btoa(`${config.authUser || 'admin'}:${config.authPassword}`)}`;
   try {
-    const response = await fetch(`${config.appUrl}/api/presence/shopify`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ clientId: config.clientId, tabId, orderExternalId, user: config.user, state }),
-    });
+    const response = await fetch(`${config.appUrl}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) return { error: payload.error ?? `Erreur ${response.status}` };
     return payload;
   } catch (error) {
     return { error: `App injoignable (${error.message})` };
   }
+};
+
+const report = async (tabId, orderExternalId, state) => {
+  const config = await getConfig();
+  return appFetch('/api/presence/shopify', {
+    method: 'POST',
+    body: { clientId: config.clientId, tabId, orderExternalId, user: config.user, state },
+  });
 };
 
 const tellPage = (tabId, message) => chrome.tabs.sendMessage(tabId, message).catch(() => {});
@@ -260,6 +265,19 @@ const handleLinkMessage = async (message, sender) => {
 // le script de la page signale aussi ses changements d'URL (plus fiable dans une SPA)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === 'url' && sender.tab?.id !== undefined) handleUrl(sender.tab.id, message.url);
+  // fenêtre « J'ai packé » : lecture / enregistrement / nouvelle personne
+  if (message?.type === 'pack-get') {
+    appFetch(`/api/packing/shopify/${encodeURIComponent(message.orderExternalId)}`).then(sendResponse);
+    return true;
+  }
+  if (message?.type === 'pack-save') {
+    appFetch(`/api/packing/shopify/${encodeURIComponent(message.orderExternalId)}`, { method: 'POST', body: message.body }).then(sendResponse);
+    return true;
+  }
+  if (message?.type === 'packer-add') {
+    appFetch('/api/packing/packers', { method: 'POST', body: { name: message.name } }).then(sendResponse);
+    return true;
+  }
   if (String(message?.type ?? '').startsWith('link-')) {
     handleLinkMessage(message, sender).then(sendResponse);
     return true;

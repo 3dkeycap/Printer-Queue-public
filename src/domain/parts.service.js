@@ -2,6 +2,7 @@ import { getDb, nowIso } from '../db/index.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
 import { hiddenColorKeys } from './addons.js';
 import { chitchatsContext, chitchatsState } from './chitchatsImport.js';
+import { buyerDetails, latestPacks } from './packing.js';
 import { chitchatsShipUrl } from './presence.js';
 import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
@@ -100,6 +101,13 @@ const buildFilters = (query = {}) => {
     where.push(`(${clauses.join(' OR ')})`);
   }
 
+  // en retard : commande plus vieille que le seuil réglable (Réglages → Atelier), pas encore expédiée
+  if (query.late === '1' || query.late === true) {
+    const days = Number(getSettings()['production.lateDays']) || 7;
+    where.push("COALESCE(o.placed_at, o.created_at) < @lateSince AND p.status <> 'SHIPPED'");
+    params.lateSince = new Date(Date.now() - days * 86400000).toISOString();
+  }
+
   if (query.priority === '1' || query.priority === true) {
     where.push('(p.priority = 1 OR o.is_priority = 1)');
   }
@@ -131,11 +139,12 @@ export const listParts = (query = {}) => {
     .prepare(
       `SELECT p.id, p.order_id, p.order_item_id, p.unit_index, p.name, p.sku, p.variant_title,
               p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count, p.not_printed,
+              p.packed_at, p.packed_by,
               p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
               o.tracking_number, o.carrier,
               o.chitchats_import_status, o.chitchats_import_error, o.chitchats_shipment_id,
-              o.shipped_at AS order_shipped_at, o.created_at AS order_created_at,
+              o.shipped_at AS order_shipped_at, o.created_at AS order_created_at, o.note AS order_note,
               COALESCE(c.name, 'Non assigné') AS color_name,
               COALESCE(c.hex, '#7C7364') AS color_hex,
               COALESCE(c.sort_order, 999) AS color_sort,
@@ -158,9 +167,19 @@ export const listParts = (query = {}) => {
 
   // pourquoi chaque pièce est (ou pas) dans Chit Chats, pour la colonne de « Tout »
   const ctx = chitchatsContext();
+  const packs = latestPacks([...new Set(rows.map((row) => row.order_id))]);
   const items = rows.map((row) => {
     const cc = chitchatsState({ ...row, created_at: row.order_created_at }, ctx);
-    return { ...hydrate(row), chitchats_state: cc.state, chitchats_reason: cc.reason };
+    const pack = packs[row.order_id];
+    return {
+      ...hydrate(row),
+      chitchats_state: cc.state,
+      chitchats_reason: cc.reason,
+      // bac : dernier passage de la commande, et ce qui manque pour CETTE ligne
+      pack: pack
+        ? { packer: pack.packer, at: pack.at, complete: pack.complete, missing: pack.missing.find((line) => line.order_item_id === row.order_item_id) ?? null }
+        : null,
+    };
   });
   return { items, total, limit, offset };
 };
@@ -189,7 +208,13 @@ export const getFacets = (query = {}) => {
     )
     .get(params).n;
 
+  const late = (() => {
+    const filters = buildFilters({ ...query, late: '1' });
+    return db.prepare(`SELECT COUNT(*) AS n ${FILTER_FROM} ${filters.clause}`).get(filters.params).n;
+  })();
+
   return {
+    late,
     color: count('color', 'p.color_key'),
     uv: count('uv', `COALESCE(NULLIF(p.uv, ''), '${NO_UV}')`),
     status: count('status', 'p.status'),
@@ -223,7 +248,11 @@ export const getPart = (id) => {
        WHERE p.id = ?`,
     )
     .get(Number(id));
-  return row ? { ...hydrate(row), links: orderLinks(row) } : null;
+  if (!row) return null;
+  const db2 = getDb();
+  const order = db2.prepare('SELECT * FROM orders WHERE id = ?').get(row.order_id);
+  const items = db2.prepare('SELECT * FROM order_items WHERE order_id = ?').all(row.order_id);
+  return { ...hydrate(row), links: orderLinks(row), buyer_details: buyerDetails(order, items) };
 };
 
 /**

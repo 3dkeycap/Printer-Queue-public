@@ -96,10 +96,10 @@ const SHIPPABLE_FROM_PRODUCTION = ['DONE'];
  * Parts still in production are only shipped when SHIP_ALL_PARTS_ON_SHIPMENT
  * is enabled; otherwise they stay on the board and the mismatch is reported.
  */
-export const markOrderShipped = (orderId, shipment, { actor = 'chitchats' } = {}) => {
+export const markOrderShipped = (orderId, shipment, { actor = 'chitchats', shipAll: forceAll = false } = {}) => {
   const db = getDb();
   const ts = nowIso();
-  const shipAll = getSettings()['chitchats.shipAllParts'];
+  const shipAll = forceAll || getSettings()['chitchats.shipAllParts'];
 
   const run = db.transaction(() => {
     const parts = db
@@ -126,7 +126,8 @@ export const markOrderShipped = (orderId, shipment, { actor = 'chitchats' } = {}
         part.id,
         part.status,
         actor,
-        `Chit Chats ${shipment.id ?? ''} ${shipment.tracking_number ? `- suivi ${shipment.tracking_number}` : ''}`.trim(),
+        shipment.note ??
+          `Chit Chats ${shipment.id ?? ''} ${shipment.tracking_number ? `- suivi ${shipment.tracking_number}` : ''}`.trim(),
         ts,
       );
       shipped.push(part.id);

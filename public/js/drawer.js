@@ -102,6 +102,15 @@ export const openDrawer = async (partId, actions) => {
           ])
         : null,
 
+      part.buyer_details?.length
+        ? el('div', { class: 'buyer-box' }, [
+            el('div', { class: 'buyer-title' }, [icon('note'), 'Note / personnalisation du client']),
+            ...part.buyer_details.map((detail) =>
+              el('div', { class: 'buyer-line' }, [el('span', { class: 'cell-sub' }, detail.label), el('div', {}, detail.value)]),
+            ),
+          ])
+        : null,
+
       part.chitchats_import_status === 'error'
         ? el('div', { class: 'cc-error-box' }, [
             el('div', { class: 'cc-error-title' }, [icon('alert'), "Import Chit Chats impossible"]),

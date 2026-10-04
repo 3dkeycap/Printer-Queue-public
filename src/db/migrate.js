@@ -137,6 +137,9 @@ export const migrate = () => {
   addColumnIfMissing(db, 'orders', 'chitchats_import_at', 'TEXT');
   // pièce expédiée d'ici mais pas imprimée ici (article en stock, supplément…) :
   // absente de « À imprimer », visible dans « Tout »
+  // pack : pièce mise dans le bac, par qui
+  addColumnIfMissing(db, 'parts', 'packed_at', 'TEXT');
+  addColumnIfMissing(db, 'parts', 'packed_by', 'TEXT');
   const notPrintedAdded = addColumnIfMissing(db, 'parts', 'not_printed', 'INTEGER NOT NULL DEFAULT 0');
   if (notPrintedAdded) restoreSkippedItems(db);
 

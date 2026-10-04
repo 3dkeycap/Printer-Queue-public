@@ -32,6 +32,7 @@ export const state = {
     statuses: new Set(),
     source: '',
     priority: false,
+    late: false,
   },
   meta: null,
   facets: null,       // compteurs des puces de filtre (/api/parts/facets)
@@ -69,6 +70,7 @@ export const hasActiveFilters = () =>
       (usesStatusFilter() && state.filters.statuses.size) ||
       state.filters.source ||
       state.filters.priority ||
+      state.filters.late ||
       state.filters.q,
   );
 
@@ -79,6 +81,7 @@ export const queryParams = () => ({
   source: state.filters.source,
   q: state.filters.q,
   priority: state.filters.priority ? '1' : undefined,
+  late: state.filters.late ? '1' : undefined,
   sort: state.sort,
   limit: 1500,
 });
@@ -116,6 +119,15 @@ export const groupParts = (parts, groupBy) => {
 
 export const statusMeta = (key) =>
   state.meta?.statuses.find((s) => s.key === key) ?? { key, labelFr: key, accent: '#8C8579', icon: 'inbox' };
+
+/** Âge de la commande en jours et niveau (ok / warn / late) selon les seuils des Réglages. */
+export const orderAge = (part) => {
+  const placed = new Date(part.placed_at ?? part.created_at ?? Date.now()).getTime();
+  const days = Math.max(0, Math.floor((Date.now() - placed) / 86400000));
+  const warn = Number(state.meta?.lateWarnDays) || 3;
+  const late = Number(state.meta?.lateDays) || 7;
+  return { days, level: days >= late ? 'late' : days >= warn ? 'warn' : 'ok' };
+};
 
 /** Commande ouverte sur Shopify en ce moment (extension Chrome), ou null. */
 export const presenceFor = (orderId) => state.presence.find((entry) => entry.orderId === orderId) ?? null;

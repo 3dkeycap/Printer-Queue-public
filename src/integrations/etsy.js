@@ -171,3 +171,33 @@ export const fetchOrders = async ({ since } = {}) => {
   await attachListingImages(normalized, freshSettings);
   return normalized;
 };
+
+/**
+ * Reçus Etsy déjà expédiés depuis `since` (même rôle que fetchFulfilledOrders
+ * côté Shopify). Renvoie [{ id, trackingNumber, carrier }].
+ */
+export const fetchShippedReceipts = async ({ since } = {}) => {
+  const settings = getSettings();
+  if (!settings['etsy.enabled'] || !isConfigured(settings) || !hasSharedSecret(settings)) return [];
+  await ensureFreshEtsyToken();
+  const fresh = getSettings();
+  const shipped = [];
+  for (let offset = 0; offset < 500; offset += 100) {
+    const url = new URL(`${config.etsy.apiBase}/shops/${fresh['etsy.shopId']}/receipts`);
+    url.searchParams.set('was_shipped', 'true');
+    url.searchParams.set('limit', '100');
+    url.searchParams.set('offset', String(offset));
+    if (since) url.searchParams.set('min_created', String(Math.floor(new Date(since).getTime() / 1000)));
+    const payload = await requestJson(url.toString(), {
+      headers: { 'x-api-key': etsyApiKeyHeader(fresh), Authorization: `Bearer ${fresh['etsy.accessToken']}` },
+      retries: 1,
+    });
+    const receipts = payload?.results ?? [];
+    for (const receipt of receipts) {
+      const shipment = (receipt.shipments ?? []).at(-1) ?? {};
+      shipped.push({ id: String(receipt.receipt_id), trackingNumber: shipment.tracking_code ?? null, carrier: shipment.carrier_name ?? null });
+    }
+    if (receipts.length < 100) break;
+  }
+  return shipped;
+};
