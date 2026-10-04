@@ -1,131 +1,444 @@
 import { el, formatDate, fromNow, icon, swatch, toast } from '../ui.js';
-import { state } from '../store.js';
+import { THEMES, state } from '../store.js';
 import { api } from '../api.js';
 
-const GROUPS = [
-  { key: 'shopify', title: 'Shopify', hint: 'App personnalisée avec le scope read_orders.' },
-  { key: 'etsy', title: 'Etsy', hint: 'Open API v3, scope transactions_r.' },
-  { key: 'chitchats', title: 'Chit Chats', hint: 'Un colis scanné bascule les pièces en « Expédié ».' },
-  { key: 'schedule', title: 'Planification', hint: 'Expressions cron appliquées par le worker (prise en compte < 1 min).' },
-  { key: 'production', title: 'Production', hint: 'Listes déroulantes disponibles sur chaque pièce.' },
-  {
-    key: 'update',
-    title: 'Mises à jour',
-    hint: 'Installe la dernière version depuis GitHub. Les données sont conservées et sauvegardées avant chaque mise à jour.',
-  },
+/* ==========================================================================
+   Page « Réglages » : un onglet par thème, un seul bouton Enregistrer.
+   ========================================================================== */
+
+const TABS = [
+  { key: 'atelier', label: 'Atelier', icon: 'printer', desc: "Imprimantes, postes UV, commentaires, et ce qu'on n'imprime pas." },
+  { key: 'resines', label: 'Résines', icon: 'drop', desc: 'Les couleurs de résine, leur stock et leurs alias de détection.' },
+  { key: 'boutiques', label: 'Boutiques', icon: 'plug', desc: 'Connexion à Shopify, Etsy et Chit Chats.' },
+  { key: 'synchro', label: 'Synchronisation', icon: 'refresh', desc: 'À quelle fréquence on va chercher les commandes.' },
+  { key: 'apparence', label: 'Apparence & aide', icon: 'sun', desc: 'Thème, tutoriel et mode kiosque iPad.' },
+  { key: 'maj', label: 'Mises à jour', icon: 'save', desc: "Installer la dernière version de l'application." },
 ];
 
+let activeTab = 'atelier';
+
+const CRON_PRESETS = [
+  ['*/5 * * * *', 'Toutes les 5 minutes'],
+  ['*/10 * * * *', 'Toutes les 10 minutes'],
+  ['*/15 * * * *', 'Toutes les 15 minutes'],
+  ['*/30 * * * *', 'Toutes les 30 minutes'],
+  ['0 * * * *', 'Toutes les heures'],
+];
+
+const byKey = (key) => state.settings.find((item) => item.key === key);
+
+/** Éditeur de liste : des pastilles, on tape + Entrée pour en ajouter. */
+const chipList = (initial, onChange, placeholder = 'Ajouter…') => {
+  let values = [...initial];
+  const root = el('div', { class: 'chip-editor' });
+  const input = el('input', { class: 'chip-input', placeholder, enterkeyhint: 'done' });
+
+  const commit = (list) => {
+    values = list;
+    onChange(values);
+    paint();
+  };
+  const addPending = () => {
+    const value = input.value.trim().replace(/,$/, '').trim();
+    if (value && !values.includes(value)) commit([...values, value]);
+    else input.value = '';
+  };
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      addPending();
+      root.querySelector('.chip-input')?.focus();
+    } else if (event.key === 'Backspace' && !input.value && values.length) {
+      commit(values.slice(0, -1));
+      root.querySelector('.chip-input')?.focus();
+    }
+  });
+  input.addEventListener('blur', () => {
+    if (input.value.trim()) addPending();
+  });
+
+  function paint() {
+    root.replaceChildren(
+      ...values.map((value) =>
+        el('span', { class: 'chip-tag' }, [
+          value,
+          el('button', { class: 'chip-x', type: 'button', title: 'Retirer', onclick: () => commit(values.filter((v) => v !== value)) }, icon('close')),
+        ]),
+      ),
+      input,
+    );
+    input.value = '';
+  }
+  paint();
+  return root;
+};
+
+/** Réglage « liste de clés de résine » : cases à cocher avec la teinte. */
+const colorChecklist = (definition, setValue) => {
+  const chosen = new Set(definition.value ?? []);
+  const rows = state.colors.map((color) =>
+    el('label', { class: 'check-row' }, [
+      el('input', {
+        type: 'checkbox',
+        checked: chosen.has(color.key),
+        onchange: (event) => {
+          if (event.target.checked) chosen.add(color.key);
+          else chosen.delete(color.key);
+          setValue([...chosen]);
+        },
+      }),
+      swatch(color.hex),
+      color.name,
+    ]),
+  );
+  return el('div', { class: 'check-grid' }, rows);
+};
+
 /** Construit le champ correspondant au type de réglage. */
-const field = (definition, draft) => {
+const field = (definition, draft, touch, overrides = {}) => {
   const id = `set-${definition.key}`;
+  const set = (value) => {
+    draft[definition.key] = value;
+    touch();
+  };
   let input;
 
-  if (definition.type === 'boolean') {
+  if (overrides.render) {
+    input = overrides.render(definition, set);
+  } else if (definition.type === 'boolean') {
+    const label = el('span', {}, definition.value ? 'Activé' : 'Désactivé');
     input = el('label', { class: 'switch' }, [
       el('input', {
         type: 'checkbox',
         id,
         checked: definition.value,
         onchange: (event) => {
-          draft[definition.key] = event.target.checked;
+          label.textContent = event.target.checked ? 'Activé' : 'Désactivé';
+          set(event.target.checked);
         },
       }),
-      el('span', {}, definition.value ? 'Activé' : 'Désactivé'),
+      label,
     ]);
-    input.querySelector('input').addEventListener('change', (event) => {
-      input.querySelector('span').textContent = event.target.checked ? 'Activé' : 'Désactivé';
-    });
   } else if (definition.type === 'list') {
-    input = el(
-      'textarea',
-      {
-        id,
-        rows: String(Math.max(3, definition.value.length + 1)),
-        placeholder: 'Une valeur par ligne',
-        oninput: (event) => {
-          draft[definition.key] = event.target.value.split('\n').map((v) => v.trim()).filter(Boolean);
-        },
-      },
-      definition.value.join('\n'),
-    );
+    input = chipList(definition.value ?? [], set, overrides.placeholder);
+  } else if (definition.key.startsWith('schedule.') && definition.key.endsWith('Cron')) {
+    input = cronPicker(definition, set);
   } else {
     input = el('input', {
       id,
       type: definition.type === 'secret' ? 'password' : definition.type === 'number' ? 'number' : 'text',
       value: definition.type === 'secret' ? '' : definition.value ?? '',
+      autocomplete: 'off',
       placeholder:
         definition.type === 'secret'
           ? definition.configured
             ? '•••••••••• (enregistré)'
             : 'Non configuré'
           : definition.placeholder ?? '',
-      oninput: (event) => {
-        draft[definition.key] = definition.type === 'number' ? Number(event.target.value) : event.target.value;
-      },
+      oninput: (event) => set(definition.type === 'number' ? Number(event.target.value) : event.target.value),
     });
   }
 
+  const hint = 'hint' in overrides ? overrides.hint : definition.hint;
+
   return el('div', { class: 'field' }, [
-    el('label', { for: id }, definition.label),
+    el('label', { for: id }, overrides.label ?? definition.label),
     input,
-    definition.hint ? el('span', { class: 'field-hint' }, definition.hint) : null,
+    hint ? el('span', { class: 'field-hint' }, hint) : null,
   ]);
 };
 
-const groupCard = (group, actions) => {
-  const definitions = state.settings.filter((item) => item.group === group.key);
-  if (!definitions.length) return null;
-
-  const draft = {};
-  const connector = state.connectors[group.key];
-
-  const save = el(
-    'button',
+/** Fréquences prédéfinies (en clair) ; « Personnalisé » garde l'expression cron brute. */
+const cronPicker = (definition, set) => {
+  const isPreset = CRON_PRESETS.some(([value]) => value === definition.value);
+  const custom = el('input', {
+    value: definition.value ?? '',
+    placeholder: '*/5 * * * *',
+    hidden: isPreset,
+    oninput: (event) => set(event.target.value),
+  });
+  const select = el(
+    'select',
     {
-      class: 'primary-btn',
-      onclick: async (event) => {
-        const button = event.currentTarget;
-        button.disabled = true;
-        await actions.saveSettings(draft);
-        button.disabled = false;
+      onchange: (event) => {
+        if (event.target.value === '__custom__') {
+          custom.hidden = false;
+          custom.focus();
+        } else {
+          custom.hidden = true;
+          custom.value = event.target.value;
+          set(event.target.value);
+        }
       },
     },
-    [icon('save'), 'Enregistrer'],
+    [
+      ...CRON_PRESETS.map(([value, label]) => el('option', { value, selected: value === definition.value }, label)),
+      el('option', { value: '__custom__', selected: !isPreset }, 'Personnalisé (expression cron)…'),
+    ],
   );
+  return el('div', { class: 'cron-picker' }, [select, custom]);
+};
 
-  return el('article', { class: 'panel settings-panel' }, [
-    el('header', { class: 'panel-head' }, [
-      el('h3', {}, group.title),
-      connector
-        ? el(
-            'span',
-            {
-              class: 'status-pill',
-              style: { '--pill': connector.configured ? 'var(--ok)' : 'var(--warn)' },
-            },
-            [el('span', { class: 'dot' }), connector.configured ? 'Configuré' : 'À configurer'],
-          )
-        : null,
-    ]),
-    group.hint ? el('p', { class: 'sub' }, group.hint) : null,
-    el('div', { class: 'settings-grid' }, definitions.map((definition) => field(definition, draft))),
-    group.key === 'shopify' ? oauthBlock(actions, { provider: 'shopify', label: 'Shopify' }) : null,
-    group.key === 'etsy' ? oauthBlock(actions, { provider: 'etsy', label: 'Etsy' }) : null,
-    group.key === 'chitchats'
-      ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/chitchats`)
-      : null,
-    group.key === 'update' ? updateBlock() : null,
-    el('div', { class: 'panel-foot' }, [
-      ['shopify', 'etsy', 'chitchats'].includes(group.key)
-        ? el(
-            'button',
-            { class: 'ghost-btn', onclick: () => actions.sync(group.key) },
-            [icon('refresh'), 'Synchroniser maintenant'],
-          )
-        : null,
-      save,
-    ]),
+/** Une carte de réglages : titre, phrase d'explication, champs. */
+const section = (title, description, children, extra = {}) =>
+  el('article', { class: 'panel settings-panel' }, [
+    el('header', { class: 'panel-head' }, [el('h3', {}, title), extra.pill ?? null]),
+    description ? el('p', { class: 'sub' }, description) : null,
+    ...[].concat(children),
   ]);
+
+const statusPill = (connector) =>
+  connector
+    ? el(
+        'span',
+        { class: 'status-pill', style: { '--pill': connector.configured ? 'var(--ok)' : 'var(--warn)' } },
+        [el('span', { class: 'dot' }), connector.configured ? 'Connecté' : 'À configurer'],
+      )
+    : null;
+
+/** Barre d'enregistrement collée en bas : visible seulement s'il y a des changements. */
+const makeSaveBar = (draft, actions) => {
+  const count = el('span', { class: 'savebar-count' });
+  const save = el('button', { class: 'primary-btn', onclick: async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    await actions.saveSettings({ ...draft });
+    button.disabled = false;
+  } }, [icon('save'), 'Enregistrer']);
+  const cancel = el('button', { class: 'ghost-btn', onclick: () => actions.refreshView() }, 'Annuler');
+  const bar = el('div', { class: 'savebar', hidden: true }, [
+    el('span', { class: 'dot' }),
+    count,
+    el('div', { class: 'toolbar-spacer' }),
+    cancel,
+    save,
+  ]);
+  const touch = () => {
+    const n = Object.keys(draft).length;
+    bar.hidden = n === 0;
+    count.textContent = n === 1 ? '1 modification non enregistrée' : `${n} modifications non enregistrées`;
+  };
+  return { bar, touch };
+};
+
+/* ------------------------------------------------------------- onglets --- */
+
+const tabAtelier = (draft, touch) => {
+  const f = (key, overrides) => (byKey(key) ? field(byKey(key), draft, touch, overrides) : null);
+  return [
+    section(
+      "Ce qu'on n'imprime pas ici",
+      "Les résines faites ailleurs et les articles toujours en stock n'apparaissent pas dans « À imprimer ».",
+      [
+        f('production.hiddenColors', {
+          label: 'Résines retirées de la file',
+          hint: "Ex. Nylon Grey (fait dans une autre usine). La vue « Tout » les montre toujours.",
+          render: colorChecklist,
+        }),
+        f('production.nonPrintableKeywords', {
+          label: 'Articles toujours en stock (mots à repérer)',
+          placeholder: 'Ex. Keycap Puller — puis Entrée',
+          hint: "Si le titre, la variante ou le SKU d'une ligne contient un de ces mots, aucune pièce n'est créée. Une pièce qu'un humain a déjà modifiée reste dans la file.",
+        }),
+      ],
+    ),
+    section('Imprimantes', 'Les machines proposées dans la liste « Imprimante » de chaque pièce.', [
+      f('production.printerOptions', { label: 'Liste des imprimantes', placeholder: 'Ex. Mars 5 Ultra #1 — puis Entrée', hint: null }),
+    ]),
+    section('Postes UV', 'Les choix proposés pour le champ UV de chaque pièce.', [
+      f('production.uvOptions', { label: 'Options UV', hint: null }),
+      f('production.defaultUv', { label: 'Valeur UV par défaut', hint: 'Laisser vide pour ne rien pré-remplir.' }),
+    ]),
+    section('Commentaires prédéfinis', 'La liste déroulante « Commentaire » disponible sur chaque pièce.', [
+      f('production.commentOptions', { label: 'Commentaires', hint: null }),
+    ]),
+    section(
+      'UV automatique',
+      "Certaines options achetées (ex. « Custom UV Printed Legends ») signifient que la vraie pièce de la commande a besoin d'UV.",
+      [
+        f('production.uvTriggerKeywords', { label: 'Options qui déclenchent l\'UV', hint: null }),
+        f('production.uvAutoValue', { label: 'Valeur UV appliquée', hint: 'Doit être une des options UV ci-dessus.' }),
+      ],
+    ),
+  ];
+};
+
+const tabResines = (actions) => [
+  section(
+    'Résines',
+    "Chaque ligne se modifie directement (enregistré tout de suite). Les alias servent à reconnaître la couleur dans les commandes. Pour ne plus imprimer une couleur, utilise l'onglet « Atelier ».",
+    [
+      el('div', { class: 'table-wrap' }, [
+        el('table', { class: 'grid' }, [
+          el('thead', {}, el('tr', {}, [
+            el('th', { style: { width: '54px' } }, 'Teinte'),
+            el('th', {}, 'Nom'),
+            el('th', {}, 'Alias de détection'),
+            el('th', { style: { width: '110px' } }, 'Stock (g)'),
+            el('th', { style: { width: '110px' } }, 'Seuil bas'),
+            el('th', { style: { width: '70px' } }, 'Active'),
+            el('th', { style: { width: '50px' } }, ''),
+          ])),
+          el('tbody', {}, state.colors.map((color) => colorRow(color, actions))),
+        ]),
+      ]),
+      el('div', { class: 'panel-foot left' }, [
+        el('button', { class: 'ghost-btn', onclick: () => actions.addColor() }, [icon('plus'), 'Ajouter une résine']),
+      ]),
+    ],
+  ),
+];
+
+const SHOP_CARDS = [
+  {
+    key: 'shopify',
+    title: 'Shopify',
+    hint: 'Étapes : renseigne le domaine, le Client ID et le Client secret, enregistre, puis clique « Connecter via OAuth ».',
+    advanced: ['shopify.scopes', 'shopify.apiVersion', 'shopify.accessToken'],
+    enabled: 'shopify.enabled',
+  },
+  {
+    key: 'etsy',
+    title: 'Etsy',
+    hint: 'Étapes : renseigne le Shop ID et la clé API, enregistre, puis clique « Connecter via OAuth ».',
+    advanced: ['etsy.scopes', 'etsy.accessToken'],
+    enabled: 'etsy.enabled',
+  },
+  {
+    key: 'chitchats',
+    title: 'Chit Chats',
+    hint: 'Un colis scanné fait passer les pièces en « Expédié ».',
+    advanced: ['chitchats.apiBase'],
+    enabled: null,
+  },
+];
+
+const tabBoutiques = (draft, touch, actions) =>
+  SHOP_CARDS.map((card) => {
+    const defs = state.settings.filter((item) => item.group === card.key);
+    const connector = state.connectors[card.key];
+    const main = defs.filter((d) => !card.advanced.includes(d.key) && d.key !== card.enabled);
+    const advanced = defs.filter((d) => card.advanced.includes(d.key));
+    const enabledDef = card.enabled ? byKey(card.enabled) : null;
+
+    return section(
+      card.title,
+      card.hint,
+      [
+        enabledDef ? field(enabledDef, draft, touch, { label: 'Importer les commandes', hint: null }) : null,
+        el('div', { class: 'settings-grid' }, main.map((d) => field(d, draft, touch))),
+        card.key === 'shopify' ? oauthBlock(actions, { provider: 'shopify', label: 'Shopify' }) : null,
+        card.key === 'etsy' ? oauthBlock(actions, { provider: 'etsy', label: 'Etsy' }) : null,
+        card.key === 'chitchats'
+          ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/chitchats`)
+          : null,
+        advanced.length
+          ? el('details', { class: 'advanced' }, [
+              el('summary', {}, 'Options avancées'),
+              el('div', { class: 'settings-grid' }, advanced.map((d) => field(d, draft, touch))),
+            ])
+          : null,
+        ['shopify', 'etsy', 'chitchats'].includes(card.key)
+          ? el('div', { class: 'panel-foot' }, [
+              el('button', { class: 'ghost-btn', onclick: () => actions.sync(card.key) }, [icon('refresh'), 'Synchroniser maintenant']),
+            ])
+          : null,
+      ],
+      { pill: statusPill(connector) },
+    );
+  });
+
+const tabSynchro = (draft, touch, actions) => [
+  section('Fréquence', 'Un « worker » en arrière-plan importe les commandes et les expéditions. Les changements sont pris en compte en moins d\'une minute.', [
+    el('div', { class: 'settings-grid' }, [
+      byKey('schedule.syncCron') ? field(byKey('schedule.syncCron'), draft, touch, { label: 'Importer les commandes', hint: null }) : null,
+      byKey('schedule.shipmentCron') ? field(byKey('schedule.shipmentCron'), draft, touch, { label: 'Vérifier les expéditions', hint: null }) : null,
+      byKey('schedule.lookbackDays')
+        ? field(byKey('schedule.lookbackDays'), draft, touch, { label: 'Remonter dans le passé de (jours)', hint: 'Les commandes plus anciennes que ça sont ignorées à chaque synchronisation.' })
+        : null,
+    ]),
+    el('div', { class: 'panel-foot' }, [
+      el('button', { class: 'ghost-btn', onclick: () => actions.sync('all') }, [icon('refresh'), 'Tout synchroniser maintenant']),
+    ]),
+  ]),
+  el('div', { class: 'section-title' }, 'Dernières synchronisations'),
+  el('div', { class: 'table-wrap' }, [
+    el('table', { class: 'grid' }, [
+      el('thead', {}, el('tr', {}, [
+        el('th', {}, 'Source'),
+        el('th', {}, 'Quand'),
+        el('th', {}, 'Déclencheur'),
+        el('th', {}, 'Commandes'),
+        el('th', {}, 'Pièces créées'),
+        el('th', {}, 'Durée'),
+        el('th', {}, 'Statut'),
+        el('th', {}, 'Message'),
+      ])),
+      el('tbody', {}, state.runs.map(runRow)),
+    ]),
+  ]),
+];
+
+const tabApparence = (actions) => [
+  section('Thème', 'Choisis l\'ambiance de l\'application. Le choix est mémorisé sur cet appareil.', [
+    el(
+      'div',
+      { class: 'theme-grid' },
+      THEMES.map((theme) =>
+        el(
+          'button',
+          {
+            class: `theme-card${state.theme === theme.key ? ' is-on' : ''}`,
+            onclick: () => {
+              actions.setTheme(theme.key);
+              actions.refreshView();
+            },
+          },
+          [
+            el('span', { class: 'theme-preview', style: { background: theme.colors[0] } }, [
+              el('span', { class: 'theme-dot', style: { background: theme.colors[1] } }),
+              el('span', { class: 'theme-bar', style: { background: theme.colors[1] } }),
+            ]),
+            theme.label,
+          ],
+        ),
+      ),
+    ),
+  ]),
+  section('Aide', 'Une visite guidée de la page « À imprimer ».', [
+    el('div', { class: 'panel-foot left' }, [
+      el('button', { class: 'primary-btn', onclick: () => actions.startTutorial() }, [icon('help'), 'Lancer le tutoriel']),
+    ]),
+  ]),
+  section('Mode kiosque (iPad)', "Une version sans menu, pensée pour l'écran tactile de l'atelier : uniquement la file « À imprimer », avec de gros boutons.", [
+    el('p', { class: 'field-hint mono' }, `${location.origin}/kiosk`),
+    el('div', { class: 'panel-foot left' }, [
+      el('a', { class: 'ghost-btn', href: '/kiosk', target: '_blank', rel: 'noopener' }, 'Ouvrir le kiosque'),
+    ]),
+  ]),
+];
+
+const tabMaj = (draft, touch) => {
+  const defs = state.settings.filter((item) => item.group === 'update');
+  const simple = defs.filter((d) => ['update.autoEnabled', 'update.intervalMinutes'].includes(d.key));
+  const advanced = defs.filter((d) => !simple.includes(d));
+  return [
+    section(
+      'Mises à jour',
+      'Installe la dernière version depuis GitHub. Les données sont conservées et sauvegardées avant chaque mise à jour, avec retour arrière en cas d\'échec.',
+      [
+        updateBlock(),
+        el('div', { class: 'settings-grid' }, simple.map((d) => field(d, draft, touch))),
+        advanced.length
+          ? el('details', { class: 'advanced' }, [
+              el('summary', {}, 'Options avancées (dépôt, branche, token)'),
+              el('div', { class: 'settings-grid' }, advanced.map((d) => field(d, draft, touch))),
+            ])
+          : null,
+      ],
+    ),
+  ];
 };
 
 /**
@@ -380,44 +693,42 @@ const runRow = (run) =>
   ]);
 
 export const renderIntegrations = (root, actions) => {
+  const draft = {};
+  const { bar, touch } = makeSaveBar(draft, actions);
+
+  const tabs = el(
+    'nav',
+    { class: 'settings-tabs', role: 'tablist' },
+    TABS.map((tab) =>
+      el(
+        'button',
+        {
+          class: `settings-tab${activeTab === tab.key ? ' is-on' : ''}`,
+          role: 'tab',
+          onclick: () => {
+            activeTab = tab.key;
+            actions.refreshView();
+          },
+        },
+        [icon(tab.icon), el('span', {}, tab.label)],
+      ),
+    ),
+  );
+
+  const current = TABS.find((tab) => tab.key === activeTab) ?? TABS[0];
+  const content = {
+    atelier: () => tabAtelier(draft, touch),
+    resines: () => tabResines(actions),
+    boutiques: () => tabBoutiques(draft, touch, actions),
+    synchro: () => tabSynchro(draft, touch, actions),
+    apparence: () => tabApparence(actions),
+    maj: () => tabMaj(draft, touch),
+  }[current.key]();
+
   root.append(
-    el('div', { class: 'section-title' }, 'Connecteurs et réglages'),
-    el('div', { class: 'settings-columns' }, GROUPS.map((group) => groupCard(group, actions)).filter(Boolean)),
-
-    el('div', { class: 'section-title' }, 'Résines'),
-    el('div', { class: 'table-wrap' }, [
-      el('table', { class: 'grid' }, [
-        el('thead', {}, el('tr', {}, [
-          el('th', { style: { width: '54px' } }, 'Teinte'),
-          el('th', {}, 'Nom'),
-          el('th', {}, 'Alias de détection'),
-          el('th', { style: { width: '110px' } }, 'Stock (g)'),
-          el('th', { style: { width: '110px' } }, 'Seuil bas'),
-          el('th', { style: { width: '70px' } }, 'Active'),
-          el('th', { style: { width: '50px' } }, ''),
-        ])),
-        el('tbody', {}, state.colors.map((color) => colorRow(color, actions))),
-      ]),
-    ]),
-    el('div', { class: 'panel-foot left' }, [
-      el('button', { class: 'ghost-btn', onclick: () => actions.addColor() }, [icon('plus'), 'Ajouter une résine']),
-    ]),
-
-    el('div', { class: 'section-title' }, 'Journal des synchronisations'),
-    el('div', { class: 'table-wrap' }, [
-      el('table', { class: 'grid' }, [
-        el('thead', {}, el('tr', {}, [
-          el('th', {}, 'Source'),
-          el('th', {}, 'Quand'),
-          el('th', {}, 'Déclencheur'),
-          el('th', {}, 'Commandes'),
-          el('th', {}, 'Pièces créées'),
-          el('th', {}, 'Durée'),
-          el('th', {}, 'Statut'),
-          el('th', {}, 'Message'),
-        ])),
-        el('tbody', {}, state.runs.map(runRow)),
-      ]),
-    ]),
+    tabs,
+    el('p', { class: 'settings-intro' }, current.desc),
+    el('div', { class: 'settings-stack' }, content.filter(Boolean)),
+    bar,
   );
 };

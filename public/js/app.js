@@ -7,7 +7,9 @@ import {
   queryParams,
   savePrefs,
   state,
+  THEMES,
   statusMeta,
+  themeMeta,
   usesStatusFilter,
   uvOptions,
 } from './store.js';
@@ -15,6 +17,7 @@ import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { closeDrawer, openDrawer } from './drawer.js';
+import { startTutorial } from './tutorial.js';
 
 const NEXT_STATUS = {
   TO_PRINT: 'PRINTING',
@@ -27,7 +30,7 @@ const NEXT_STATUS = {
 const VIEW_META = {
   board: { title: 'À imprimer', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
   all: { title: 'Tout', subtitle: 'Toutes les pièces, tous statuts confondus.' },
-  integrations: { title: 'Intégrations', subtitle: 'Connecteurs, planification et réglages de production.' },
+  integrations: { title: 'Réglages', subtitle: 'Tout ce qui se configure, rangé par thème.' },
 };
 
 const dom = {
@@ -120,6 +123,12 @@ const actions = {
       dom.syncBtn.querySelector('.icon').classList.remove('spin');
     }
   },
+
+  setTheme: (key) => setTheme(key),
+
+  refreshView: () => render(),
+
+  startTutorial: () => startTutorial(),
 
   async saveSettings(patch) {
     if (!Object.keys(patch).length) return toast('Aucune modification');
@@ -640,8 +649,15 @@ const setView = (view) => {
 
 const applyTheme = () => {
   document.documentElement.dataset.theme = state.theme;
-  const isDark = state.theme === 'dark';
-  clear(dom.themeBtn).append(icon(isDark ? 'sun' : 'moon'), el('span', {}, isDark ? 'Thème beige' : 'Thème nuit'));
+  const next = THEMES[(THEMES.findIndex((theme) => theme.key === state.theme) + 1) % THEMES.length];
+  clear(dom.themeBtn).append(icon('sun'), el('span', {}, `Thème : ${themeMeta(state.theme).label}`));
+  dom.themeBtn.title = `Changer de thème (suivant : ${next.label})`;
+};
+
+const setTheme = (key) => {
+  state.theme = key;
+  savePrefs();
+  applyTheme();
 };
 
 const updateConnectorBadge = () => {
@@ -676,10 +692,9 @@ const bindEvents = () => {
   document.getElementById('add-part-btn').addEventListener('click', () => actions.addPart());
 
   dom.themeBtn.addEventListener('click', () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    savePrefs();
-    applyTheme();
+    setTheme(THEMES[(THEMES.findIndex((theme) => theme.key === state.theme) + 1) % THEMES.length].key);
   });
+  document.getElementById('tutorial-btn').addEventListener('click', () => startTutorial());
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {

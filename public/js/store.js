@@ -10,11 +10,21 @@ const loadPrefs = () => {
 
 const prefs = loadPrefs();
 
+/** Les 5 thèmes. `colors` = fond + accent, pour les pastilles d'aperçu. */
+export const THEMES = [
+  { key: 'dark', label: 'Nuit', colors: ['#0e0d0b', '#d9c7a3'] },
+  { key: 'light', label: 'Beige', colors: ['#e9e1d1', '#1d1a14'] },
+  { key: 'blue', label: 'Blanc & bleu', colors: ['#eef3fb', '#1f5fd6'] },
+  { key: 'forest', label: 'Forêt', colors: ['#0c1410', '#6fcf8f'] },
+  { key: 'lavender', label: 'Lavande', colors: ['#f1edf9', '#6d3fd1'] },
+];
+export const themeMeta = (key) => THEMES.find((theme) => theme.key === key) ?? THEMES[0];
+
 export const state = {
   view: 'board',              // board | all | integrations
   groupBy: prefs.groupBy ?? 'color',
   sort: prefs.sort ?? 'smart',
-  theme: prefs.theme ?? 'dark',
+  theme: THEMES.some((theme) => theme.key === prefs.theme) ? prefs.theme : 'dark',
   stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
   filters: {
     q: '',

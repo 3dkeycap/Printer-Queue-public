@@ -384,7 +384,7 @@ La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` 
 
 **Suppléments Etsy/Shopify (« Custom UV Printed Legends », « Color Variety Pack »...)** —
 ce ne sont pas des objets à imprimer, ce sont des options rattachées à la vraie pièce de la
-même commande (souvent un « Custom Keycap Set »). Réglable dans Intégrations → Production :
+même commande (souvent un « Custom Keycap Set »). Réglable dans Réglages → Atelier :
 - **Suppléments à ne pas imprimer** : tout titre de ligne contenant un de ces mots ne
   génère aucune pièce (la ligne de commande reste enregistrée pour l'historique). Le mot
   est cherché dans le titre, la variante et le SKU (sans tenir compte des accents/majuscules).
@@ -525,3 +525,15 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 - **Kiosque** : `http://<ip>:8080/kiosk` — sans barre latérale, en-tête minimal, cibles
   tactiles agrandies, colonnes qu'on fait défiler au doigt. Pensé pour l'iPad de l'atelier
   (« Ajouter à l'écran d'accueil » pour le plein écran).
+
+## Réglages, thèmes et tutoriel
+
+- **Réglages** (ex-« Intégrations ») : 6 onglets — Atelier (imprimantes, UV, commentaires, ce qu'on
+  n'imprime pas), Résines, Boutiques (Shopify / Etsy / Chit Chats, options avancées repliées),
+  Synchronisation (fréquences en clair, journal), Apparence & aide, Mises à jour. Les listes
+  s'éditent en pastilles (taper + Entrée), et un seul bouton « Enregistrer » apparaît en bas dès
+  qu'il y a une modification.
+- **Thèmes** : Nuit, Beige, Blanc & bleu, Forêt, Lavande — bouton dans le menu latéral (passe au
+  suivant) ou Réglages → Apparence & aide.
+- **Tutoriel** : bouton « Tutoriel » en haut de la page (aussi en mode kiosque) — visite guidée
+  de la page « À imprimer » (flèches du clavier, Échap pour quitter).
