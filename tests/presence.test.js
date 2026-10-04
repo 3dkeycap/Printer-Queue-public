@@ -24,6 +24,7 @@ describe('« ouvert sur Shopify » (extension Chrome)', () => {
     resetPresence();
     const result = reportShopify({ clientId: 'c1', tabId: 1, orderExternalId: '5550001', user: 'Alex' });
     assert.equal(result.open, true);
+    assert.deepEqual(result.chitchatsImport, { status: null, error: null, inChitChats: false });
     assert.equal(result.chitchatsUrl, 'https://chitchats.com/clients/42/shipments/search?locale=en&q=1042');
     const [entry] = listOpen();
     assert.equal(entry.orderNumber, '#1042');

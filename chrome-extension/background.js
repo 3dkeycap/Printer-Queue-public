@@ -132,6 +132,9 @@ const remember = async (tabId, result) => {
   if (!tabs[tabId]) return;
   tabs[tabId].app = result;
   await saveTabs(tabs);
+  // l'onglet Chit Chats lié affiche l'état de l'import de cette commande
+  const link = await getLink();
+  if (link?.shopifyTabId === tabId) await broadcastLink();
 };
 
 const close = async (tabId, { notifyPage = false, expire = false } = {}) => {
@@ -224,7 +227,12 @@ const handleLinkMessage = async (message, sender) => {
   const link = await getLink();
   switch (message.type) {
     case 'link-status':
-      return { link, tabId };
+      return {
+        link,
+        tabId,
+        // ce que l'app sait de la commande ouverte dans l'onglet Shopify lié (import Chit Chats…)
+        shopifyApp: link?.shopifyTabId ? (await loadTabs())[link.shopifyTabId]?.app ?? null : null,
+      };
     case 'link-start': // depuis l'onglet Shopify
       await setLink({ state: 'pending', shopifyTabId: tabId, chitchatsTabId: null, lastOrder: null });
       await broadcastLink();

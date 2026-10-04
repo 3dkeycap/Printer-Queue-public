@@ -30,8 +30,23 @@
       `background:${isMine ? '#167a43' : '#1f5fd6'};box-shadow:0 10px 30px -10px rgba(20,30,60,.5);`;
 
     if (isMine) {
-      badge.textContent = '● Live — suit la commande ouverte dans Shopify';
       badge.style.padding = '9px 14px';
+      badge.style.maxWidth = 'min(720px, 92vw)';
+      const order = link.lastOrder ?? '';
+      const app = status.shopifyApp;
+      const sameOrder = app?.orderNumber && String(app.orderNumber).replace(/^#/, '') === String(order).replace(/^#/, '');
+      const cc = sameOrder ? app.chitchatsImport : null;
+
+      if (cc?.status === 'error') {
+        // l'app a détecté l'échec de l'import : voilà pourquoi la commande n'est pas dans Chit Chats
+        badge.style.background = '#b43a3a';
+        badge.textContent = `⚠ ${order} : l'import dans Chit Chats a échoué — ${cc.error ?? 'raison inconnue'}. C'est pour ça que la commande n'est pas là.`;
+      } else if (cc && !cc.inChitChats && !cc.status) {
+        badge.style.background = '#8a6414';
+        badge.textContent = `● Live — ${order} pas encore importée dans Chit Chats (prochain import automatique dans l'heure).`;
+      } else {
+        badge.textContent = `● Live — suit la commande ouverte dans Shopify${order ? ` (${order})` : ''}`;
+      }
       return;
     }
 

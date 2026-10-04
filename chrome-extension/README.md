@@ -54,3 +54,7 @@ Deux onglets côte à côte : une commande Shopify et Chit Chats.
 4. **Stop live** (sur Shopify) coupe le lien. Fermer un des deux onglets le coupe aussi.
 
 Il faut le Client ID Chit Chats dans les réglages de l'extension.
+
+Si l'app a détecté que l'**import de cette commande dans Chit Chats a échoué**, la barre en bas de
+l'onglet Chit Chats devient rouge et dit pourquoi (ex. « line_items required ») : c'est pour ça que
+la commande n'apparaît pas dans Chit Chats. Une commande pas encore importée est signalée en orange.

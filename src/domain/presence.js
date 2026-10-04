@@ -34,7 +34,10 @@ export const chitchatsShipUrl = (orderNumber, settings = getSettings()) => {
 
 const findOrder = (externalId) =>
   getDb()
-    .prepare(`SELECT id, order_number, customer_name FROM orders WHERE source = 'shopify' AND external_id = ?`)
+    .prepare(
+      `SELECT id, order_number, customer_name, chitchats_import_status, chitchats_import_error, chitchats_shipment_id
+         FROM orders WHERE source = 'shopify' AND external_id = ?`,
+    )
     .get(String(externalId)) ?? null;
 
 /**
@@ -75,6 +78,14 @@ export const reportShopify = ({ clientId, tabId, orderExternalId, user, state = 
     orderNumber: order?.order_number ?? null,
     customerName: order?.customer_name ?? null,
     chitchatsUrl: chitchatsShipUrl(order?.order_number ?? null),
+    // pour expliquer dans l'onglet Chit Chats pourquoi la commande n'y est pas
+    chitchatsImport: order
+      ? {
+          status: order.chitchats_import_status ?? null,
+          error: order.chitchats_import_error ?? null,
+          inChitChats: Boolean(order.chitchats_shipment_id),
+        }
+      : null,
   };
 };
 
