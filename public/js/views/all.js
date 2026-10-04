@@ -1,5 +1,5 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
-import { groupParts, printerOptions, state, statusMeta, uvOptions } from '../store.js';
+import { groupParts, openChitChats, presenceFor, printerOptions, state, statusMeta, uvOptions } from '../store.js';
 import { buildCommentTags } from '../comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -31,11 +31,34 @@ const statusSelect = (part, actions) => {
   return node;
 };
 
-const row = (part, actions) =>
-  el(
+/** « Ouvert sur Shopify » (extension Chrome), comme sur les cartes du tableau. */
+const openBadge = (open) =>
+  el('div', { class: 'row-open-shop' }, [
+    el('span', { class: 'open-label', title: open.users.length ? `Ouvert par ${open.users.join(', ')}` : 'Ouvert sur Shopify' }, [
+      el('span', { class: 'open-dot' }),
+      open.users.length ? `Shopify · ${open.users.join(', ')}` : 'Ouvert sur Shopify',
+    ]),
+    open.chitchatsUrl &&
+      el(
+        'button',
+        {
+          class: 'mini-btn',
+          title: 'Ouvre Chit Chats et copie le numéro de commande',
+          onclick: (event) => {
+            event.stopPropagation();
+            openChitChats(open);
+          },
+        },
+        [icon('truck'), 'Chit Chats'],
+      ),
+  ]);
+
+const row = (part, actions) => {
+  const open = presenceFor(part.order_id);
+  return el(
     'tr',
     {
-      class: state.selection.has(part.id) ? 'is-selected' : '',
+      class: [state.selection.has(part.id) ? 'is-selected' : '', open ? 'is-open-shop' : ''].filter(Boolean).join(' '),
       onclick: () => actions.openPart(part.id),
     },
     [
@@ -59,6 +82,7 @@ const row = (part, actions) =>
       el('td', {}, [
         el('div', {}, part.order_number ?? `#${part.order_id}`),
         el('div', { class: 'cell-sub' }, SOURCE_LABEL[part.source] ?? part.source),
+        open && openBadge(open),
       ]),
       el('td', {}, [
         el('div', {}, part.customer_name ?? '—'),
@@ -73,6 +97,7 @@ const row = (part, actions) =>
       ]),
     ],
   );
+};
 
 export const renderAll = (root, actions) => {
   if (!state.parts.length) {

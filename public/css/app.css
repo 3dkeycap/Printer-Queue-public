@@ -671,3 +671,8 @@ html.kiosk .card-open-shop .open-cc { min-height: 38px; }
 .comment-tags.is-compact { padding: 3px; min-width: 160px; }
 .comment-tags.is-compact .chip-tag { font-size: 11px; padding: 1px 3px 1px 8px; }
 .comment-tags.is-compact .chip-input { min-width: 70px; flex-basis: 70px; font-size: 12px; padding: 2px 4px; }
+tr.is-open-shop > td { background: color-mix(in srgb, var(--ok) 9%, transparent); }
+tr.is-open-shop > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
+.row-open-shop { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 5px; font-size: 11.5px; color: var(--text); white-space: nowrap; }
+.row-open-shop .mini-btn { display: inline-flex; align-items: center; gap: 4px; }
+.row-open-shop .open-label { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 99px; background: color-mix(in srgb, var(--ok) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--line)); }
