@@ -155,3 +155,36 @@ describe('nettoyage des suppléments déjà dans la file', () => {
     assert.equal(partsOf(orderId)[0].id, first.id);
   });
 });
+
+describe('« Enlever tout maintenant »', () => {
+  before(() => migrate());
+
+  it('retire les pièces correspondantes, même touchées, mais pas les manuelles ni en cours', async () => {
+    const { purgeNow } = await import('../src/domain/addons.js');
+    const { createManualPart, setStatus } = await import('../src/domain/parts.service.js');
+    updateSettings({ 'production.nonPrintableKeywords': [] });
+    const orderId = ingestOrder(
+      makeOrder({
+        externalId: '8001',
+        orderNumber: '#8001',
+        items: [
+          { externalId: 'a', title: 'Spacebar Sticker', quantity: 2 },
+          { externalId: 'b', title: 'Spacebar Sticker', quantity: 1, variantTitle: 'X' },
+          { externalId: 'c', title: 'Real Keycap', quantity: 1 },
+        ],
+      }),
+    ).orderId;
+    const stickers = partsOf(orderId).filter((p) => p.name === 'Spacebar Sticker');
+    assert.equal(stickers.length, 3);
+    setStatus(stickers[0].id, 'PRINTING');
+    createManualPart({ name: 'Spacebar Sticker', quantity: 1 });
+
+    const preview = purgeNow({ keywords: ['sticker'], dryRun: true });
+    assert.equal(preview.removed, 2, 'la pièce en impression et la manuelle sont épargnées');
+    assert.equal(partsOf(orderId).length, 4, 'dryRun ne supprime rien');
+
+    assert.equal(purgeNow({ keywords: ['sticker'] }).removed, 2);
+    assert.equal(partsOf(orderId).length, 2);
+    assert.ok(partsOf(orderId).some((p) => p.name === 'Real Keycap'));
+  });
+});

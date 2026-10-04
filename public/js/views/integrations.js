@@ -146,6 +146,7 @@ const field = (definition, draft, touch, overrides = {}) => {
     el('label', { for: id }, overrides.label ?? definition.label),
     input,
     hint ? el('span', { class: 'field-hint' }, hint) : null,
+    overrides.extra ? overrides.extra(() => draft[definition.key] ?? definition.value ?? []) : null,
   ]);
 };
 
@@ -224,7 +225,7 @@ const makeSaveBar = (draft, actions) => {
 
 /* ------------------------------------------------------------- onglets --- */
 
-const tabAtelier = (draft, touch) => {
+const tabAtelier = (draft, touch, actions) => {
   const f = (key, overrides) => (byKey(key) ? field(byKey(key), draft, touch, overrides) : null);
   return [
     section(
@@ -237,6 +238,14 @@ const tabAtelier = (draft, touch) => {
           render: colorChecklist,
         }),
         f('production.nonPrintableKeywords', {
+          extra: (current) =>
+            el('div', { class: 'panel-foot left' }, [
+              el(
+                'button',
+                { class: 'ghost-btn danger', type: 'button', onclick: () => actions.purgeQueueNow(current()) },
+                [icon('trash'), 'Enlever tout maintenant de la file'],
+              ),
+            ]),
           label: 'Articles toujours en stock (mots à repérer)',
           placeholder: 'Ex. Keycap Puller — puis Entrée',
           hint: "Il suffit que le titre, la variante ou le SKU CONTIENNE le mot (pas besoin du nom exact). Si le nom d'une résine le contient (ex. « Nylon »), la résine disparaît aussi de la file. Une pièce qu'un humain a déjà modifiée reste dans la file.",
@@ -717,7 +726,7 @@ export const renderIntegrations = (root, actions) => {
 
   const current = TABS.find((tab) => tab.key === activeTab) ?? TABS[0];
   const content = {
-    atelier: () => tabAtelier(draft, touch),
+    atelier: () => tabAtelier(draft, touch, actions),
     resines: () => tabResines(actions),
     boutiques: () => tabBoutiques(draft, touch, actions),
     synchro: () => tabSynchro(draft, touch, actions),

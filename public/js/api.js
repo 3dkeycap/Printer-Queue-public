@@ -36,6 +36,7 @@ export const api = {
     request(`/api/parts/${id}/status`, { method: 'POST', body: { status, ...extra } }),
   bulkStatus: (ids, status, extra = {}) =>
     request('/api/parts/bulk/status', { method: 'POST', body: { ids, status, ...extra } }),
+  purgeNonPrintable: (body) => request('/api/parts/purge-non-printable', { method: 'POST', body }),
   deletePart: (id) => request(`/api/parts/${id}`, { method: 'DELETE' }),
 
   colors: () => request('/api/colors'),

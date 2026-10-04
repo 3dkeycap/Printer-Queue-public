@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { purgeNow } from '../domain/addons.js';
 import { asyncRoute, badRequest, notFound } from '../lib/errors.js';
 import {
   bulkSetStatus,
@@ -18,6 +19,15 @@ export const partsRouter = Router();
 partsRouter.get('/', (req, res) => {
   res.json(listParts(req.query));
 });
+
+/** { keywords?: string[], dryRun?: boolean } : retire de la file les suppléments en stock. */
+partsRouter.post(
+  '/purge-non-printable',
+  asyncRoute((req, res) => {
+    const { keywords, dryRun } = req.body ?? {};
+    res.json(purgeNow({ keywords, dryRun: Boolean(dryRun) }));
+  }),
+);
 
 partsRouter.get('/facets', (req, res) => {
   res.json(getFacets(req.query));

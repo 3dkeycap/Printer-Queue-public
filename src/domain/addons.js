@@ -59,6 +59,48 @@ export const purgeNonPrintableParts = () => {
 };
 
 /**
+ * « Enlever tout maintenant » : parcourt la file et retire les pièces dont le
+ * titre, la variante ou le SKU contient un des mots (liste passée par l'écran,
+ * donc même non enregistrée). Action explicite de l'opérateur : on ne regarde
+ * pas si un humain a touché la pièce. Reste hors de portée : les pièces
+ * ajoutées à la main, celles en cours d'impression ou déjà imprimées.
+ * `dryRun` ne supprime rien et renvoie seulement ce qui serait retiré.
+ */
+export const purgeNow = ({ keywords, dryRun = false } = {}) => {
+  const db = getDb();
+  const list = (Array.isArray(keywords) ? keywords : getSettings()['production.nonPrintableKeywords'] ?? [])
+    .map((word) => String(word).trim())
+    .filter(Boolean);
+  if (!list.length) return { removed: 0, items: [], dryRun };
+
+  const matches = db
+    .prepare(
+      `SELECT p.id, p.name, p.status, i.title, i.variant_title, i.sku, o.order_number
+         FROM parts p
+         JOIN order_items i ON i.id = p.order_item_id
+         JOIN orders o ON o.id = p.order_id
+        WHERE o.source <> 'manual' AND p.status IN ('TO_PRINT', 'FAILED')`,
+    )
+    .all()
+    .filter((row) => matchesAnyKeyword([row.title, row.variant_title, row.sku], list));
+
+  if (!dryRun) {
+    const remove = db.prepare('DELETE FROM parts WHERE id = ?');
+    db.transaction(() => matches.forEach((row) => remove.run(row.id)))();
+    if (matches.length) log.info('queue cleaned by operator', { removed: matches.length });
+  }
+
+  // regroupé par nom pour que l'écran puisse montrer ce qui part
+  const byName = new Map();
+  for (const row of matches) byName.set(row.name, (byName.get(row.name) ?? 0) + 1);
+  return {
+    removed: matches.length,
+    items: [...byName].map(([name, count]) => ({ name, count })),
+    dryRun,
+  };
+};
+
+/**
  * Clés des résines à retirer du tableau « À imprimer » : celles cochées dans
  * les réglages, plus toute résine dont le nom, la clé ou un alias CONTIENT un
  * des mots de la liste « à ne pas imprimer » (ex. « Nylon » retire toutes les

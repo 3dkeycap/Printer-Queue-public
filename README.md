@@ -537,3 +537,9 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
   suivant) ou Réglages → Apparence & aide.
 - **Tutoriel** : bouton « Tutoriel » en haut de la page (aussi en mode kiosque) — visite guidée
   de la page « À imprimer » (flèches du clavier, Échap pour quitter).
+
+**Enlever tout maintenant** — bouton sous « Articles toujours en stock » (Réglages → Atelier) :
+parcourt la file, montre ce qui serait retiré (aperçu + confirmation) puis supprime les pièces
+« À imprimer » / « Échec » dont le titre, la variante ou le SKU contient un des mots de la
+liste (même non enregistrée). Les pièces ajoutées à la main, en cours d'impression ou déjà
+imprimées ne sont pas touchées.

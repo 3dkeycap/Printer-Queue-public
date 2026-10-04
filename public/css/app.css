@@ -620,3 +620,6 @@ html.kiosk .savebar { left: 12px; right: 12px; }
 @media (max-width: 1080px) { .savebar { left: 92px; } }
 @media (max-width: 760px) { .savebar { left: 12px; right: 12px; } .settings-stack { grid-template-columns: 1fr; } }
 .field .check-row { text-transform: none; letter-spacing: 0; font-size: 13.5px; color: var(--text-soft); }
+.ghost-btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+.ghost-btn.danger:hover { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); color: var(--danger); }
+.purge-list { margin: 8px 0; padding-left: 20px; max-height: 200px; overflow-y: auto; font-size: 13px; }

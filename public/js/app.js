@@ -216,6 +216,31 @@ const actions = {
     });
   },
 
+  /** « Enlever tout maintenant » : aperçu, confirmation, puis retrait de la file. */
+  async purgeQueueNow(keywords) {
+    try {
+      const preview = await api.purgeNonPrintable({ keywords, dryRun: true });
+      if (!preview.removed) return toast('Rien à enlever : aucune pièce de la file ne correspond');
+      const confirmed = await modal({
+        title: 'Enlever de la file maintenant ?',
+        body: el('div', {}, [
+          el('p', {}, `${preview.removed} pièce(s) seront retirées de « À imprimer » et « Échec » :`),
+          el('ul', { class: 'purge-list' }, preview.items.map((item) => el('li', {}, `${item.count} × ${item.name}`))),
+          el('p', { class: 'cell-sub' }, "Les pièces ajoutées à la main, en cours d'impression ou déjà imprimées ne sont pas touchées."),
+        ]),
+        confirmLabel: `Enlever ${preview.removed} pièce(s)`,
+        onConfirm: () => true,
+      });
+      if (!confirmed) return;
+      const result = await api.purgeNonPrintable({ keywords });
+      toast(`${result.removed} pièce(s) retirée(s) de la file`);
+      await refresh({ silent: true });
+      render();
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
   toggleStack(status) {
     if (state.stacked.has(status)) state.stacked.delete(status);
     else state.stacked.add(status);
