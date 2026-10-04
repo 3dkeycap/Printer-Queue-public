@@ -589,3 +589,9 @@ mise à jour en un clic depuis GitHub (icône → Mettre à jour).
 **Extension v1.2 — lien live** : Shopify et Chit Chats côte à côte ; « 🔗 Link » sur Shopify puis
 « 🔗 Link » sur l'onglet Chit Chats, et chaque commande ouverte dans Shopify s'affiche dans Chit
 Chats. « Stop live » pour couper. Détails dans [`chrome-extension/README.md`](chrome-extension/README.md).
+
+**Etsy : Shared secret obligatoire** — Etsy exige maintenant sur chaque appel l'en-tête
+`x-api-key: <keystring>:<shared secret>` (sinon 403). Renseigne le **Shared secret** (Etsy →
+Your Apps, à côté de la keystring) dans Réglages → Boutiques → Etsy. Le Shop ID est aussi
+détecté automatiquement depuis le compte connecté (à la connexion OAuth, et corrigé si Etsy
+refuse celui saisi).

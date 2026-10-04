@@ -41,7 +41,15 @@ export const DEFINITIONS = [
   // --- Etsy ---------------------------------------------------------------
   // --- Etsy (OAuth 2.0 + PKCE, obligatoire sur l'Open API v3) --------------
   { key: 'etsy.shopId', group: 'etsy', label: 'Shop ID', type: 'text', hint: 'Visible dans l\'URL de ton tableau de bord Etsy (Shop Manager).', fallback: () => config.etsy.shopId },
-  { key: 'etsy.apiKey', group: 'etsy', label: 'Clé API (Keystring)', type: 'secret', hint: 'Aussi utilisée comme Client ID pour la connexion OAuth ci-dessous.', fallback: () => config.etsy.apiKey },
+  { key: 'etsy.apiKey', group: 'etsy', label: 'Clé API (Keystring)', type: 'secret', hint: 'Etsy → Your Apps. Aussi utilisée comme Client ID pour la connexion OAuth ci-dessous.', fallback: () => config.etsy.apiKey },
+  {
+    key: 'etsy.sharedSecret',
+    group: 'etsy',
+    label: 'Shared secret',
+    type: 'secret',
+    hint: "Etsy → Your Apps, à côté de la Keystring. Etsy l'exige maintenant sur chaque appel (en-tête x-api-key « keystring:shared secret ») : sans lui, erreur 403.",
+    fallback: () => process.env.ETSY_SHARED_SECRET || '',
+  },
   { key: 'etsy.scopes', group: 'etsy', label: 'Scopes OAuth', type: 'text', fallback: () => 'transactions_r' },
   {
     key: 'etsy.accessToken',
@@ -251,7 +259,7 @@ export const connectorStatus = () => {
       enabled: s['shopify.enabled'],
     },
     etsy: {
-      configured: Boolean(s['etsy.shopId'] && s['etsy.apiKey'] && s['etsy.accessToken']),
+      configured: Boolean(s['etsy.shopId'] && s['etsy.apiKey'] && s['etsy.sharedSecret'] && s['etsy.accessToken']),
       enabled: s['etsy.enabled'],
     },
     chitchats: {

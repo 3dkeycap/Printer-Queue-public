@@ -16,6 +16,7 @@ describe('renouvellement automatique du token Etsy (expire toutes les heures)', 
     migrate();
     updateSettings({
       'etsy.apiKey': 'keystring_123',
+      'etsy.sharedSecret': 'secret_456',
       'etsy.shopId': '99887766',
       'etsy.accessToken': 'old-access-token',
       'etsy.enabled': true,
@@ -85,6 +86,7 @@ describe('renouvellement automatique du token Etsy (expire toutes les heures)', 
       }
       if (String(url).includes('/receipts')) {
         assert.equal(options.headers.Authorization, 'Bearer refreshed-for-fetch');
+        assert.equal(options.headers['x-api-key'], 'keystring_123:secret_456', 'Etsy exige keystring:shared_secret');
         return new Response(JSON.stringify({ results: [] }), { status: 200 });
       }
       return originalFetch(url, options);
@@ -93,5 +95,37 @@ describe('renouvellement automatique du token Etsy (expire toutes les heures)', 
     await fetchOrders({});
     assert.ok(calls.some((url) => url === 'https://api.etsy.com/v3/public/oauth/token'));
     assert.ok(calls.some((url) => String(url).includes('/receipts')));
+  });
+
+  it('Shop ID faux : 403, puis correction automatique depuis le compte connecté', async () => {
+    setSetting('etsy.tokenExpiresAt', new Date(Date.now() + 3600_000).toISOString());
+    updateSettings({ 'etsy.accessToken': '12345678.tok', 'etsy.shopId': '1358876740743' });
+    const seen = [];
+    globalThis.fetch = async (url, options) => {
+      seen.push(String(url));
+      if (String(url).includes('/shops/1358876740743/receipts')) {
+        return new Response(JSON.stringify({ error: 'Shop not found for user' }), { status: 403 });
+      }
+      if (String(url).endsWith('/users/12345678/shops')) {
+        return new Response(JSON.stringify({ shop_id: 4242, shop_name: '3DKeycap' }), { status: 200 });
+      }
+      if (String(url).includes('/shops/4242/receipts')) return new Response(JSON.stringify({ results: [] }), { status: 200 });
+      return originalFetch(url, options);
+    };
+    await fetchOrders({});
+    assert.equal(getSettings()['etsy.shopId'], '4242');
+    assert.ok(seen.some((url) => url.includes('/shops/4242/receipts')));
+  });
+
+  it('sans shared secret : message clair, aucun appel en boucle', async () => {
+    updateSettings({ 'etsy.sharedSecret': null, 'etsy.apiKey': 'keystring_123' });
+    let called = false;
+    globalThis.fetch = async () => {
+      called = true;
+      return new Response('{}', { status: 403 });
+    };
+    await assert.rejects(fetchOrders({}), /Shared secret/);
+    assert.equal(called, false);
+    updateSettings({ 'etsy.sharedSecret': 'secret_456' });
   });
 });

@@ -1,8 +1,8 @@
 import { config } from '../config.js';
-import { requestJson } from '../lib/http.js';
+import { ApiError, requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
-import { getSettings } from '../domain/settings.service.js';
-import { ensureFreshEtsyToken } from './etsyOAuth.js';
+import { getSettings, updateSettings } from '../domain/settings.service.js';
+import { detectEtsyShop, ensureFreshEtsyToken, etsyApiKeyHeader } from './etsyOAuth.js';
 
 const log = createLogger('etsy');
 
@@ -49,7 +49,7 @@ export const fetchListingImage = async (listingId, listingImageId, settings) => 
     const url = `${config.etsy.apiBase}/listings/${listingId}/images/${listingImageId}`;
     const payload = await requestJson(url, {
       headers: {
-        'x-api-key': settings['etsy.apiKey'],
+        'x-api-key': etsyApiKeyHeader(settings),
         Authorization: `Bearer ${settings['etsy.accessToken']}`,
       },
     });
@@ -94,6 +94,16 @@ export const normalizeReceipt = (receipt) => ({
 export const isConfigured = (settings = getSettings()) =>
   Boolean(settings['etsy.shopId'] && settings['etsy.apiKey'] && settings['etsy.accessToken']);
 
+/** Le shared secret est-il fourni (champ dédié, ou « keystring:secret » collé dans la clé) ? */
+const hasSharedSecret = (settings) =>
+  Boolean(String(settings['etsy.sharedSecret'] ?? '').trim() || String(settings['etsy.apiKey'] ?? '').includes(':'));
+
+/** Message d'Etsy (« error ») si présent. */
+const etsyMessage = (error) => {
+  const body = error?.body ?? {};
+  return body.error_description ?? body.error ?? body.message ?? body.raw ?? null;
+};
+
 /** Récupère les commandes payées et non expédiées. */
 export const fetchOrders = async ({ since } = {}) => {
   const settings = getSettings();
@@ -113,18 +123,47 @@ export const fetchOrders = async ({ since } = {}) => {
   await ensureFreshEtsyToken();
   const freshSettings = getSettings();
 
-  const url = new URL(`${config.etsy.apiBase}/shops/${freshSettings['etsy.shopId']}/receipts`);
-  url.searchParams.set('was_paid', 'true');
-  url.searchParams.set('was_shipped', 'false');
-  url.searchParams.set('limit', '100');
-  if (since) url.searchParams.set('min_created', String(Math.floor(new Date(since).getTime() / 1000)));
+  if (!hasSharedSecret(freshSettings)) {
+    // Etsy refuse maintenant tout appel sans « keystring:shared secret » : inutile d'insister
+    throw new Error(
+      'Etsy exige le « Shared secret » de ton app (Etsy → Your Apps) : ajoute-le dans Réglages → Boutiques → Etsy. Sans lui, Etsy répond 403.',
+    );
+  }
 
-  const payload = await requestJson(url.toString(), {
-    headers: {
-      'x-api-key': freshSettings['etsy.apiKey'],
-      Authorization: `Bearer ${freshSettings['etsy.accessToken']}`,
-    },
-  });
+  const fetchReceipts = (shopId) => {
+    const url = new URL(`${config.etsy.apiBase}/shops/${shopId}/receipts`);
+    url.searchParams.set('was_paid', 'true');
+    url.searchParams.set('was_shipped', 'false');
+    url.searchParams.set('limit', '100');
+    if (since) url.searchParams.set('min_created', String(Math.floor(new Date(since).getTime() / 1000)));
+    return requestJson(url.toString(), {
+      headers: {
+        'x-api-key': etsyApiKeyHeader(freshSettings),
+        Authorization: `Bearer ${freshSettings['etsy.accessToken']}`,
+      },
+    });
+  };
+
+  let payload;
+  try {
+    payload = await fetchReceipts(freshSettings['etsy.shopId']);
+  } catch (error) {
+    if (!(error instanceof ApiError) || ![401, 403, 404].includes(error.status)) throw error;
+    // Shop ID mal recopié ? On demande à Etsy la boutique du compte connecté et on réessaie une fois.
+    const shop = await detectEtsyShop(freshSettings).catch(() => null);
+    if (shop && shop.shopId !== String(freshSettings['etsy.shopId'])) {
+      log.warn('etsy shop id corrected from the connected account', { from: freshSettings['etsy.shopId'], to: shop.shopId });
+      updateSettings({ 'etsy.shopId': shop.shopId });
+      payload = await fetchReceipts(shop.shopId);
+    } else {
+      const detail = etsyMessage(error);
+      const hint =
+        error.status === 401
+          ? 'connexion expirée : clique « Reconnecter via OAuth » (Réglages → Boutiques → Etsy)'
+          : 'vérifie le Shared secret et reconnecte la boutique via OAuth (scope transactions_r)';
+      throw new Error(`Etsy refuse l'accès (${error.status})${detail ? ` : ${detail}` : ''} — ${hint}.`);
+    }
+  }
 
   const receipts = payload?.results ?? [];
   log.info('receipts fetched', { count: receipts.length });

@@ -14,6 +14,20 @@ const TOKEN_URL = 'https://api.etsy.com/v3/public/oauth/token';
 /** État éphémère du flux OAuth (anti-CSRF + vérifieur PKCE), stocké en base. */
 export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
+/** La keystring seule (Client ID OAuth), même si « keystring:secret » a été collé dans le champ. */
+export const etsyKeystring = (settings = getSettings()) => String(settings['etsy.apiKey'] ?? '').split(':')[0].trim();
+
+/**
+ * En-tête `x-api-key` exigé par Etsy sur CHAQUE appel v3 : « keystring:shared_secret ».
+ * La keystring seule (ancien format) est refusée en 403.
+ */
+export const etsyApiKeyHeader = (settings = getSettings()) => {
+  const raw = String(settings['etsy.apiKey'] ?? '').trim();
+  const secret = String(settings['etsy.sharedSecret'] ?? '').trim();
+  if (secret) return `${etsyKeystring(settings)}:${secret}`;
+  return raw; // éventuellement déjà « keystring:secret »
+};
+
 export const redirectUri = (settings = getSettings()) =>
   `${normalizeBaseUrl(settings['app.publicUrl'])}/api/integrations/etsy/oauth/callback`;
 
@@ -33,7 +47,7 @@ export const generatePkce = () => {
 /** Construit l'URL d'autorisation Etsy (étape 1 du flux OAuth). */
 export const buildAuthorizeUrl = (state, codeChallenge) => {
   const settings = getSettings();
-  const apiKey = settings['etsy.apiKey'];
+  const apiKey = etsyKeystring(settings);
 
   if (!apiKey) throw badRequest('La clé API Etsy (Keystring) doit être renseignée avant de connecter la boutique');
   if (!settings['app.publicUrl']) {
@@ -58,7 +72,7 @@ export const buildAuthorizeUrl = (state, codeChallenge) => {
  */
 export const exchangeCodeForToken = async ({ code, codeVerifier }) => {
   const settings = getSettings();
-  const apiKey = settings['etsy.apiKey'];
+  const apiKey = etsyKeystring(settings);
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     client_id: apiKey,
@@ -71,7 +85,7 @@ export const exchangeCodeForToken = async ({ code, codeVerifier }) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'x-api-key': apiKey,
+      'x-api-key': etsyApiKeyHeader(settings),
     },
     body: body.toString(),
   });
@@ -92,7 +106,7 @@ const persistToken = (token) => {
 /** Rafraîchit le token via le refresh token (valable 90 jours chez Etsy). */
 const refreshAccessToken = async (refreshToken) => {
   const settings = getSettings();
-  const apiKey = settings['etsy.apiKey'];
+  const apiKey = etsyKeystring(settings);
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     client_id: apiKey,
@@ -103,7 +117,7 @@ const refreshAccessToken = async (refreshToken) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'x-api-key': apiKey,
+      'x-api-key': etsyApiKeyHeader(settings),
     },
     body: body.toString(),
     retries: 1,
@@ -137,7 +151,34 @@ export const ensureFreshEtsyToken = async () => {
   persistToken(token);
 };
 
-export const completeOAuthConnection = (token) => persistToken(token);
+/**
+ * Boutique du vendeur connecté : le token OAuth commence par son user_id
+ * (« 12345678.xxxx »), et /users/{id}/shops renvoie sa boutique. Évite un
+ * Shop ID mal recopié (cause classique de 403/404 sur /shops/{id}/receipts).
+ */
+export const detectEtsyShop = async (settings = getSettings()) => {
+  const userId = String(settings['etsy.accessToken'] ?? '').split('.')[0];
+  if (!/^\d+$/.test(userId)) return null;
+  const payload = await requestJson(`https://openapi.etsy.com/v3/application/users/${userId}/shops`, {
+    headers: { 'x-api-key': etsyApiKeyHeader(settings), Authorization: `Bearer ${settings['etsy.accessToken']}` },
+    retries: 1,
+  });
+  const shop = payload?.shop_id ? payload : payload?.results?.[0];
+  return shop?.shop_id ? { shopId: String(shop.shop_id), name: shop.shop_name ?? null } : null;
+};
+
+export const completeOAuthConnection = async (token) => {
+  persistToken(token);
+  try {
+    const shop = await detectEtsyShop();
+    if (shop && shop.shopId !== String(getSettings()['etsy.shopId'] ?? '')) {
+      updateSettings({ 'etsy.shopId': shop.shopId });
+      log.info('etsy shop id set from the connected account', shop);
+    }
+  } catch (error) {
+    log.warn('could not detect etsy shop id', { error: error.message });
+  }
+};
 
 export const clearEtsyToken = () => {
   updateSettings({ 'etsy.accessToken': null });

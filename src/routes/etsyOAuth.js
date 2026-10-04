@@ -68,7 +68,7 @@ etsyOAuthRouter.get(
         code: String(req.query.code ?? ''),
         codeVerifier: stored.verifier,
       });
-      completeOAuthConnection(token);
+      await completeOAuthConnection(token);
 
       log.info('etsy shop connected');
       return backToDashboard('connected');
