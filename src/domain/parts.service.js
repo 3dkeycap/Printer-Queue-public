@@ -1,6 +1,6 @@
 import { getDb, nowIso } from '../db/index.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
-import { getSettings } from './settings.service.js';
+import { hiddenColorKeys } from './addons.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
 
 const SORTS = {
@@ -45,7 +45,7 @@ const buildFilters = (query = {}) => {
 
   // couleurs que l'atelier n'imprime pas : absentes du tableau « À imprimer »
   if (query.scope === 'board') {
-    const hidden = getSettings()['production.hiddenColors'] ?? [];
+    const hidden = hiddenColorKeys();
     if (hidden.length) {
       where.push(`p.color_key NOT IN (${hidden.map((_, i) => `@hidden${i}`).join(', ')})`);
       hidden.forEach((color, i) => {

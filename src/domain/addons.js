@@ -1,5 +1,6 @@
 import { getDb } from '../db/index.js';
 import { createLogger } from '../lib/logger.js';
+import { listColors } from './colors.js';
 import { getSettings } from './settings.service.js';
 
 const log = createLogger('addons');
@@ -55,4 +56,22 @@ export const purgeNonPrintableParts = () => {
   db.transaction(() => candidates.forEach((row) => remove.run(row.id)))();
   if (candidates.length) log.info('supplement parts removed from the queue', { removed: candidates.length });
   return { removed: candidates.length };
+};
+
+/**
+ * Clés des résines à retirer du tableau « À imprimer » : celles cochées dans
+ * les réglages, plus toute résine dont le nom, la clé ou un alias CONTIENT un
+ * des mots de la liste « à ne pas imprimer » (ex. « Nylon » retire toutes les
+ * couleurs Nylon, « Nylon Gray » aussi).
+ */
+export const hiddenColorKeys = () => {
+  const settings = getSettings();
+  const hidden = new Set(settings['production.hiddenColors'] ?? []);
+  const keywords = settings['production.nonPrintableKeywords'] ?? [];
+  if (keywords.length) {
+    for (const color of listColors()) {
+      if (matchesAnyKeyword([color.key, color.name, ...(color.aliases ?? [])], keywords)) hidden.add(color.key);
+    }
+  }
+  return [...hidden];
 };

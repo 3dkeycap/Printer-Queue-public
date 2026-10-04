@@ -35,3 +35,21 @@ describe('couleurs retirées de la file', () => {
     assert.equal(getSummary().totals.parts_active, 1);
   });
 });
+
+describe('mots à ne pas imprimer : « contient », y compris le nom de la résine', () => {
+  it('« Nylon » retire toutes les résines dont le nom contient Nylon du tableau', () => {
+    updateSettings({ 'production.hiddenColors': [], 'production.nonPrintableKeywords': [] });
+    ingestOrder(
+      makeOrder({
+        externalId: '7002',
+        items: [{ externalId: 'n1', title: 'Custom Keycap', quantity: 2, variantTitle: 'Nylon Grey' }],
+      }),
+    );
+    const before = listParts({ scope: 'board' }).total;
+    updateSettings({ 'production.nonPrintableKeywords': ['nylon'] });
+    const after = listParts({ scope: 'board' });
+    assert.ok(after.total <= before - 2);
+    assert.ok(after.items.every((p) => !/nylon/i.test(p.color_name)));
+    assert.ok(listParts({}).items.some((p) => /nylon/i.test(p.color_name)), '« Tout » les garde');
+  });
+});

@@ -89,7 +89,7 @@ export const DEFINITIONS = [
     group: 'production',
     label: 'Suppléments à ne pas imprimer',
     type: 'list',
-    hint: "Une valeur par ligne. Si le titre d'une ligne de commande contient un de ces mots (Etsy/Shopify), c'est un supplément/upsell, pas un objet : aucune pièce n'est créée pour cette ligne (la commande, elle, est conservée normalement).",
+    hint: "Une valeur par ligne. Si le titre, la variante ou le SKU d'une ligne de commande CONTIENT un de ces mots (Etsy/Shopify), c'est un supplément/upsell : aucune pièce n'est créée. Si le nom d'une résine contient un de ces mots (ex. « Nylon »), cette résine est aussi retirée de « À imprimer ».",
     fallback: () => ['Custom UV Printed Legends', 'Color Variety Pack'],
   },
   {

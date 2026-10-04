@@ -239,7 +239,7 @@ const tabAtelier = (draft, touch) => {
         f('production.nonPrintableKeywords', {
           label: 'Articles toujours en stock (mots à repérer)',
           placeholder: 'Ex. Keycap Puller — puis Entrée',
-          hint: "Si le titre, la variante ou le SKU d'une ligne contient un de ces mots, aucune pièce n'est créée. Une pièce qu'un humain a déjà modifiée reste dans la file.",
+          hint: "Il suffit que le titre, la variante ou le SKU CONTIENNE le mot (pas besoin du nom exact). Si le nom d'une résine le contient (ex. « Nylon »), la résine disparaît aussi de la file. Une pièce qu'un humain a déjà modifiée reste dans la file.",
         }),
       ],
     ),

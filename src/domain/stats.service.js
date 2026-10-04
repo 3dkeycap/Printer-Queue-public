@@ -1,5 +1,5 @@
 import { getDb } from '../db/index.js';
-import { getSettings } from './settings.service.js';
+import { hiddenColorKeys } from './addons.js';
 import { BOARD_STATUSES, STATUS_KEYS } from './statuses.js';
 
 const boardList = `('${BOARD_STATUSES.join("','")}')`;
@@ -49,7 +49,7 @@ export const getSummary = () => {
     .all();
 
   // les couleurs retirées de la file ne comptent pas dans « À imprimer »
-  const hidden = (getSettings()['production.hiddenColors'] ?? []).map((key) => `'${String(key).replace(/'/g, "''")}'`);
+  const hidden = hiddenColorKeys().map((key) => `'${String(key).replace(/'/g, "''")}'`);
   const visible = hidden.length ? ` AND color_key NOT IN (${hidden.join(',')})` : '';
 
   const totals = db

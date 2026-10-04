@@ -386,7 +386,7 @@ La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` 
 ce ne sont pas des objets à imprimer, ce sont des options rattachées à la vraie pièce de la
 même commande (souvent un « Custom Keycap Set »). Réglable dans Réglages → Atelier :
 - **Suppléments à ne pas imprimer** : tout titre de ligne contenant un de ces mots ne
-  génère aucune pièce (la ligne de commande reste enregistrée pour l'historique). Le mot
+  génère aucune pièce (la ligne de commande reste enregistrée pour l'historique). Si le nom d'une résine contient un de ces mots (ex. « Nylon »), cette résine est aussi retirée de « À imprimer ». Le mot
   est cherché dans le titre, la variante et le SKU (sans tenir compte des accents/majuscules).
   Les pièces déjà créées pour ces articles sont retirées de la file à la prochaine synchro, au
   démarrage et à l'enregistrement du réglage — **sauf** si un humain s'en est occupé (statut
