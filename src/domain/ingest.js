@@ -1,15 +1,11 @@
 import { getDb, nowIso } from '../db/index.js';
 import { createLogger } from '../lib/logger.js';
 import { listColors, resolveColorKey } from './colors.js';
+import { matchesAnyKeyword, purgeNonPrintableParts } from './addons.js';
 import { getSettings } from './settings.service.js';
 
 const log = createLogger('ingest');
 
-/** Vrai si `title` contient un des mots-clés (comparaison insensible à la casse). */
-const matchesAnyKeyword = (title, keywords) => {
-  const normalizedTitle = String(title ?? '').toLowerCase();
-  return (keywords ?? []).some((keyword) => normalizedTitle.includes(String(keyword).toLowerCase()));
-};
 
 /**
  * @typedef {Object} NormalizedItem
@@ -57,7 +53,7 @@ export const ingestOrder = (order) => {
   // un objet à imprimer : sa seule présence dans la commande indique que la
   // vraie pièce (souvent un « Custom Keycap Set ») a besoin d'UV.
   const needsAutoUv = (order.items ?? []).some((item) =>
-    matchesAnyKeyword(item.title, settings['production.uvTriggerKeywords']),
+    matchesAnyKeyword([item.title, item.variantTitle, item.sku], settings['production.uvTriggerKeywords']),
   );
 
   const run = db.transaction(() => {
@@ -139,7 +135,10 @@ export const ingestOrder = (order) => {
       // Supplément Etsy/Shopify (ex. « Custom UV Printed Legends », « Color
       // Variety Pack ») : pas un objet physique, donc pas de pièce à créer -
       // la ligne de commande reste enregistrée pour l'historique/le total.
-      const isNonPrintable = matchesAnyKeyword(item.title, settings['production.nonPrintableKeywords']);
+      const isNonPrintable = matchesAnyKeyword(
+        [item.title, item.variantTitle, item.sku],
+        settings['production.nonPrintableKeywords'],
+      );
 
       const existingItem = db
         .prepare('SELECT * FROM order_items WHERE order_id = ? AND external_id = ?')
@@ -246,7 +245,10 @@ export const ingestOrder = (order) => {
     return { orderId, orderCreated, partsCreated, partsUpdated };
   });
 
-  return run();
+  const result = run();
+  // rattrape les pièces de supplément créées avant que le mot-clé existe
+  purgeNonPrintableParts();
+  return result;
 };
 
 export const ingestOrders = (orders) => {

@@ -386,7 +386,12 @@ La couleur de résine est déduite, dans l'ordre : propriété de ligne `Color` 
 ce ne sont pas des objets à imprimer, ce sont des options rattachées à la vraie pièce de la
 même commande (souvent un « Custom Keycap Set »). Réglable dans Intégrations → Production :
 - **Suppléments à ne pas imprimer** : tout titre de ligne contenant un de ces mots ne
-  génère aucune pièce (la ligne de commande reste enregistrée pour l'historique).
+  génère aucune pièce (la ligne de commande reste enregistrée pour l'historique). Le mot
+  est cherché dans le titre, la variante et le SKU (sans tenir compte des accents/majuscules).
+  Les pièces déjà créées pour ces articles sont retirées de la file à la prochaine synchro, au
+  démarrage et à l'enregistrement du réglage — **sauf** si un humain s'en est occupé (statut
+  changé, imprimante/UV/commentaire/notes modifiés, pièce ajoutée à la main) : c'est la façon
+  de dire « celle-là, on la veut dans la file ».
 - **Suppléments qui indiquent un besoin UV** : si un de ces titres apparaît dans la
   commande, les vraies pièces de la même commande reçoivent automatiquement la **valeur UV
   appliquée automatiquement** (ex. `oui`).

@@ -116,3 +116,42 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
     assert.equal(partsOf(result.orderId)[0].uv, 'oui');
   });
 });
+
+describe('nettoyage des suppléments déjà dans la file', () => {
+  before(() => migrate());
+
+  const seed = (externalId) => {
+    updateSettings({ 'production.nonPrintableKeywords': [] });
+    const result = ingestOrder(
+      makeOrder({
+        externalId,
+        orderNumber: `#${externalId}`,
+        items: [{ externalId: `li-${externalId}`, title: 'Keycap Puller', quantity: 2 }],
+      }),
+    );
+    return result.orderId;
+  };
+
+  it('retire les pièces automatiques d\'un supplément devenu « à ne pas imprimer »', async () => {
+    const { purgeNonPrintableParts } = await import('../src/domain/addons.js');
+    const orderId = seed('6001');
+    assert.equal(partsOf(orderId).length, 2);
+    updateSettings({ 'production.nonPrintableKeywords': ['keycap puller'] });
+    assert.equal(purgeNonPrintableParts().removed, 2);
+    assert.equal(partsOf(orderId).length, 0);
+    assert.equal(itemsOf(orderId).length, 1, 'la ligne de commande reste');
+  });
+
+  it('garde une pièce dont un humain s\'est occupé', async () => {
+    const { purgeNonPrintableParts } = await import('../src/domain/addons.js');
+    const orderId = seed('6002');
+    const [first] = partsOf(orderId);
+    getDb()
+      .prepare(`INSERT INTO part_events (part_id, from_status, to_status, actor) VALUES (?, 'TO_PRINT', 'TO_PRINT', 'dashboard')`)
+      .run(first.id);
+    updateSettings({ 'production.nonPrintableKeywords': ['keycap puller'] });
+    assert.equal(purgeNonPrintableParts().removed, 1);
+    assert.equal(partsOf(orderId).length, 1);
+    assert.equal(partsOf(orderId)[0].id, first.id);
+  });
+});

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncRoute, badRequest } from '../lib/errors.js';
 import { connectorStatus, describeSettings, updateSettings } from '../domain/settings.service.js';
+import { purgeNonPrintableParts } from '../domain/addons.js';
 import { writeUpdaterConfig } from '../domain/updater.service.js';
 
 export const settingsRouter = Router();
@@ -16,6 +17,7 @@ settingsRouter.put(
     if (typeof patch !== 'object' || Array.isArray(patch)) throw badRequest('Corps attendu : un objet { clé: valeur }');
     const result = updateSettings(patch);
     if (result.applied.some((key) => key.startsWith('update.'))) writeUpdaterConfig();
+    if (result.applied.includes('production.nonPrintableKeywords')) purgeNonPrintableParts();
     res.json({ ...result, connectors: connectorStatus() });
   }),
 );

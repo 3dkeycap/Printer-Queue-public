@@ -4,6 +4,7 @@ import { closeDb } from './db/index.js';
 import { migrate } from './db/migrate.js';
 import { createLogger } from './lib/logger.js';
 import { createApp } from './app.js';
+import { purgeNonPrintableParts } from './domain/addons.js';
 import { writeUpdaterConfig } from './domain/updater.service.js';
 import { startScheduler } from './jobs/scheduler.js';
 
@@ -13,6 +14,7 @@ const log = createLogger('server');
 backupBeforeUpgrade();
 migrate();
 recordBuild();
+purgeNonPrintableParts();
 writeUpdaterConfig();
 
 const app = createApp();
