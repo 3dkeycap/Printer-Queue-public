@@ -24,6 +24,7 @@ export const state = {
     priority: false,
   },
   meta: null,
+  facets: null,       // compteurs des puces de filtre (/api/parts/facets)
   colors: [],
   parts: [],
   summary: null,
@@ -40,10 +41,29 @@ export const savePrefs = () => {
   localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme }));
 };
 
-/** Le tableau « À imprimer » ne montre que la production en cours. */
+/** Valeur de filtre UV pour « aucun poste UV » (comprise par l'API). */
+export const NO_UV = '__none__';
+
+/**
+ * Le tableau « À imprimer » ne montre que la production en cours : le filtre
+ * de statut n'existe que dans la vue « Tout », sinon un statut coché là-bas
+ * (Expédié…) vidait le tableau sans aucune puce visible pour le retirer.
+ */
+export const usesStatusFilter = () => state.view === 'all';
+
+export const hasActiveFilters = () =>
+  Boolean(
+    state.filters.colors.size ||
+      state.filters.uv.size ||
+      (usesStatusFilter() && state.filters.statuses.size) ||
+      state.filters.source ||
+      state.filters.priority ||
+      state.filters.q,
+  );
+
 export const queryParams = () => ({
-  scope: state.view === 'board' && !state.filters.statuses.size ? 'board' : undefined,
-  status: [...state.filters.statuses],
+  scope: state.view === 'board' ? 'board' : undefined,
+  status: usesStatusFilter() ? [...state.filters.statuses] : [],
   color: [...state.filters.colors],
   uv: [...state.filters.uv],
   source: state.filters.source,

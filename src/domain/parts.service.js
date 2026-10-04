@@ -17,6 +17,13 @@ const csv = (value) =>
     .map((v) => v.trim())
     .filter(Boolean);
 
+export const NO_UV = '__none__';
+
+// la recherche porte aussi sur le nom de la résine : même jointure partout
+const FILTER_FROM = `FROM parts p
+  JOIN orders o ON o.id = p.order_id
+  LEFT JOIN resin_colors c ON c.key = p.color_key`;
+
 /** Builds the WHERE clause shared by the list and the count queries. */
 const buildFilters = (query = {}) => {
   const where = [];
@@ -61,12 +68,19 @@ const buildFilters = (query = {}) => {
     params.printer = query.printer;
   }
 
+  // « __none__ » = pièces sans poste UV (NULL ou chaîne vide)
   const uvs = csv(query.uv);
   if (uvs.length) {
-    where.push(`p.uv IN (${uvs.map((_, i) => `@uv${i}`).join(', ')})`);
-    uvs.forEach((uv, i) => {
-      params[`uv${i}`] = uv;
-    });
+    const values = uvs.filter((uv) => uv !== NO_UV);
+    const clauses = [];
+    if (values.length) {
+      clauses.push(`p.uv IN (${values.map((_, i) => `@uv${i}`).join(', ')})`);
+      values.forEach((uv, i) => {
+        params[`uv${i}`] = uv;
+      });
+    }
+    if (values.length !== uvs.length) clauses.push("COALESCE(p.uv, '') = ''");
+    where.push(`(${clauses.join(' OR ')})`);
   }
 
   if (query.priority === '1' || query.priority === true) {
@@ -76,11 +90,14 @@ const buildFilters = (query = {}) => {
   const search = String(query.q ?? '').trim();
   if (search) {
     where.push(`(
-      p.name LIKE @q OR p.sku LIKE @q OR p.variant_title LIKE @q OR p.notes LIKE @q
-      OR p.comment LIKE @q OR p.printer LIKE @q
-      OR o.order_number LIKE @q OR o.customer_name LIKE @q OR o.external_id LIKE @q
+      p.name LIKE @q ESCAPE '\\' OR p.sku LIKE @q ESCAPE '\\' OR p.variant_title LIKE @q ESCAPE '\\'
+      OR p.notes LIKE @q ESCAPE '\\' OR p.comment LIKE @q ESCAPE '\\' OR p.printer LIKE @q ESCAPE '\\'
+      OR p.uv LIKE @q ESCAPE '\\' OR c.name LIKE @q ESCAPE '\\'
+      OR o.order_number LIKE @q ESCAPE '\\' OR o.customer_name LIKE @q ESCAPE '\\'
+      OR o.customer_email LIKE @q ESCAPE '\\' OR o.external_id LIKE @q ESCAPE '\\'
     )`);
-    params.q = `%${search}%`;
+    // « 100% » ou « R_1 » doivent être cherchés tels quels, pas comme jokers
+    params.q = `%${search.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
   }
 
   return { clause: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
@@ -116,11 +133,44 @@ export const listParts = (query = {}) => {
 
   const total = db
     .prepare(
-      `SELECT COUNT(*) AS n FROM parts p JOIN orders o ON o.id = p.order_id ${clause}`,
+      `SELECT COUNT(*) AS n ${FILTER_FROM} ${clause}`,
     )
     .get(params).n;
 
   return { items: rows.map(hydrate), total, limit, offset };
+};
+
+/**
+ * Compteurs affichés sur les puces de filtre. Chaque dimension est comptée
+ * avec tous les AUTRES filtres actifs, mais pas le sien : cocher « Noir »
+ * laisse voir combien de pièces donnerait « Blanc » en plus.
+ */
+export const getFacets = (query = {}) => {
+  const db = getDb();
+  const count = (omit, expression) => {
+    const { clause, params } = buildFilters({ ...query, [omit]: undefined });
+    return Object.fromEntries(
+      db
+        .prepare(`SELECT ${expression} AS k, COUNT(*) AS n ${FILTER_FROM} ${clause} GROUP BY k`)
+        .all(params)
+        .map((row) => [row.k, row.n]),
+    );
+  };
+
+  const { clause, params } = buildFilters({ ...query, priority: undefined });
+  const rush = db
+    .prepare(
+      `SELECT COUNT(*) AS n ${FILTER_FROM} ${clause ? `${clause} AND` : 'WHERE'} (p.priority = 1 OR o.is_priority = 1)`,
+    )
+    .get(params).n;
+
+  return {
+    color: count('color', 'p.color_key'),
+    uv: count('uv', `COALESCE(NULLIF(p.uv, ''), '${NO_UV}')`),
+    status: count('status', 'p.status'),
+    source: count('source', 'o.source'),
+    rush,
+  };
 };
 
 const hydrate = (row) => ({

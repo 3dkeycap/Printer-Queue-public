@@ -4,6 +4,7 @@ import {
   bulkSetStatus,
   createManualPart,
   deletePart,
+  getFacets,
   getPart,
   listEvents,
   listParts,
@@ -16,6 +17,10 @@ export const partsRouter = Router();
 
 partsRouter.get('/', (req, res) => {
   res.json(listParts(req.query));
+});
+
+partsRouter.get('/facets', (req, res) => {
+  res.json(getFacets(req.query));
 });
 
 partsRouter.get('/printers', (req, res) => {

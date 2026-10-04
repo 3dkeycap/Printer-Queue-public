@@ -153,9 +153,7 @@ const buildColumn = (status, parts, actions, { focused }) => {
 export const renderBoard = (root, actions) => {
   root.classList.add('is-board');
   const board = state.meta.boardStatuses ?? [];
-  let statuses = state.filters.statuses.size
-    ? state.meta.statuses.filter((s) => state.filters.statuses.has(s.key))
-    : state.meta.statuses.filter((s) => board.includes(s.key));
+  let statuses = state.meta.statuses.filter((s) => board.includes(s.key));
 
   // Vue « agrandie » : une seule colonne, en grille, pour une vision globale
   // de tout ce qu'elle contient d'un coup plutôt qu'une liste étroite.

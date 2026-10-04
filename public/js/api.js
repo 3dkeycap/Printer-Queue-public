@@ -28,6 +28,7 @@ const qs = (params = {}) => {
 export const api = {
   meta: () => request('/api/meta'),
   parts: (params) => request(`/api/parts${qs(params)}`),
+  facets: (params) => request(`/api/parts/facets${qs(params)}`),
   part: (id) => request(`/api/parts/${id}`),
   createPart: (body) => request('/api/parts', { method: 'POST', body }),
   patchPart: (id, body) => request(`/api/parts/${id}`, { method: 'PATCH', body }),

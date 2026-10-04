@@ -1,6 +1,16 @@
 import { api } from './api.js';
 import { clear, el, icon, modal, swatch, toast } from './ui.js';
-import { commentOptions, queryParams, savePrefs, state, statusMeta, uvOptions } from './store.js';
+import {
+  NO_UV,
+  commentOptions,
+  hasActiveFilters,
+  queryParams,
+  savePrefs,
+  state,
+  statusMeta,
+  usesStatusFilter,
+  uvOptions,
+} from './store.js';
 import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
@@ -278,11 +288,11 @@ const renderToolbar = () => {
   }
   dom.toolbar.hidden = false;
 
-  const colorCounts = new Map((state.summary?.byColor ?? []).map((c) => [c.key, state.view === 'board' ? c.active : c.total]));
-  const statusCounts = state.summary?.byStatus ?? {};
+  // compteurs « à facettes » : ils tiennent compte des autres filtres actifs
+  const facets = state.facets ?? { color: {}, uv: {}, status: {}, source: {}, rush: 0 };
 
   const colorChips = state.colors
-    .filter((color) => colorCounts.get(color.key) > 0 || state.filters.colors.has(color.key))
+    .filter((color) => facets.color[color.key] > 0 || state.filters.colors.has(color.key))
     .map((color) =>
       chip(
         color.name,
@@ -292,37 +302,47 @@ const renderToolbar = () => {
           refresh();
         },
         [swatch(color.hex)],
-        colorCounts.get(color.key) ?? 0,
+        facets.color[color.key] ?? 0,
       ),
     );
 
-  const uvChips = (state.meta?.uvOptions ?? []).map((option) =>
-    chip(
-      `UV ${option}`,
-      state.filters.uv.has(option),
-      () => {
-        toggleIn(state.filters.uv, option);
-        refresh();
-      },
-      [icon('uv')],
-    ),
-  );
+  const uvValues = [...(state.meta?.uvOptions ?? [])];
+  // une valeur UV retirée des réglages mais encore portée par des pièces
+  for (const value of Object.keys(facets.uv)) {
+    if (value !== NO_UV && !uvValues.includes(value)) uvValues.push(value);
+  }
+  const uvChips = [
+    ...uvValues.map((option) => [option, `UV ${option}`]),
+    [NO_UV, 'Sans UV'],
+  ]
+    .filter(([value]) => facets.uv[value] > 0 || state.filters.uv.has(value) || state.meta?.uvOptions?.includes(value))
+    .map(([value, label]) =>
+      chip(
+        label,
+        state.filters.uv.has(value),
+        () => {
+          toggleIn(state.filters.uv, value);
+          refresh();
+        },
+        [icon('uv')],
+        facets.uv[value] ?? 0,
+      ),
+    );
 
-  const statusChips =
-    state.view === 'all'
-      ? state.meta.statuses.map((status) =>
-          chip(
-            status.labelFr,
-            state.filters.statuses.has(status.key),
-            () => {
-              toggleIn(state.filters.statuses, status.key);
-              refresh();
-            },
-            [el('span', { class: 'swatch', style: { background: status.accent } })],
-            statusCounts[status.key] ?? 0,
-          ),
-        )
-      : [];
+  const statusChips = usesStatusFilter()
+    ? state.meta.statuses.map((status) =>
+        chip(
+          status.labelFr,
+          state.filters.statuses.has(status.key),
+          () => {
+            toggleIn(state.filters.statuses, status.key);
+            refresh();
+          },
+          [el('span', { class: 'swatch', style: { background: status.accent } })],
+          facets.status[status.key] ?? 0,
+        ),
+      )
+    : [];
 
   const groupSelect = el(
     'select',
@@ -375,23 +395,21 @@ const renderToolbar = () => {
       ['shopify', 'Shopify'],
       ['etsy', 'Etsy'],
       ['manual', 'Interne'],
-    ].map(([value, label]) => el('option', { value, selected: state.filters.source === value }, label)),
+    ].map(([value, label]) =>
+      el(
+        'option',
+        { value, selected: state.filters.source === value },
+        value ? `${label} (${facets.source[value] ?? 0})` : label,
+      ),
+    ),
   );
 
   const rushChip = chip('Rush', state.filters.priority, () => {
     state.filters.priority = !state.filters.priority;
     refresh();
-  }, [icon('bolt')]);
+  }, [icon('bolt')], facets.rush ?? 0);
 
-  const hasFilters =
-    state.filters.colors.size ||
-    state.filters.uv.size ||
-    state.filters.statuses.size ||
-    state.filters.source ||
-    state.filters.priority ||
-    state.filters.q;
-
-  const resetChip = hasFilters
+  const resetChip = hasActiveFilters()
     ? chip('Réinitialiser', false, () => {
         state.filters.colors.clear();
         state.filters.uv.clear();
@@ -511,11 +529,17 @@ const render = () => {
   if (state.view === 'board') {
     if (!state.parts.length) {
       root.append(
-        el('div', { class: 'empty' }, [
-          icon('layers'),
-          el('strong', {}, 'Rien à imprimer'),
-          'Connecte Shopify ou Etsy dans Intégrations, ou ajoute une pièce manuellement.',
-        ]),
+        hasActiveFilters()
+          ? el('div', { class: 'empty' }, [
+              icon('layers'),
+              el('strong', {}, 'Aucune pièce ne correspond aux filtres'),
+              'Retire un filtre ou clique « Réinitialiser » dans la barre au-dessus.',
+            ])
+          : el('div', { class: 'empty' }, [
+              icon('layers'),
+              el('strong', {}, 'Rien à imprimer'),
+              'Connecte Shopify ou Etsy dans Intégrations, ou ajoute une pièce manuellement.',
+            ]),
       );
     } else renderBoard(root, actions);
   } else if (state.view === 'all') renderAll(root, actions);
@@ -524,7 +548,12 @@ const render = () => {
 
 /* ----------------------------------------------------------------- data -- */
 
+// numéro de la dernière requête : une réponse plus ancienne (clic rapide sur
+// plusieurs puces, rafraîchissement automatique) ne doit pas écraser la plus récente
+let refreshSeq = 0;
+
 const refresh = async ({ silent = false } = {}) => {
+  const seq = ++refreshSeq;
   if (!silent) state.loading = true;
   try {
     if (state.view === 'integrations') {
@@ -534,22 +563,33 @@ const refresh = async ({ silent = false } = {}) => {
         api.runs(),
         api.summary(),
       ]);
+      if (seq !== refreshSeq) return;
       state.settings = settings.items;
       state.connectors = settings.connectors;
       state.colors = colors.items;
       state.runs = runs.items;
       state.summary = summary;
     } else {
-      const [summary, parts] = await Promise.all([api.summary(), api.parts(queryParams())]);
+      const params = queryParams();
+      const [summary, parts, facets] = await Promise.all([
+        api.summary(),
+        api.parts(params),
+        api.facets(params),
+      ]);
+      if (seq !== refreshSeq) return;
       state.summary = summary;
       state.parts = parts.items;
+      state.facets = facets;
+      // une pièce sélectionnée qui sort du filtre ne doit pas rester dans les actions groupées
+      const visible = new Set(state.parts.map((part) => part.id));
+      for (const id of state.selection) if (!visible.has(id)) state.selection.delete(id);
     }
     updateNavCounts();
     render();
   } catch (error) {
-    toast(error.message, 'err');
+    if (seq === refreshSeq) toast(error.message, 'err');
   } finally {
-    state.loading = false;
+    if (seq === refreshSeq) state.loading = false;
   }
 };
 
@@ -586,7 +626,8 @@ const updateConnectorBadge = () => {
   document.getElementById('mode-label').textContent =
     total === 0 ? '—' : ready === total ? 'Connecteurs actifs' : `${ready}/${total} connecteur(s)`;
   document.getElementById('cron-line').textContent =
-    `sync ${state.meta?.syncCron ?? '—'} · envois ${state.meta?.shipmentCron ?? '—'}`;
+    `sync ${state.meta?.syncCron ?? '—'} · envois ${state.meta?.shipmentCron ?? '—'}` +
+    (state.meta?.build ? ` · version ${state.meta.build}` : '');
 };
 
 const bindEvents = () => {
