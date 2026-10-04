@@ -6,8 +6,20 @@ const show = (text, ok) => {
   status.className = ok ? 'ok' : 'err';
 };
 
-chrome.storage.sync.get(FIELDS).then((values) => {
+chrome.storage.sync.get(FIELDS).then(async (values) => {
   for (const key of FIELDS) document.getElementById(key).value = values[key] ?? '';
+  // extension téléchargée depuis l'app : son adresse est déjà connue
+  if (!values.appUrl) {
+    try {
+      const defaults = await (await fetch(chrome.runtime.getURL('defaults.json'))).json();
+      if (defaults.appUrl) {
+        document.getElementById('appUrl').value = defaults.appUrl;
+        show('Adresse de l\'app pré-remplie : ajoute ton nom puis « Enregistrer et tester ».', true);
+      }
+    } catch {
+      /* pas de defaults.json : extension copiée depuis le dépôt */
+    }
+  }
 });
 
 document.getElementById('save').addEventListener('click', async () => {

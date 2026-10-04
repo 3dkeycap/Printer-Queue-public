@@ -17,9 +17,11 @@ Le marquage disparaît tout seul quand :
 
 ## Installation (une fois par ordinateur)
 
-1. Récupère ce dossier `chrome-extension` (copie du dépôt, ou « Download ZIP » sur GitHub puis décompresser).
+1. Dans l'app : Réglages → Apparence & aide → **Télécharger l'extension** (fichier
+   `resin-queue-extension.zip`, l'adresse de l'app y est déjà), puis **décompresse-le**.
+   (Ou copie ce dossier `chrome-extension` depuis le dépôt.)
 2. Dans Chrome : `chrome://extensions` → active **Mode développeur** (en haut à droite).
-3. **Charger l'extension non empaquetée** → choisis le dossier `chrome-extension`.
+3. **Charger l'extension non empaquetée** → choisis le dossier décompressé (`resin-queue-extension`).
 4. Clique l'icône de l'extension (pièce de puzzle → Resin Queue) : renseigne l'adresse de l'app
    (ex. `http://192.168.1.50:8080`), ton nom, et le mot de passe du dashboard s'il y en a un.
    **Enregistrer et tester** doit afficher « connexion à l'app OK ».

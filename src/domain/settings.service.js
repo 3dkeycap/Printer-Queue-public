@@ -75,9 +75,9 @@ export const DEFINITIONS = [
     group: 'chitchats',
     label: "Page d'expédition Chit Chats",
     type: 'text',
-    placeholder: 'https://chitchats.com/clients/{clientId}/shipments?q={order}',
+    placeholder: 'https://chitchats.com/clients/{clientId}/shipments/search?locale=en&q={order}',
     hint: "Adresse ouverte par « Ouvrir sur Chit Chats » quand une commande est ouverte sur Shopify. {order} = numéro de commande (sans #), {clientId} = Client ID ci-dessus. Le numéro est aussi copié dans le presse-papiers.",
-    fallback: () => 'https://chitchats.com/clients/{clientId}/shipments?q={order}',
+    fallback: () => 'https://chitchats.com/clients/{clientId}/shipments/search?locale=en&q={order}',
   },
   { key: 'chitchats.shipAllParts', group: 'chitchats', label: 'Expédier toutes les pièces du colis', type: 'boolean', hint: 'Sinon, seules les pièces déjà imprimées passent à Expédié.', fallback: () => config.chitchats.shipAllParts },
 

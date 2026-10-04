@@ -69,3 +69,17 @@ describe('liens « ouvrir sur… »', () => {
     assert.match(getPart(part.id).links.shop.url, /etsy\.com\/your\/orders\/sold\?order_id=555/);
   });
 });
+
+describe('lien Chit Chats par numéro de commande', () => {
+  it('pointe sur la recherche Chit Chats quand le Client ID est connu', async () => {
+    const { getPart } = await import('../src/domain/parts.service.js');
+    const { getDb } = await import('../src/db/index.js');
+    updateSettings({ 'chitchats.clientId': '314561' });
+    const { orderId } = ingestOrder(makeOrder({ externalId: '9002', orderNumber: '#5429', items: [{ externalId: 'y', title: 'Link test 2', quantity: 1 }] }));
+    const part = getDb().prepare('SELECT id FROM parts WHERE order_id = ?').get(orderId);
+    assert.equal(
+      getPart(part.id).links.chitchats.url,
+      'https://chitchats.com/clients/314561/shipments/search?locale=en&q=5429',
+    );
+  });
+});

@@ -27,8 +27,19 @@ const orderIdFromUrl = (url) => {
 
 /* ---------------------------------------------------------------- réglages */
 
+/** Adresse de l'app pré-remplie quand l'extension est téléchargée depuis l'app. */
+const loadDefaults = async () => {
+  try {
+    const response = await fetch(chrome.runtime.getURL('defaults.json'));
+    return response.ok ? await response.json() : {};
+  } catch {
+    return {};
+  }
+};
+
 const getConfig = async () => {
-  const { appUrl = '', user = '', authUser = '', authPassword = '', clientId } = await chrome.storage.sync.get([
+  const defaults = await loadDefaults();
+  const { appUrl = defaults.appUrl ?? '', user = '', authUser = '', authPassword = '', clientId } = await chrome.storage.sync.get([
     'appUrl',
     'user',
     'authUser',

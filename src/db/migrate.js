@@ -110,6 +110,11 @@ export const migrate = () => {
     if (info.changes) log.info('legacy status migrated', { legacy, replacement, parts: info.changes });
   }
 
+  // ancienne adresse Chit Chats par défaut (devinée) -> la vraie page de recherche
+  db.prepare(`DELETE FROM settings WHERE key = 'chitchats.shipUrlTemplate' AND value = ?`).run(
+    'https://chitchats.com/clients/{clientId}/shipments?q={order}',
+  );
+
   purgeLegacyMockData(db);
   resetCorruptedSyncCursors(db);
 

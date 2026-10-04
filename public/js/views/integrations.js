@@ -430,17 +430,18 @@ const tabApparence = (actions) => [
     'Extension Chrome (Shopify → Chit Chats)',
     "Quand quelqu'un ouvre une commande dans l'admin Shopify, ses cartes affichent « Ouvert sur Shopify » et un bouton « Ouvrir sur Chit Chats ». Le marquage disparaît en changeant de page, en fermant l'onglet ou après 30 min.",
     [
-      el('p', { class: 'field-hint' }, [
-        "Installation : chrome://extensions → Mode développeur → « Charger l'extension non empaquetée » → dossier ",
-        el('code', {}, 'chrome-extension'),
-        " du dépôt. Puis, dans l'extension, l'adresse de l'app : ",
-        el('code', {}, location.origin),
+      el('ol', { class: 'install-steps' }, [
+        el('li', {}, ["Clique ", el('strong', {}, "Télécharger l'extension"), ' puis décompresse le fichier .zip.']),
+        el('li', {}, ['Dans Chrome, ouvre ', el('code', {}, 'chrome://extensions'), ' et active le ', el('strong', {}, 'Mode développeur'), ' (en haut à droite).']),
+        el('li', {}, [el('strong', {}, "Charger l'extension non empaquetée"), ' → choisis le dossier ', el('code', {}, 'resin-queue-extension'), '.']),
+        el('li', {}, ["Clique l'icône de l'extension : l'adresse de l'app est déjà remplie, ajoute ton nom puis « Enregistrer et tester »."]),
       ]),
       el('div', { class: 'panel-foot left' }, [
+        el('a', { class: 'primary-btn', href: '/api/extension.zip', download: 'resin-queue-extension.zip' }, [icon('save'), "Télécharger l'extension"]),
         el(
           'a',
           { class: 'ghost-btn', href: 'https://github.com/3dkeycap/Printer-Queue-public/tree/main/chrome-extension', target: '_blank', rel: 'noopener' },
-          [icon('link'), "Voir l'extension sur GitHub"],
+          [icon('link'), 'Voir sur GitHub'],
         ),
       ]),
     ],

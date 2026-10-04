@@ -27,6 +27,7 @@ COPY package.json ./
 COPY src ./src
 COPY public ./public
 COPY scripts ./scripts
+COPY chrome-extension ./chrome-extension
 
 # Version affichée dans le dashboard et utilisée pour la sauvegarde automatique
 # au premier démarrage d'une nouvelle version : le commit passé par

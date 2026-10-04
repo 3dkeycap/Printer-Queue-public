@@ -12,7 +12,7 @@ const { reportShopify, listOpen, resetPresence, MAX_OPEN, HEARTBEAT_TTL } = awai
 describe('« ouvert sur Shopify » (extension Chrome)', () => {
   before(() => {
     migrate();
-    updateSettings({ 'chitchats.clientId': '42', 'chitchats.shipUrlTemplate': 'https://chitchats.com/clients/{clientId}/shipments?q={order}' });
+    updateSettings({ 'chitchats.clientId': '42', 'chitchats.shipUrlTemplate': 'https://chitchats.com/clients/{clientId}/shipments/search?locale=en&q={order}' });
     ingestOrder(makeOrder({ externalId: '5550001', orderNumber: '#1042' }));
   });
   after(() => {
@@ -24,7 +24,7 @@ describe('« ouvert sur Shopify » (extension Chrome)', () => {
     resetPresence();
     const result = reportShopify({ clientId: 'c1', tabId: 1, orderExternalId: '5550001', user: 'Alex' });
     assert.equal(result.open, true);
-    assert.equal(result.chitchatsUrl, 'https://chitchats.com/clients/42/shipments?q=1042');
+    assert.equal(result.chitchatsUrl, 'https://chitchats.com/clients/42/shipments/search?locale=en&q=1042');
     const [entry] = listOpen();
     assert.equal(entry.orderNumber, '#1042');
     assert.deepEqual(entry.users, ['Alex']);

@@ -15,6 +15,7 @@ import { shopifyOAuthRouter } from './routes/shopifyOAuth.js';
 import { statsRouter } from './routes/stats.js';
 import { syncRouter } from './routes/sync.js';
 import { presenceRouter } from './routes/presence.js';
+import { extensionRouter } from './routes/extension.js';
 import { systemRouter } from './routes/system.js';
 import { webhooksRouter } from './routes/webhooks.js';
 
@@ -86,6 +87,7 @@ export const createApp = () => {
   app.use('/api/sync', syncRouter);
   app.use('/api/system', systemRouter);
   app.use('/api/presence', presenceRouter);
+  app.use('/api', extensionRouter);
 
   app.use(express.static(config.publicDir, { extensions: ['html'], maxAge: '1h' }));
 
