@@ -50,7 +50,7 @@ export const getSummary = () => {
 
   // les couleurs retirées de la file ne comptent pas dans « À imprimer »
   const hidden = hiddenColorKeys().map((key) => `'${String(key).replace(/'/g, "''")}'`);
-  const visible = hidden.length ? ` AND color_key NOT IN (${hidden.join(',')})` : '';
+  const visible = ` AND not_printed = 0${hidden.length ? ` AND color_key NOT IN (${hidden.join(',')})` : ''}`;
 
   const totals = db
     .prepare(

@@ -26,21 +26,21 @@ export const matchesAnyKeyword = (texts, keywords) => {
 };
 
 /**
- * Retire de la file les pièces créées automatiquement pour un supplément
- * (articles toujours en stock : pas à imprimer).
+ * Range les pièces des articles « à ne pas imprimer » hors de « À imprimer »
+ * (elles restent dans « Tout » : on les expédie quand même). Recalculé à
+ * chaque changement de la liste : retirer un mot remet ses pièces dans la file.
  *
- * Une pièce n'est JAMAIS retirée dès qu'un humain s'en est occupé : pièce
- * manuelle, changement de statut, imprimante/UV/commentaire/notes modifiés...
- * C'est la façon de dire « celle-là, on la veut dans la file ».
+ * Une pièce dont un humain s'est occupé (pièce manuelle, statut changé,
+ * imprimante/UV/tags/notes modifiés...) n'est jamais déplacée : c'est la façon
+ * de dire « celle-là, on la veut dans la file ».
  */
 export const purgeNonPrintableParts = () => {
   const db = getDb();
   const keywords = getSettings()['production.nonPrintableKeywords'] ?? [];
-  if (!keywords.length) return { removed: 0 };
 
-  const candidates = db
+  const rows = db
     .prepare(
-      `SELECT p.id, i.title, i.variant_title, i.sku
+      `SELECT p.id, p.not_printed, i.title, i.variant_title, i.sku
          FROM parts p
          JOIN order_items i ON i.id = p.order_item_id
          JOIN orders o ON o.id = p.order_id
@@ -49,22 +49,30 @@ export const purgeNonPrintableParts = () => {
           AND p.updated_at = p.created_at
           AND NOT EXISTS (SELECT 1 FROM part_events e WHERE e.part_id = p.id AND e.actor <> 'worker')`,
     )
-    .all()
-    .filter((row) => matchesAnyKeyword([row.title, row.variant_title, row.sku], keywords));
+    .all();
 
-  const remove = db.prepare('DELETE FROM parts WHERE id = ?');
-  db.transaction(() => candidates.forEach((row) => remove.run(row.id)))();
-  if (candidates.length) log.info('supplement parts removed from the queue', { removed: candidates.length });
-  return { removed: candidates.length };
+  const set = db.prepare('UPDATE parts SET not_printed = ? WHERE id = ?');
+  let removed = 0;
+  db.transaction(() => {
+    for (const row of rows) {
+      const flag = matchesAnyKeyword([row.title, row.variant_title, row.sku], keywords) ? 1 : 0;
+      if (flag !== row.not_printed) {
+        set.run(flag, row.id);
+        if (flag) removed += 1;
+      }
+    }
+  })();
+  if (removed) log.info('supplement parts moved out of the queue', { removed });
+  return { removed };
 };
 
 /**
- * « Enlever tout maintenant » : parcourt la file et retire les pièces dont le
- * titre, la variante ou le SKU contient un des mots (liste passée par l'écran,
- * donc même non enregistrée). Action explicite de l'opérateur : on ne regarde
- * pas si un humain a touché la pièce. Reste hors de portée : les pièces
- * ajoutées à la main, celles en cours d'impression ou déjà imprimées.
- * `dryRun` ne supprime rien et renvoie seulement ce qui serait retiré.
+ * « Enlever tout maintenant » : parcourt la file et en retire les pièces dont
+ * le titre, la variante ou le SKU contient un des mots (liste passée par
+ * l'écran, donc même non enregistrée). Elles restent dans « Tout ». Action
+ * explicite de l'opérateur : on ne regarde pas si un humain a touché la pièce.
+ * Hors de portée : pièces ajoutées à la main, en cours d'impression ou déjà
+ * imprimées. `dryRun` ne modifie rien et renvoie seulement ce qui serait retiré.
  */
 export const purgeNow = ({ keywords, dryRun = false } = {}) => {
   const db = getDb();
@@ -79,14 +87,14 @@ export const purgeNow = ({ keywords, dryRun = false } = {}) => {
          FROM parts p
          JOIN order_items i ON i.id = p.order_item_id
          JOIN orders o ON o.id = p.order_id
-        WHERE o.source <> 'manual' AND p.status IN ('TO_PRINT', 'FAILED')`,
+        WHERE o.source <> 'manual' AND p.status IN ('TO_PRINT', 'FAILED') AND p.not_printed = 0`,
     )
     .all()
     .filter((row) => matchesAnyKeyword([row.title, row.variant_title, row.sku], list));
 
   if (!dryRun) {
-    const remove = db.prepare('DELETE FROM parts WHERE id = ?');
-    db.transaction(() => matches.forEach((row) => remove.run(row.id)))();
+    const flag = db.prepare('UPDATE parts SET not_printed = 1 WHERE id = ?');
+    db.transaction(() => matches.forEach((row) => flag.run(row.id)))();
     if (matches.length) log.info('queue cleaned by operator', { removed: matches.length });
   }
 

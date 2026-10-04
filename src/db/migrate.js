@@ -23,6 +23,38 @@ const addColumnIfMissing = (db, table, column, definition) => {
   return true;
 };
 
+/**
+ * Avant la colonne `not_printed`, une ligne « à ne pas imprimer » ne créait
+ * aucune pièce (ou elle était supprimée) : elle n'apparaissait nulle part.
+ * Une seule fois, on recrée ces pièces, marquées « pas imprimé ici », pour
+ * qu'elles soient dans « Tout » (on les expédie quand même).
+ */
+const restoreSkippedItems = (db) => {
+  const items = db
+    .prepare(
+      `SELECT i.*, o.shipped_at, o.is_priority FROM order_items i JOIN orders o ON o.id = i.order_id
+        WHERE o.source <> 'manual' AND NOT EXISTS (SELECT 1 FROM parts p WHERE p.order_item_id = i.id)`,
+    )
+    .all();
+  const ts = nowIso();
+  const insert = db.prepare(
+    `INSERT INTO parts (order_id, order_item_id, unit_index, name, sku, variant_title, color_key, status,
+                        priority, not_printed, status_changed_at, shipped_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, 'unassigned'), ?, ?, 1, ?, ?, ?, ?)`,
+  );
+  db.transaction(() => {
+    for (const item of items) {
+      for (let unit = 1; unit <= Math.max(Number(item.quantity) || 1, 1); unit += 1) {
+        insert.run(
+          item.order_id, item.id, unit, item.title, item.sku, item.variant_title, item.color_key,
+          item.shipped_at ? 'SHIPPED' : 'TO_PRINT', item.is_priority ? 1 : 0, ts, item.shipped_at ?? null, ts, ts,
+        );
+      }
+    }
+  })();
+  if (items.length) log.info('not-printed items restored for the All view', { items: items.length });
+};
+
 const MOCK_DATA_PURGED_KEY = 'internal.mockDataPurged';
 
 /**
@@ -103,6 +135,10 @@ export const migrate = () => {
   addColumnIfMissing(db, 'orders', 'chitchats_import_status', 'TEXT');
   addColumnIfMissing(db, 'orders', 'chitchats_import_error', 'TEXT');
   addColumnIfMissing(db, 'orders', 'chitchats_import_at', 'TEXT');
+  // pièce expédiée d'ici mais pas imprimée ici (article en stock, supplément…) :
+  // absente de « À imprimer », visible dans « Tout »
+  const notPrintedAdded = addColumnIfMissing(db, 'parts', 'not_printed', 'INTEGER NOT NULL DEFAULT 0');
+  if (notPrintedAdded) restoreSkippedItems(db);
 
   // statuts retirés en v2 (FILE_READY, IN_INVENTORY) -> équivalent actuel
   for (const [legacy, replacement] of Object.entries(LEGACY_STATUS_MAP)) {

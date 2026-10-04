@@ -91,6 +91,9 @@ const row = (part, actions) => {
       el('td', {}, statusSelect(part, actions)),
       el('td', {}, [
         el('div', { class: 'cell-name' }, part.name),
+        part.not_printed || (state.meta?.hiddenColors ?? []).includes(part.color_key)
+          ? el('span', { class: 'tag not-printed', title: "Expédié d'ici mais pas imprimé ici (article en stock, supplément, autre usine) : absent de « À imprimer »" }, 'Pas imprimé ici')
+          : null,
         el('div', { class: 'cell-sub' }, [part.sku, part.variant_title].filter(Boolean).join(' · ') || '—'),
       ]),
       el('td', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),

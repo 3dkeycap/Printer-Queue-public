@@ -249,7 +249,7 @@ const actions = {
       const confirmed = await modal({
         title: 'Enlever de la file maintenant ?',
         body: el('div', {}, [
-          el('p', {}, `${preview.removed} pièce(s) seront retirées de « À imprimer » et « Échec » :`),
+          el('p', {}, `${preview.removed} pièce(s) seront retirées de « À imprimer » et « Échec » (elles restent dans « Tout », pour l'expédition) :`),
           el('ul', { class: 'purge-list' }, preview.items.map((item) => el('li', {}, `${item.count} × ${item.name}`))),
           el('p', { class: 'cell-sub' }, "Les pièces ajoutées à la main, en cours d'impression ou déjà imprimées ne sont pas touchées."),
         ]),

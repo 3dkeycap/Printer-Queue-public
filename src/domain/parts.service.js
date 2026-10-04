@@ -47,6 +47,8 @@ const buildFilters = (query = {}) => {
 
   // couleurs que l'atelier n'imprime pas : absentes du tableau « À imprimer »
   if (query.scope === 'board') {
+    // pas imprimé ici (article en stock, supplément) : seulement dans « Tout »
+    where.push('p.not_printed = 0');
     const hidden = hiddenColorKeys();
     if (hidden.length) {
       where.push(`p.color_key NOT IN (${hidden.map((_, i) => `@hidden${i}`).join(', ')})`);
@@ -127,7 +129,7 @@ export const listParts = (query = {}) => {
   const rows = db
     .prepare(
       `SELECT p.id, p.order_id, p.order_item_id, p.unit_index, p.name, p.sku, p.variant_title,
-              p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count,
+              p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count, p.not_printed,
               p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
               o.tracking_number, o.carrier,
@@ -190,6 +192,7 @@ export const getFacets = (query = {}) => {
 
 const hydrate = (row) => ({
   ...row,
+  not_printed: Boolean(row.not_printed),
   priority: Boolean(row.priority),
   order_priority: Boolean(row.order_priority),
 });
@@ -352,6 +355,10 @@ export const updatePart = (id, patch, { actor = 'dashboard' } = {}) => {
   if (patch.priority !== undefined) {
     fields.push('priority = @priority');
     values.priority = patch.priority ? 1 : 0;
+  }
+  if (patch.not_printed !== undefined) {
+    fields.push('not_printed = @not_printed');
+    values.not_printed = patch.not_printed ? 1 : 0;
   }
 
   if (values.color_key !== undefined) {

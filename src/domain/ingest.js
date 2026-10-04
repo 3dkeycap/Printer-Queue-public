@@ -132,9 +132,9 @@ export const ingestOrder = (order) => {
         [item.variantTitle, item.sku, item.title, ...(item.colorHints ?? [])],
         colors,
       );
-      // Supplément Etsy/Shopify (ex. « Custom UV Printed Legends », « Color
-      // Variety Pack ») : pas un objet physique, donc pas de pièce à créer -
-      // la ligne de commande reste enregistrée pour l'historique/le total.
+      // Supplément / article toujours en stock (ex. « Color Variety Pack ») :
+      // pas imprimé ici, mais expédié d'ici -> pièce marquée « pas imprimé ici »,
+      // absente de « À imprimer », visible dans « Tout ».
       const isNonPrintable = matchesAnyKeyword(
         [item.title, item.variantTitle, item.sku],
         settings['production.nonPrintableKeywords'],
@@ -190,7 +190,7 @@ export const ingestOrder = (order) => {
       }
 
       // --- granularity: one row per physical object ---------------------
-      if (!isNonPrintable) {
+      {
         const known = db
           .prepare('SELECT unit_index FROM parts WHERE order_item_id = ?')
           .all(itemId)
@@ -204,9 +204,9 @@ export const ingestOrder = (order) => {
           const info = db
             .prepare(
               `INSERT INTO parts (order_id, order_item_id, unit_index, name, sku, variant_title,
-                                  color_key, status, priority, uv, status_changed_at, created_at, updated_at)
+                                  color_key, status, priority, uv, not_printed, status_changed_at, created_at, updated_at)
                VALUES (@orderId, @itemId, @unitIndex, @name, @sku, @variantTitle,
-                       @colorKey, 'TO_PRINT', @priority, @uv, @ts, @ts, @ts)`,
+                       @colorKey, 'TO_PRINT', @priority, @uv, @notPrinted, @ts, @ts, @ts)`,
             )
             .run({
               orderId,
@@ -217,7 +217,9 @@ export const ingestOrder = (order) => {
               variantTitle: item.variantTitle ?? null,
               colorKey,
               priority: order.isPriority ? 1 : 0,
-              uv: needsAutoUv ? settings['production.uvAutoValue'] || null : null,
+              uv: needsAutoUv && !isNonPrintable ? settings['production.uvAutoValue'] || null : null,
+              // supplément / article en stock : expédié d'ici, pas imprimé -> « Tout » seulement
+              notPrinted: isNonPrintable ? 1 : 0,
               ts,
             });
           db.prepare(

@@ -10,6 +10,9 @@ const { ingestOrder } = await import('../src/domain/ingest.js');
 
 const partsOf = (orderId) =>
   getDb().prepare('SELECT * FROM parts WHERE order_id = ? ORDER BY id').all(orderId);
+// pièces dans « À imprimer » (les articles pas imprimés ici n'y sont pas, mais restent dans « Tout »)
+const queueOf = (orderId) =>
+  getDb().prepare('SELECT * FROM parts WHERE order_id = ? AND not_printed = 0 ORDER BY id').all(orderId);
 const itemsOf = (orderId) =>
   getDb().prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id').all(orderId);
 
@@ -17,7 +20,7 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
   before(() => migrate());
   after(() => closeDb());
 
-  it('« Custom UV Printed Legends » ne crée aucune pièce et marque la vraie pièce UV', () => {
+  it('« Custom UV Printed Legends » : pas dans la file (mais dans « Tout ») et marque la vraie pièce UV', () => {
     const order = makeOrder({
       externalId: '5001',
       orderNumber: '#5001',
@@ -37,12 +40,15 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
     });
 
     const result = ingestOrder(order);
-    assert.equal(result.partsCreated, 1, 'une seule pièce : le supplément UV n\'en crée pas');
+    assert.equal(result.partsCreated, 2, 'le supplément a sa pièce, pour « Tout » (on l\'expédie)');
 
-    const parts = partsOf(result.orderId);
-    assert.equal(parts.length, 1);
+    const parts = queueOf(result.orderId);
+    assert.equal(parts.length, 1, 'une seule pièce à imprimer');
     assert.equal(parts[0].name, 'Custom Keycap Set');
     assert.equal(parts[0].uv, 'oui', 'la pièce reçoit automatiquement la valeur UV');
+    const addon = partsOf(result.orderId).find((part) => part.name === 'Custom UV Printed Legends');
+    assert.equal(addon.not_printed, 1);
+    assert.equal(addon.uv, null);
 
     // la ligne de commande du supplément reste enregistrée pour l'historique
     const items = itemsOf(result.orderId);
@@ -50,7 +56,7 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
     assert.ok(items.some((item) => item.title === 'Custom UV Printed Legends'));
   });
 
-  it('« Color Variety Pack » ne crée pas de pièce mais ne déclenche pas l\'UV', () => {
+  it('« Color Variety Pack » : pas dans la file et ne déclenche pas l\'UV', () => {
     const order = makeOrder({
       externalId: '5002',
       orderNumber: '#5002',
@@ -61,7 +67,8 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
     });
 
     const result = ingestOrder(order);
-    assert.equal(result.partsCreated, 2);
+    assert.equal(result.partsCreated, 3);
+    assert.equal(queueOf(result.orderId).length, 2);
 
     const parts = partsOf(result.orderId);
     assert.ok(parts.every((part) => part.uv === null), 'pas de supplément UV dans cette commande');
@@ -91,8 +98,8 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
     });
 
     const result = ingestOrder(order);
-    assert.equal(result.partsCreated, 1);
-    assert.equal(partsOf(result.orderId)[0].uv, 'A');
+    assert.equal(queueOf(result.orderId).length, 1);
+    assert.equal(queueOf(result.orderId)[0].uv, 'A');
   });
 
   it('la détection est insensible à la casse', () => {
@@ -112,8 +119,8 @@ describe('suppléments Etsy/Shopify (pas des objets à imprimer)', () => {
     });
 
     const result = ingestOrder(order);
-    assert.equal(result.partsCreated, 1);
-    assert.equal(partsOf(result.orderId)[0].uv, 'oui');
+    assert.equal(queueOf(result.orderId).length, 1);
+    assert.equal(queueOf(result.orderId)[0].uv, 'oui');
   });
 });
 
@@ -132,14 +139,20 @@ describe('nettoyage des suppléments déjà dans la file', () => {
     return result.orderId;
   };
 
-  it('retire les pièces automatiques d\'un supplément devenu « à ne pas imprimer »', async () => {
+  it('sort de la file les pièces d\'un article devenu « à ne pas imprimer » (elles restent dans « Tout »)', async () => {
     const { purgeNonPrintableParts } = await import('../src/domain/addons.js');
     const orderId = seed('6001');
     assert.equal(partsOf(orderId).length, 2);
     updateSettings({ 'production.nonPrintableKeywords': ['keycap puller'] });
     assert.equal(purgeNonPrintableParts().removed, 2);
-    assert.equal(partsOf(orderId).length, 0);
-    assert.equal(itemsOf(orderId).length, 1, 'la ligne de commande reste');
+    assert.equal(queueOf(orderId).length, 0);
+    assert.equal(partsOf(orderId).length, 2, 'toujours dans « Tout »');
+    // retirer le mot les remet dans la file
+    updateSettings({ 'production.nonPrintableKeywords': [] });
+    purgeNonPrintableParts();
+    assert.equal(queueOf(orderId).length, 2);
+    updateSettings({ 'production.nonPrintableKeywords': ['keycap puller'] });
+    purgeNonPrintableParts();
   });
 
   it('garde une pièce dont un humain s\'est occupé', async () => {
@@ -150,9 +163,9 @@ describe('nettoyage des suppléments déjà dans la file', () => {
       .prepare(`INSERT INTO part_events (part_id, from_status, to_status, actor) VALUES (?, 'TO_PRINT', 'TO_PRINT', 'dashboard')`)
       .run(first.id);
     updateSettings({ 'production.nonPrintableKeywords': ['keycap puller'] });
-    assert.equal(purgeNonPrintableParts().removed, 1);
-    assert.equal(partsOf(orderId).length, 1);
-    assert.equal(partsOf(orderId)[0].id, first.id);
+    purgeNonPrintableParts();
+    assert.equal(queueOf(orderId).length, 1, 'seule la pièce touchée par un humain reste dans la file');
+    assert.equal(queueOf(orderId)[0].id, first.id);
   });
 });
 
@@ -181,10 +194,11 @@ describe('« Enlever tout maintenant »', () => {
 
     const preview = purgeNow({ keywords: ['sticker'], dryRun: true });
     assert.equal(preview.removed, 2, 'la pièce en impression et la manuelle sont épargnées');
-    assert.equal(partsOf(orderId).length, 4, 'dryRun ne supprime rien');
+    assert.equal(queueOf(orderId).length, 4, 'dryRun ne change rien');
 
     assert.equal(purgeNow({ keywords: ['sticker'] }).removed, 2);
-    assert.equal(partsOf(orderId).length, 2);
-    assert.ok(partsOf(orderId).some((p) => p.name === 'Real Keycap'));
+    assert.equal(queueOf(orderId).length, 2);
+    assert.equal(partsOf(orderId).length, 4, 'rien n\'est supprimé : tout reste dans « Tout »');
+    assert.ok(queueOf(orderId).some((p) => p.name === 'Real Keycap'));
   });
 });

@@ -230,7 +230,7 @@ const tabAtelier = (draft, touch, actions) => {
   return [
     section(
       "Ce qu'on n'imprime pas ici",
-      "Les résines faites ailleurs et les articles toujours en stock n'apparaissent pas dans « À imprimer ».",
+      "Les résines faites ailleurs et les articles toujours en stock n'apparaissent pas dans « À imprimer », mais restent dans « Tout » pour l'expédition.",
       [
         f('production.hiddenColors', {
           label: 'Résines retirées de la file',
@@ -248,7 +248,7 @@ const tabAtelier = (draft, touch, actions) => {
             ]),
           label: 'Articles toujours en stock (mots à repérer)',
           placeholder: 'Ex. Keycap Puller — puis Entrée',
-          hint: "Il suffit que le titre, la variante ou le SKU CONTIENNE le mot (pas besoin du nom exact). Si le nom d'une résine le contient (ex. « Nylon »), la résine disparaît aussi de la file. Une pièce qu'un humain a déjà modifiée reste dans la file.",
+          hint: "Il suffit que le titre, la variante ou le SKU CONTIENNE le mot. Ces articles sortent de « À imprimer » mais restent dans « Tout » (on les expédie d'ici). Si le nom d'une résine contient le mot (ex. « Nylon »), la résine sort aussi de la file. Une pièce qu'un humain a déjà modifiée reste dans la file.",
         }),
       ],
     ),

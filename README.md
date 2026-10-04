@@ -596,3 +596,10 @@ Chats. « Stop live » pour couper. Détails dans [`chrome-extension/README.md`]
 Your Apps, à côté de la keystring) dans Réglages → Boutiques → Etsy. Le Shop ID est aussi
 détecté automatiquement depuis le compte connecté (à la connexion OAuth, et corrigé si Etsy
 refuse celui saisi).
+
+**« Tout » = tout ce qui est expédié d'ici** — les articles qu'on n'imprime pas ici (suppléments,
+articles toujours en stock, résines faites ailleurs) ne sont plus supprimés : ils sortent seulement
+de « À imprimer » et restent dans « Tout » avec l'étiquette « Pas imprimé ici ». Dans la fiche,
+le bouton « Pas imprimé ici » les sort de la file ou les y remet. « Enlever tout maintenant » fait
+pareil (rien n'est supprimé). Les anciennes lignes de commande qui n'avaient pas de pièce en
+reçoivent une automatiquement à la mise à jour.

@@ -193,6 +193,24 @@ export const openDrawer = async (partId, actions) => {
       el('div', { class: 'field' }, [el('label', {}, 'Notes libres'), notesInput]),
 
       el('div', {}, [
+        el('div', { class: 'section-title' }, 'Impression'),
+        el(
+          'button',
+          {
+            class: `chip${part.not_printed ? ' is-on' : ''}`,
+            title: part.not_printed
+              ? 'Remettre cette pièce dans « À imprimer »'
+              : "Article en stock / pas imprimé ici : le retirer de « À imprimer » (il reste dans « Tout »)",
+            onclick: async () => {
+              await actions.patchPart(part.id, { not_printed: !part.not_printed });
+              openDrawer(part.id, actions);
+            },
+          },
+          [icon('printer'), part.not_printed ? "Pas imprimé ici — remettre dans « À imprimer »" : 'Pas imprimé ici (en stock)'],
+        ),
+      ]),
+
+      el('div', {}, [
         el('div', { class: 'section-title' }, 'Priorité'),
         el(
           'button',
