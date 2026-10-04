@@ -24,6 +24,7 @@ metaRouter.get('/meta', (req, res) => {
     uvOptions: settings['production.uvOptions'],
     commentOptions: settings['production.commentOptions'],
     printerOptions: settings['production.printerOptions'],
+    hiddenColors: settings['production.hiddenColors'],
     defaultUv: settings['production.defaultUv'],
     syncCron: settings['schedule.syncCron'],
     shipmentCron: settings['schedule.shipmentCron'],

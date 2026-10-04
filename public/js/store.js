@@ -15,11 +15,11 @@ export const state = {
   groupBy: prefs.groupBy ?? 'color',
   sort: prefs.sort ?? 'smart',
   theme: prefs.theme ?? 'dark',
+  stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
   filters: {
     q: '',
     colors: new Set(),
     statuses: new Set(),
-    uv: new Set(),
     source: '',
     priority: false,
   },
@@ -39,11 +39,11 @@ export const state = {
 
 export const savePrefs = () => {
   const { groupBy, sort, theme } = state;
-  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme }));
+  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, stacked: [...state.stacked] }));
 };
 
-/** Valeur de filtre UV pour « aucun poste UV » (comprise par l'API). */
-export const NO_UV = '__none__';
+/** Mode kiosque (iPad d'atelier) : /kiosk, rien que le tableau « À imprimer ». */
+export const isKiosk = location.pathname.replace(/\/+$/, '') === '/kiosk';
 
 /**
  * Le tableau « À imprimer » ne montre que la production en cours : le filtre
@@ -55,7 +55,6 @@ export const usesStatusFilter = () => state.view === 'all';
 export const hasActiveFilters = () =>
   Boolean(
     state.filters.colors.size ||
-      state.filters.uv.size ||
       (usesStatusFilter() && state.filters.statuses.size) ||
       state.filters.source ||
       state.filters.priority ||
@@ -66,7 +65,6 @@ export const queryParams = () => ({
   scope: state.view === 'board' ? 'board' : undefined,
   status: usesStatusFilter() ? [...state.filters.statuses] : [],
   color: [...state.filters.colors],
-  uv: [...state.filters.uv],
   source: state.filters.source,
   q: state.filters.q,
   priority: state.filters.priority ? '1' : undefined,

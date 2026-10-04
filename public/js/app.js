@@ -1,9 +1,9 @@
 import { api } from './api.js';
 import { clear, el, icon, modal, swatch, toast } from './ui.js';
 import {
-  NO_UV,
   commentOptions,
   hasActiveFilters,
+  isKiosk,
   queryParams,
   savePrefs,
   state,
@@ -80,9 +80,13 @@ const actions = {
     }
   },
 
-  toggleSelection(id) {
-    if (state.selection.has(id)) state.selection.delete(id);
-    else state.selection.add(id);
+  toggleSelection(target) {
+    const ids = Array.isArray(target) ? target : [target];
+    const allIn = ids.every((id) => state.selection.has(id));
+    for (const id of ids) {
+      if (allIn) state.selection.delete(id);
+      else state.selection.add(id);
+    }
     render();
   },
 
@@ -167,6 +171,47 @@ const actions = {
         }
       },
     });
+  },
+
+  async editHiddenColors() {
+    const hidden = new Set(state.meta?.hiddenColors ?? []);
+    const boxes = state.colors.map((color) => {
+      const input = el('input', { type: 'checkbox', checked: hidden.has(color.key) });
+      return { color, input };
+    });
+
+    await modal({
+      title: 'Couleurs retirées de la file',
+      body: el('div', {}, [
+        el('p', { class: 'cell-sub' }, "Coche les couleurs qu'on n'imprime pas ici (ex. Nylon, fait dans une autre usine). Elles disparaissent de « À imprimer » ; « Tout » les montre toujours."),
+        ...boxes.map(({ color, input }) =>
+          el('label', { class: 'check-row' }, [input, swatch(color.hex), color.name]),
+        ),
+      ]),
+      confirmLabel: 'Enregistrer',
+      onConfirm: async () => {
+        try {
+          // on garde les clés masquées qui ne sont plus dans la liste des résines actives
+          const known = new Set(state.colors.map((color) => color.key));
+          const keep = [...hidden].filter((key) => !known.has(key));
+          const next = [...keep, ...boxes.filter(({ input }) => input.checked).map(({ color }) => color.key)];
+          await api.saveSettings({ 'production.hiddenColors': next });
+          state.meta = await api.meta();
+          state.filters.colors = new Set([...state.filters.colors].filter((key) => !next.includes(key)));
+          toast(next.length ? `${next.length} couleur(s) masquée(s)` : 'Aucune couleur masquée');
+          await refresh();
+        } catch (error) {
+          toast(error.message, 'err');
+        }
+      },
+    });
+  },
+
+  toggleStack(status) {
+    if (state.stacked.has(status)) state.stacked.delete(status);
+    else state.stacked.add(status);
+    savePrefs();
+    render();
   },
 
   async saveColor(key, patch) {
@@ -306,29 +351,6 @@ const renderToolbar = () => {
       ),
     );
 
-  const uvValues = [...(state.meta?.uvOptions ?? [])];
-  // une valeur UV retirée des réglages mais encore portée par des pièces
-  for (const value of Object.keys(facets.uv)) {
-    if (value !== NO_UV && !uvValues.includes(value)) uvValues.push(value);
-  }
-  const uvChips = [
-    ...uvValues.map((option) => [option, `UV ${option}`]),
-    [NO_UV, 'Sans UV'],
-  ]
-    .filter(([value]) => facets.uv[value] > 0 || state.filters.uv.has(value) || state.meta?.uvOptions?.includes(value))
-    .map(([value, label]) =>
-      chip(
-        label,
-        state.filters.uv.has(value),
-        () => {
-          toggleIn(state.filters.uv, value);
-          refresh();
-        },
-        [icon('uv')],
-        facets.uv[value] ?? 0,
-      ),
-    );
-
   const statusChips = usesStatusFilter()
     ? state.meta.statuses.map((status) =>
         chip(
@@ -409,10 +431,15 @@ const renderToolbar = () => {
     refresh();
   }, [icon('bolt')], facets.rush ?? 0);
 
+  const hiddenKeys = state.meta?.hiddenColors ?? [];
+  const hiddenChip =
+    state.view === 'board' && !isKiosk
+      ? chip('Couleurs masquées', hiddenKeys.length > 0, () => actions.editHiddenColors(), [icon('close')], hiddenKeys.length || null)
+      : null;
+
   const resetChip = hasActiveFilters()
     ? chip('Réinitialiser', false, () => {
         state.filters.colors.clear();
-        state.filters.uv.clear();
         state.filters.statuses.clear();
         state.filters.source = '';
         state.filters.priority = false;
@@ -426,12 +453,10 @@ const renderToolbar = () => {
     ...[
       el('span', { class: 'toolbar-label' }, 'Résine'),
       el('div', { class: 'toolbar-group' }, colorChips.length ? colorChips : el('span', { class: 'cell-sub' }, 'Aucune pièce')),
-      uvChips.length ? el('span', { class: 'toolbar-sep' }) : null,
-      uvChips.length ? el('div', { class: 'toolbar-group' }, uvChips) : null,
       statusChips.length ? el('span', { class: 'toolbar-sep' }) : null,
       statusChips.length ? el('div', { class: 'toolbar-group' }, statusChips) : null,
       el('div', { class: 'toolbar-spacer' }),
-      el('div', { class: 'toolbar-group' }, [rushChip, resetChip, sourceSelect, groupSelect, sortSelect].filter(Boolean)),
+      el('div', { class: 'toolbar-group' }, [hiddenChip, rushChip, resetChip, sourceSelect, groupSelect, sortSelect].filter(Boolean)),
     ].filter(Boolean),
   );
 };
@@ -669,7 +694,7 @@ const bindEvents = () => {
 
   window.addEventListener('hashchange', () => {
     const view = location.hash.replace('#', '');
-    if (VIEW_META[view] && view !== state.view) setView(view);
+    if (!isKiosk && VIEW_META[view] && view !== state.view) setView(view);
   });
 
   // le worker importe en arrière-plan : on rafraîchit sans déranger l'opérateur
@@ -699,6 +724,10 @@ const consumeOAuthRedirect = () => {
 };
 
 const boot = async () => {
+  if (isKiosk) {
+    document.documentElement.classList.add('kiosk');
+    location.hash = 'board';
+  }
   applyTheme();
   bindEvents();
   consumeOAuthRedirect();
@@ -709,7 +738,7 @@ const boot = async () => {
   updateConnectorBadge();
 
   const initial = location.hash.replace('#', '');
-  state.view = VIEW_META[initial] ? initial : 'board';
+  state.view = !isKiosk && VIEW_META[initial] ? initial : 'board';
 
   await refresh();
 };

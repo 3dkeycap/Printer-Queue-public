@@ -513,3 +513,15 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 * **Derrière un reverse proxy** : terminer le TLS chez le proxy et ne publier que le port
   8080 du service `app` ; le worker n'expose rien.
 * **Logs** : JSON sur stdout (`LOG_LEVEL=debug` pour le détail des requêtes).
+
+## Tableau « À imprimer » : couleurs masquées, regroupement, kiosque iPad
+
+- **Couleurs masquées** : bouton « Couleurs masquées » dans la barre de filtres → coche les
+  résines qu'on n'imprime pas ici (ex. Nylon Grey, fait dans une autre usine). Elles
+  disparaissent de « À imprimer » (et de son compteur) ; la vue « Tout » les montre toujours.
+- **Regrouper** : bouton dans l'en-tête de chaque colonne, à côté de l'agrandissement. Les
+  pièces identiques (même nom, couleur, variante, UV, commentaire, imprimante) deviennent une
+  carte « ×3 » ; les actions (passer à l'étape suivante, échec) s'appliquent à toute la pile.
+- **Kiosque** : `http://<ip>:8080/kiosk` — sans barre latérale, en-tête minimal, cibles
+  tactiles agrandies, colonnes qu'on fait défiler au doigt. Pensé pour l'iPad de l'atelier
+  (« Ajouter à l'écran d'accueil » pour le plein écran).

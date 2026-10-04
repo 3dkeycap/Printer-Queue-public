@@ -93,6 +93,14 @@ export const DEFINITIONS = [
     fallback: () => ['Custom UV Printed Legends', 'Color Variety Pack'],
   },
   {
+    key: 'production.hiddenColors',
+    group: 'production',
+    label: 'Couleurs retirées de la file',
+    type: 'list',
+    hint: "Clés de résine (ex. « nylon-gray ») qu'on n'imprime pas ici (autre usine). Leurs pièces n'apparaissent plus dans « À imprimer ». Plus simple : bouton « Couleurs masquées » dans la barre de filtres.",
+    fallback: () => [],
+  },
+  {
     key: 'production.uvTriggerKeywords',
     group: 'production',
     label: 'Suppléments qui indiquent un besoin UV',

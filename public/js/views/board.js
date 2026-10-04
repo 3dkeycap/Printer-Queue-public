@@ -3,12 +3,33 @@ import { groupParts, state, statusMeta } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
-const buildCard = (part, actions) => {
+/**
+ * Regroupe les pièces identiques (même nom, couleur, variante, UV, commentaire,
+ * imprimante) : « 3× MX Tilters Adapters (10 Pack) » devient une seule carte.
+ * Chaque pile garde la liste de ses ids pour agir sur toutes les pièces d'un coup.
+ */
+const stackParts = (parts) => {
+  const stacks = new Map();
+  for (const part of parts) {
+    const key = [part.name, part.color_key, part.variant_title, part.uv, part.comment, part.printer, part.priority || part.order_priority]
+      .map((value) => String(value ?? ''))
+      .join('|');
+    if (!stacks.has(key)) stacks.set(key, []);
+    stacks.get(key).push(part);
+  }
+  return [...stacks.values()];
+};
+
+const buildCard = (stack, actions) => {
+  const [part] = stack;
+  const ids = stack.map((item) => item.id);
+  const count = stack.length;
+  const allSelected = ids.every((id) => state.selection.has(id));
   const next = actions.nextStatus(part.status);
   const card = el(
     'article',
     {
-      class: `card${state.selection.has(part.id) ? ' is-selected' : ''}${part.priority || part.order_priority ? ' is-rush' : ''}`,
+      class: `card${allSelected ? ' is-selected' : ''}${part.priority || part.order_priority ? ' is-rush' : ''}`,
       draggable: 'true',
       style: { '--card-color': part.color_hex },
       dataset: { id: String(part.id), status: part.status },
@@ -16,20 +37,22 @@ const buildCard = (part, actions) => {
     [
       el('div', { class: 'card-top' }, [
         el('div', { class: 'card-title' }, part.name),
-        el('span', { class: 'card-unit' }, `#${part.unit_index}`),
+        count > 1
+          ? el('span', { class: 'card-unit card-stack', title: `${count} pièces identiques regroupées` }, `×${count}`)
+          : el('span', { class: 'card-unit' }, `#${part.unit_index}`),
       ]),
       el('div', { class: 'card-meta' }, [
         el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name]),
         part.uv && el('span', { class: 'tag uv' }, [icon('uv'), `UV ${part.uv}`]),
         el('span', { class: `tag src-${part.source}` }, SOURCE_LABEL[part.source] ?? part.source),
-        el('span', { class: 'tag' }, part.order_number ?? `#${part.order_id}`),
+        el('span', { class: 'tag' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
         part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),
       part.comment && el('div', { class: 'card-comment' }, [icon('note'), part.comment]),
       el('div', { class: 'card-foot' }, [
-        el('span', { class: 'who' }, part.customer_name ?? '—'),
+        el('span', { class: 'who' }, count > 1 ? '—' : (part.customer_name ?? '—')),
         el('div', { class: 'card-actions' }, [
           part.status !== 'FAILED' &&
             part.status !== 'TO_PRINT' &&
@@ -40,7 +63,7 @@ const buildCard = (part, actions) => {
                 title: 'Marquer comme échec',
                 onclick: (event) => {
                   event.stopPropagation();
-                  actions.move([part.id], 'FAILED');
+                  actions.move(ids, 'FAILED');
                 },
               },
               icon('alert'),
@@ -53,7 +76,7 @@ const buildCard = (part, actions) => {
                 title: `Passer à ${statusMeta(next).labelFr}`,
                 onclick: (event) => {
                   event.stopPropagation();
-                  actions.move([part.id], next);
+                  actions.move(ids, next);
                 },
               },
               [statusMeta(next).labelFr, icon('chevron')],
@@ -65,15 +88,15 @@ const buildCard = (part, actions) => {
 
   card.addEventListener('click', (event) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey) {
-      actions.toggleSelection(part.id);
+      actions.toggleSelection(ids);
       return;
     }
     actions.openPart(part.id);
   });
 
   card.addEventListener('dragstart', (event) => {
-    const ids = state.selection.has(part.id) ? [...state.selection] : [part.id];
-    event.dataTransfer.setData('text/plain', JSON.stringify(ids));
+    const dragged = ids.some((id) => state.selection.has(id)) ? [...state.selection] : ids;
+    event.dataTransfer.setData('text/plain', JSON.stringify(dragged));
     event.dataTransfer.effectAllowed = 'move';
     card.classList.add('is-dragging');
   });
@@ -84,6 +107,7 @@ const buildCard = (part, actions) => {
 
 const buildColumn = (status, parts, actions, { focused }) => {
   const meta = statusMeta(status);
+  const stacked = state.stacked.has(status);
   const body = el('div', { class: `column-body${focused ? ' is-grid' : ''}` });
 
   if (!parts.length) {
@@ -99,7 +123,8 @@ const buildColumn = (status, parts, actions, { focused }) => {
           ]),
         );
       }
-      for (const part of group.items) body.append(buildCard(part, actions));
+      const stacks = stacked ? stackParts(group.items) : group.items.map((part) => [part]);
+      for (const stack of stacks) body.append(buildCard(stack, actions));
     }
   }
 
@@ -111,6 +136,18 @@ const buildColumn = (status, parts, actions, { focused }) => {
         el('span', { class: 'column-dot' }),
         el('h3', {}, meta.labelFr),
         el('span', { class: 'count' }, String(parts.length)),
+        el(
+          'button',
+          {
+            class: `mini-btn column-stack-btn${stacked ? ' is-on' : ''}`,
+            title: stacked ? 'Dégrouper les pièces identiques' : 'Regrouper les pièces identiques (ex. 3× MX Tilters Adapters)',
+            onclick: (event) => {
+              event.stopPropagation();
+              actions.toggleStack(status);
+            },
+          },
+          [icon('layers'), 'Regrouper'],
+        ),
         el(
           'button',
           {

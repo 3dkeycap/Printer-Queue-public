@@ -1,4 +1,5 @@
 import { getDb } from '../db/index.js';
+import { getSettings } from './settings.service.js';
 import { BOARD_STATUSES, STATUS_KEYS } from './statuses.js';
 
 const boardList = `('${BOARD_STATUSES.join("','")}')`;
@@ -47,12 +48,16 @@ export const getSummary = () => {
     )
     .all();
 
+  // les couleurs retirées de la file ne comptent pas dans « À imprimer »
+  const hidden = (getSettings()['production.hiddenColors'] ?? []).map((key) => `'${String(key).replace(/'/g, "''")}'`);
+  const visible = hidden.length ? ` AND color_key NOT IN (${hidden.join(',')})` : '';
+
   const totals = db
     .prepare(
       `SELECT
          (SELECT COUNT(*) FROM parts) AS parts_total,
-         (SELECT COUNT(*) FROM parts WHERE status IN ${boardList}) AS parts_active,
-         (SELECT COUNT(*) FROM parts WHERE priority = 1 AND status IN ${boardList}) AS parts_rush,
+         (SELECT COUNT(*) FROM parts WHERE status IN ${boardList}${visible}) AS parts_active,
+         (SELECT COUNT(*) FROM parts WHERE priority = 1 AND status IN ${boardList}${visible}) AS parts_rush,
          (SELECT COUNT(*) FROM orders) AS orders_total,
          (SELECT COUNT(*) FROM orders WHERE shipped_at IS NULL) AS orders_open,
          (SELECT COUNT(*) FROM parts WHERE status = 'SHIPPED' AND date(shipped_at) = date('now')) AS shipped_today,
