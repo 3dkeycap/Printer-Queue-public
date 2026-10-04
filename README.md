@@ -576,8 +576,8 @@ Pour Shopify, la photo vient de la ligne de commande (API GraphQL, scope `read_o
 l'API produits (`read_products`) ne sert plus qu'en secours. Les commandes déjà importées sans
 photo la reçoivent automatiquement à la synchro Shopify suivante.
 
-**Pièce déjà en inventaire** — sur une carte « À imprimer », les boutons **Imprimé** et
-**Expédié** la font passer directement à l'étape voulue, sans passer par l'impression.
+**Pièce déjà en inventaire** — sur une carte « À imprimer », le bouton **Expédié** la fait
+passer directement à Expédié, sans passer par l'impression.
 
 **Tags** — plusieurs tags par pièce, ajoutés comme dans les Réglages : taper puis Entrée (suggestions
 = tags prédéfinis ; un nouveau tag y est ajouté automatiquement), × pour en retirer un. Visibles sur les cartes, la fiche et la vue « Tout ». Le tableau reste groupé par couleur.

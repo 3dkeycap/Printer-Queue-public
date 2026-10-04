@@ -681,3 +681,17 @@ tr.is-open-shop > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 .cc-state.is-false { color: var(--muted); }
 .cc-state.is-failed { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); background: color-mix(in srgb, var(--danger) 10%, transparent); }
 .cc-state .cc-reason { font-family: var(--font); font-size: 11px; color: var(--text-soft); white-space: normal; line-height: 1.3; }
+
+/* ---------------------------------------------- cartes : rien ne dépasse --- */
+.card { overflow: hidden; min-width: 0; flex: none; }
+.card-top { min-width: 0; }
+.card-title { min-width: 0; overflow-wrap: anywhere; }
+.card-meta, .card-comments { min-width: 0; }
+.card .tag, .card .comment-tag { max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .tag .icon, .card .comment-tag .icon { width: 12px; height: 12px; flex: none; }
+.card-open-shop { min-width: 0; }
+/* pied de carte : client à gauche, boutons à droite ; les boutons passent sous le nom si la place manque */
+.card-foot { flex-wrap: wrap; min-width: 0; row-gap: 6px; }
+.card-foot .who { flex: 1 1 90px; min-width: 0; }
+.card-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; min-width: 0; }
+.card-actions .mini-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; flex: none; }

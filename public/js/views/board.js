@@ -103,20 +103,7 @@ const buildCard = (stack, actions) => {
               },
               icon('alert'),
             ),
-          // pièce déjà en inventaire : on saute l'impression
-          part.status === 'TO_PRINT' &&
-            el(
-              'button',
-              {
-                class: 'mini-btn',
-                title: 'Déjà en inventaire : marquer comme imprimé',
-                onclick: (event) => {
-                  event.stopPropagation();
-                  actions.move(ids, 'DONE', { force: true });
-                },
-              },
-              [icon('check'), statusMeta('DONE').labelFr],
-            ),
+          // pièce déjà en inventaire : directement expédiée
           part.status === 'TO_PRINT' &&
             el(
               'button',
