@@ -99,6 +99,10 @@ export const migrate = () => {
   addColumnIfMissing(db, 'parts', 'uv', 'TEXT');
   addColumnIfMissing(db, 'parts', 'comment', 'TEXT');
   addColumnIfMissing(db, 'order_items', 'image_url', 'TEXT');
+  // import automatique des commandes dans Chit Chats : résultat et raison d'un échec
+  addColumnIfMissing(db, 'orders', 'chitchats_import_status', 'TEXT');
+  addColumnIfMissing(db, 'orders', 'chitchats_import_error', 'TEXT');
+  addColumnIfMissing(db, 'orders', 'chitchats_import_at', 'TEXT');
 
   // statuts retirés en v2 (FILE_READY, IN_INVENTORY) -> équivalent actuel
   for (const [legacy, replacement] of Object.entries(LEGACY_STATUS_MAP)) {

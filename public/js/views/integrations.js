@@ -318,7 +318,7 @@ const SHOP_CARDS = [
     key: 'chitchats',
     title: 'Chit Chats',
     hint: 'Un colis scanné fait passer les pièces en « Expédié ».',
-    advanced: ['chitchats.apiBase'],
+    advanced: ['chitchats.apiBase', 'chitchats.packageType', 'chitchats.cheapestPostage', 'chitchats.shipUrlTemplate', 'chitchats.webhookSecret'],
     enabled: null,
   },
 ];
@@ -350,6 +350,9 @@ const tabBoutiques = (draft, touch, actions) =>
           : null,
         ['shopify', 'etsy', 'chitchats'].includes(card.key)
           ? el('div', { class: 'panel-foot' }, [
+              card.key === 'chitchats'
+                ? el('button', { class: 'ghost-btn', onclick: () => actions.importChitChats() }, [icon('truck'), 'Importer les commandes maintenant'])
+                : null,
               el('button', { class: 'ghost-btn', onclick: () => actions.sync(card.key) }, [icon('refresh'), 'Synchroniser maintenant']),
             ])
           : null,
@@ -363,6 +366,9 @@ const tabSynchro = (draft, touch, actions) => [
     el('div', { class: 'settings-grid' }, [
       byKey('schedule.syncCron') ? field(byKey('schedule.syncCron'), draft, touch, { label: 'Importer les commandes', hint: null }) : null,
       byKey('schedule.shipmentCron') ? field(byKey('schedule.shipmentCron'), draft, touch, { label: 'Vérifier les expéditions', hint: null }) : null,
+      byKey('schedule.chitchatsImportCron')
+        ? field(byKey('schedule.chitchatsImportCron'), draft, touch, { label: 'Importer les commandes dans Chit Chats', hint: 'Activable dans Boutiques → Chit Chats.' })
+        : null,
       byKey('schedule.lookbackDays')
         ? field(byKey('schedule.lookbackDays'), draft, touch, { label: 'Remonter dans le passé de (jours)', hint: 'Les commandes plus anciennes que ça sont ignorées à chaque synchronisation.' })
         : null,

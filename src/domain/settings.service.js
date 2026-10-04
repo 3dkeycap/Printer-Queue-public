@@ -59,6 +59,18 @@ export const DEFINITIONS = [
   { key: 'chitchats.apiBase', group: 'chitchats', label: 'URL de l\'API', type: 'text', fallback: () => config.chitchats.apiBase },
   { key: 'chitchats.webhookSecret', group: 'chitchats', label: 'Secret webhook (X-Webhook-Secret)', type: 'secret', fallback: () => config.chitchats.webhookSecret },
   {
+    key: 'chitchats.autoImport',
+    group: 'chitchats',
+    label: 'Importer les commandes dans Chit Chats',
+    type: 'boolean',
+    hint: "Chaque heure, les commandes Shopify / Etsy ouvertes deviennent des envois « en attente » dans Chit Chats (rien n'est acheté). En cas d'échec, la raison s'affiche sur les pièces.",
+    fallback: () => true,
+  },
+  { key: 'chitchats.packageType', group: 'chitchats', label: 'Type de colis par défaut', type: 'text', placeholder: 'parcel', hint: 'parcel, thick_envelope, envelope…', fallback: () => 'parcel' },
+  { key: 'chitchats.packageWeightGrams', group: 'chitchats', label: 'Poids par défaut (g)', type: 'number', fallback: () => 150 },
+  { key: 'chitchats.packageSizeCm', group: 'chitchats', label: 'Dimensions par défaut (cm)', type: 'text', placeholder: '15x10x5', hint: 'Longueur x largeur x hauteur.', fallback: () => '15x10x5' },
+  { key: 'chitchats.cheapestPostage', group: 'chitchats', label: "Choisir l'envoi le moins cher", type: 'boolean', hint: 'Sinon : Canada → Chit Chats Canada Tracked, États-Unis → USPS Ground Advantage, ailleurs → Chit Chats International Tracked.', fallback: () => true },
+  {
     key: 'chitchats.shipUrlTemplate',
     group: 'chitchats',
     label: "Page d'expédition Chit Chats",
@@ -72,6 +84,7 @@ export const DEFINITIONS = [
   // --- Planification ------------------------------------------------------
   { key: 'schedule.syncCron', group: 'schedule', label: 'Cron des commandes', type: 'text', hint: 'Par défaut toutes les 5 minutes.', fallback: () => config.jobs.syncCron },
   { key: 'schedule.shipmentCron', group: 'schedule', label: 'Cron des expéditions', type: 'text', fallback: () => config.jobs.shipmentCron },
+  { key: 'schedule.chitchatsImportCron', group: 'schedule', label: 'Cron de l\'import Chit Chats', type: 'text', hint: 'Par défaut toutes les heures.', fallback: () => '0 * * * *' },
   { key: 'schedule.lookbackDays', group: 'schedule', label: 'Fenêtre de rattrapage (jours)', type: 'number', fallback: () => config.integrations.lookbackDays },
 
   // --- Mises à jour (lues par le service « updater », voir updater.service) -

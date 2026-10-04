@@ -54,5 +54,6 @@ export const api = {
   sync: (source = 'all') => request(`/api/sync/run?source=${source}`, { method: 'POST' }),
   updateStatus: () => request('/api/system/update'),
   requestUpdate: (action) => request('/api/system/update', { method: 'POST', body: { action } }),
+  importOrderToChitChats: (id) => request(`/api/orders/${id}/chitchats-import`, { method: 'POST' }),
   shipOrder: (id, body = {}) => request(`/api/orders/${id}/ship`, { method: 'POST', body }),
 };

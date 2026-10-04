@@ -556,3 +556,21 @@ l'admin Shopify, ses cartes affichent **Ouvert sur Shopify** (avec le nom de la 
 bouton **Ouvrir sur Chit Chats**, qui ouvre la page d'expédition (adresse réglable dans
 Réglages → Boutiques → Chit Chats, `{order}` = numéro de commande) et copie le numéro de commande.
 Le marquage disparaît en changeant de page, en fermant l'onglet, ou après 30 min sur la même page.
+
+## Import automatique des commandes dans Chit Chats
+
+Toutes les heures (Réglages → Synchronisation, activable dans Boutiques → Chit Chats), chaque
+commande Shopify / Etsy ouverte et récente devient un **envoi « en attente » dans Chit Chats**
+(rien n'est acheté : l'étiquette s'achète toujours dans Chit Chats). Adresse reprise de la commande,
+poids / dimensions par défaut réglables, Canada → Chit Chats Canada Tracked, États-Unis → USPS
+Ground Advantage, ailleurs → International Tracked (avec détail douane), ou « le moins cher ».
+Si Chit Chats a déjà un envoi pour ce numéro de commande, il est simplement relié (pas de doublon).
+
+En cas d'échec, l'app **trouve la raison** (adresse incomplète : code postal / province manquant,
+pas d'adresse de livraison, accès refusé, refus de Chit Chats avec le champ en cause...) et
+l'affiche en **étiquette rouge sur les pièces** de la commande, avec le détail et un bouton
+« Réessayer maintenant » dans la fiche. Les commandes en erreur sont retentées à chaque heure.
+
+**Photo du produit** : la fiche d'une pièce affiche la photo Shopify / Etsy quand elle est connue.
+Pour Shopify, la photo demande le scope `read_products` : reconnecte la boutique (Réglages →
+Boutiques → Shopify → Reconnecter via OAuth) si les photos n'apparaissent pas.

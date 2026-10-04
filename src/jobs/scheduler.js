@@ -4,24 +4,25 @@ import { createLogger } from '../lib/logger.js';
 import { getSettings } from '../domain/settings.service.js';
 import { syncAllSources } from './syncOrders.js';
 import { syncShipments } from './syncShipments.js';
+import { importOrdersToChitChats } from '../domain/chitchatsImport.js';
 
 const log = createLogger('scheduler');
 
-let running = false;
+const running = new Set();
 
-/** Empêche deux exécutions simultanées quand une API est lente. */
+/** Empêche deux exécutions simultanées d'une même tâche quand une API est lente. */
 const guarded = (name, fn) => async () => {
-  if (running) {
+  if (running.has(name)) {
     log.warn('previous job still running, skipping tick', { job: name });
     return;
   }
-  running = true;
+  running.add(name);
   try {
     await fn();
   } catch (error) {
     log.error('job crashed', { job: name, error: error.message });
   } finally {
-    running = false;
+    running.delete(name);
   }
 };
 
@@ -52,7 +53,14 @@ export const startScheduler = () => {
     guarded('shipments', () => syncShipments({ trigger: 'cron' })),
   );
 
-  log.info('scheduler started', { orders: orders.expression, shipments: shipments.expression });
+  const importJob = guarded('chitchats-import', () => importOrdersToChitChats({ trigger: 'cron' }));
+  let chitchatsImport = schedule(settings['schedule.chitchatsImportCron'], '0 * * * *', importJob);
+
+  log.info('scheduler started', {
+    orders: orders.expression,
+    shipments: shipments.expression,
+    chitchatsImport: chitchatsImport.expression,
+  });
 
   const watcher = setInterval(() => {
     const current = getSettings();
@@ -74,6 +82,11 @@ export const startScheduler = () => {
       );
       log.info('shipments schedule updated', { expression: shipments.expression });
     }
+    if (current['schedule.chitchatsImportCron'] !== chitchatsImport.expression) {
+      chitchatsImport.task.stop();
+      chitchatsImport = schedule(current['schedule.chitchatsImportCron'], '0 * * * *', importJob);
+      log.info('chit chats import schedule updated', { expression: chitchatsImport.expression });
+    }
   }, 60000);
   watcher.unref?.();
 
@@ -91,5 +104,6 @@ export const startScheduler = () => {
     clearInterval(watcher);
     orders.task.stop();
     shipments.task.stop();
+    chitchatsImport.task.stop();
   };
 };

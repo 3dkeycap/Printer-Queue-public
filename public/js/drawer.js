@@ -96,6 +96,41 @@ export const openDrawer = async (partId, actions) => {
         el('div', { class: 'status-flow' }, statusButtons),
       ]),
 
+      part.image_url
+        ? el('a', { class: 'drawer-image', href: part.image_url, target: '_blank', rel: 'noopener noreferrer', title: 'Ouvrir la photo en grand' }, [
+            el('img', { src: part.image_url, alt: part.name, loading: 'lazy' }),
+          ])
+        : null,
+
+      part.chitchats_import_status === 'error'
+        ? el('div', { class: 'cc-error-box' }, [
+            el('div', { class: 'cc-error-title' }, [icon('alert'), "Import Chit Chats impossible"]),
+            el('p', {}, part.chitchats_import_error ?? 'Raison inconnue'),
+            el('div', { class: 'cc-error-foot' }, [
+              el('span', { class: 'cell-sub' }, part.chitchats_import_at ? `Dernier essai ${fromNow(part.chitchats_import_at)}` : ''),
+              el(
+                'button',
+                {
+                  class: 'ghost-btn',
+                  onclick: async (event) => {
+                    const button = event.currentTarget;
+                    button.disabled = true;
+                    try {
+                      await api.importOrderToChitChats(part.order_id);
+                      await openDrawer(part.id, actions);
+                      toast('Import Chit Chats relancé');
+                    } catch (error) {
+                      toast(error.message, 'err');
+                      button.disabled = false;
+                    }
+                  },
+                },
+                [icon('refresh'), 'Réessayer maintenant'],
+              ),
+            ]),
+          ])
+        : null,
+
       presenceFor(part.order_id)
         ? el('div', { class: 'card-open-shop drawer-open-shop' }, [
             el('span', { class: 'open-dot' }),
@@ -142,6 +177,12 @@ export const openDrawer = async (partId, actions) => {
           el('dd', {}, String(part.fail_count)),
           el('dt', {}, 'Suivi'),
           el('dd', {}, part.tracking_number ?? '—'),
+          el('dt', {}, 'Chit Chats'),
+          el('dd', {}, {
+            imported: 'Envoi créé (en attente d\'achat)',
+            linked: 'Envoi déjà présent, relié',
+            error: 'Erreur — voir ci-dessus',
+          }[part.chitchats_import_status] ?? (part.source === 'manual' ? '—' : 'Pas encore importé')),
         ]),
       ]),
 

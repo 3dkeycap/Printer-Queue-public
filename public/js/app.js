@@ -130,6 +130,18 @@ const actions = {
 
   startTutorial: () => startTutorial(),
 
+  async importChitChats() {
+    try {
+      toast('Import vers Chit Chats en cours…');
+      const { import: result } = await api.sync('chitchats-import');
+      if (result.status === 'skipped') toast(result.message, 'err');
+      else toast(`Chit Chats : ${result.message ?? 'terminé'}`);
+      await refresh({ silent: true });
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
   async saveSettings(patch) {
     if (!Object.keys(patch).length) return toast('Aucune modification');
     try {

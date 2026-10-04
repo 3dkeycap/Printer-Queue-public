@@ -638,3 +638,15 @@ html.kiosk .savebar { left: 12px; right: 12px; }
 .drawer-open-shop { margin: 0; padding: 10px 12px; font-size: 13px; }
 .drawer-open-shop .primary-btn { margin-left: auto; }
 html.kiosk .card-open-shop .open-cc { min-height: 38px; }
+
+/* ------------------------------------------- import Chit Chats & photo ---- */
+.tag.cc-error { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); background: color-mix(in srgb, var(--danger) 10%, var(--surface-2)); }
+.tag.cc-ok { color: var(--muted); }
+.cc-error-box { flex: none; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); background: color-mix(in srgb, var(--danger) 9%, var(--surface)); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.cc-error-title { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--danger); }
+.cc-error-box p { font-size: 13px; color: var(--text-soft); }
+.cc-error-foot { display: flex; align-items: center; gap: 8px; }
+.cc-error-foot .ghost-btn { margin-left: auto; }
+.drawer-image { display: block; flex: none; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
+.drawer-image img { display: block; width: 100%; max-height: 320px; object-fit: contain; }
+.drawer-links, .drawer-open-shop { flex: none; }

@@ -3,6 +3,7 @@ import { getDb } from '../db/index.js';
 import { asyncRoute, badRequest } from '../lib/errors.js';
 import { syncAllSources, syncSource } from '../jobs/syncOrders.js';
 import { syncShipments } from '../jobs/syncShipments.js';
+import { importOrdersToChitChats } from '../domain/chitchatsImport.js';
 
 export const syncRouter = Router();
 
@@ -15,6 +16,9 @@ syncRouter.post(
       const orders = await syncAllSources({ trigger: 'manual' });
       const shipments = await syncShipments({ trigger: 'manual' });
       return res.json({ orders, shipments });
+    }
+    if (source === 'chitchats-import') {
+      return res.json({ import: await importOrdersToChitChats({ trigger: 'manual' }) });
     }
     if (source === 'chitchats') {
       return res.json({ shipments: await syncShipments({ trigger: 'manual' }) });

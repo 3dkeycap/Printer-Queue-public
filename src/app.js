@@ -31,7 +31,8 @@ export const createApp = () => {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:'],
+          // photos produits : CDN Shopify et Etsy
+          imgSrc: ["'self'", 'data:', 'https://cdn.shopify.com', 'https://*.etsystatic.com'],
           connectSrc: ["'self'"],
           // L'appli est servie en HTTP sur le réseau local (http://192.168.x.x:8080) :
           // sans ça le navigateur force https et CSS/JS/API cassent (sauf sur localhost).
