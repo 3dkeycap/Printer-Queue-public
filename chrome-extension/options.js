@@ -172,6 +172,23 @@ $('update').addEventListener('click', async () => {
       if (!response.ok) throw new Error(`Téléchargement de ${entry.name} impossible (${response.status})`);
       downloads.push({ name: entry.name, data: await response.arrayBuffer() });
     }
+    // garde-fou : tout fichier exigé par le nouveau manifest doit être là, sinon Chrome
+    // refuserait de charger l'extension -> on n'écrit rien du tout
+    const manifestFile = downloads.find((file) => file.name === 'manifest.json');
+    if (!manifestFile) throw new Error('manifest.json absent sur GitHub : mise à jour annulée.');
+    const manifest = JSON.parse(new TextDecoder().decode(manifestFile.data));
+    const required = [
+      ...Object.values(manifest.icons ?? {}),
+      ...Object.values(manifest.action?.default_icon ?? {}),
+      manifest.background?.service_worker,
+      manifest.options_page,
+      manifest.action?.default_popup,
+      ...(manifest.content_scripts ?? []).flatMap((script) => script.js ?? []),
+    ].filter(Boolean);
+    const got = new Set(downloads.map((file) => file.name));
+    const missing = [...new Set(required)].filter((name) => !got.has(name));
+    if (missing.length) throw new Error(`Fichiers manquants sur GitHub (${missing.join(', ')}) : mise à jour annulée, rien n'a été modifié.`);
+
     for (const { name, data } of downloads) {
       const parts = name.split('/');
       let dir = folder;
