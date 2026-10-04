@@ -606,7 +606,7 @@ reçoivent une automatiquement à la mise à jour.
 
 ## Bac (« J'ai packé »), commandes traitées, délais, notes client
 
-- **J'ai packé la commande** (extension Chrome, v1.3) : sur une commande Shopify, le bouton
+- **J'ai packé la commande** (extension Chrome, v1.3.1) : sur une commande Shopify, le bouton
   « 📦 J'ai packé » ouvre une fenêtre avec toute la commande (note client, articles, Chit Chats,
   historique). On indique pour chaque article combien sont dans le bac (− / +), pourquoi il en
   manque (liste réglable + « Autre… »), et qui on est (liste de personnes, ajoutables depuis
@@ -620,3 +620,9 @@ reçoivent une automatiquement à la mise à jour.
 - **Note du client** (Shopify) et **personnalisation** (propriétés de ligne Shopify, variations
   « Personalization » Etsy) : sur la carte, dans la fiche, dans « Tout » et dans la fenêtre du bac.
 - La position de défilement est gardée quand l'app se rafraîchit (plus de retour en haut de liste).
+
+  v1.3.1 : « J'ai packé » est un bouton de la barre qui ouvre / referme une boîte juste en
+  dessous, avec seulement « Mis dans le bac » et un champ de **notes internes** (gardées dans
+  l'app, jamais envoyées à Shopify, visibles dans la fiche et dans « Tout »). Une pièce qui n'est
+  **pas dans le bac retourne dans « À imprimer »** (même un article en stock, et une pièce déjà
+  imprimée repasse à « À imprimer »).

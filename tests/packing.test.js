@@ -53,6 +53,7 @@ describe("« J'ai packé la commande »", () => {
     assert.equal(keycaps.filter((part) => part.packed_by === 'Alex').length, 2);
     assert.ok(keycaps.filter((part) => part.packed_at).every((part) => part.status === 'DONE' && part.comment.includes('Packé par Alex')));
     assert.equal(keycaps.filter((part) => !part.packed_at)[0].status, 'TO_PRINT', 'la manquante reste dans la file');
+    assert.equal(keycaps.filter((part) => !part.packed_at)[0].not_printed, 0);
     assert.equal(view.history.length, 1);
     assert.equal(view.history[0].complete, false);
     assert.equal(view.items[0].lastReason, 'Cassée');
@@ -72,6 +73,25 @@ describe("« J'ai packé la commande »", () => {
     assert.equal(view.history.length, 2);
     assert.equal(view.history[0].complete, true);
     assert.equal(view.history[0].packer, 'Sam');
+  });
+
+  it('pas dans le bac -> remis dans « À imprimer », même un article en stock ; note interne gardée', () => {
+    const id = ingestOrder(makeOrder({ externalId: '7770002', orderNumber: '#4243', items: [
+      { externalId: 'k2', title: 'Keycap imprimée', quantity: 1 },
+      { externalId: 'v2', title: 'Color Variety Pack', quantity: 1 },
+    ] })).orderId;
+    const keycap = partsOf(id).find((part) => part.name === 'Keycap imprimée');
+    getDb().prepare("UPDATE parts SET status = 'DONE' WHERE id = ?").run(keycap.id);
+    const [k, v] = getPackingView({ shopifyId: '7770002' }).items;
+    const view = savePack({ shopifyId: '7770002' }, {
+      packer: 'Alex',
+      note: 'Bac 4, étagère du haut',
+      items: [{ orderItemId: k.id, packed: 0, reason: 'Cassée' }, { orderItemId: v.id, packed: 0, reason: 'Pas en stock' }],
+    });
+    const after = partsOf(id);
+    assert.ok(after.every((part) => part.status === 'TO_PRINT' && part.not_printed === 0), 'tout ce qui manque revient dans la file');
+    assert.equal(view.order.packNote, 'Bac 4, étagère du haut');
+    assert.equal(view.history[0].note, 'Bac 4, étagère du haut');
   });
 
   it('refuse un pack sans nom', () => {

@@ -81,7 +81,8 @@
     const link = status.link;
     const mine = link && link.shopifyTabId === status.tabId;
 
-    const { dockTop = 42 } = await chrome.storage.local.get('dockTop');
+    // assez haut pour que la boîte du bac tienne en dessous
+    const { dockTop = 14 } = await chrome.storage.local.get('dockTop');
     if (!dock) {
       dock = document.createElement('div');
       dock.setAttribute('data-resin-queue', '');
@@ -114,6 +115,7 @@
       const move = (e) => {
         const top = Math.min(92, Math.max(4, (e.clientY / window.innerHeight) * 100));
         dock.style.top = `${top}%`;
+        globalThis.ResinQueuePack?.place();
       };
       const up = () => {
         grip.removeEventListener('pointermove', move);
@@ -161,12 +163,14 @@
     // « J'ai packé la commande » : ouvre la fenêtre du bac
     const packButton = document.createElement('button');
     packButton.type = 'button';
-    packButton.textContent = "📦 J'ai packé";
+    const packOpen = globalThis.ResinQueuePack?.isOpen();
+    packButton.textContent = packOpen ? "📦 J'ai packé ▴" : "📦 J'ai packé ▾";
     packButton.title = 'Indiquer ce qui est dans le bac de cette commande';
     packButton.style.cssText = 'all:unset;cursor:pointer;display:flex;align-items:center;padding:10px 12px;background:#7a4fd0;color:#fff;border-left:1px solid rgba(255,255,255,.25);';
-    packButton.addEventListener('click', () => globalThis.ResinQueuePack?.open(orderIdFromPath()));
+    packButton.addEventListener('click', () => globalThis.ResinQueuePack?.toggle(orderIdFromPath(), dock));
 
     dock.replaceChildren(...[grip, info.chitchatsUrl && button, packButton, info.chitchatsUrl && linkPart].filter(Boolean));
+    globalThis.ResinQueuePack?.place();
   };
 
   // l'admin Shopify change d'URL et de titre sans recharger la page
@@ -185,6 +189,8 @@
 
   notifyUrl();
   render();
+  // la boîte du bac s'ouvre / se ferme : on met à jour la flèche du bouton
+  globalThis.addEventListener('resin-queue-pack', () => render());
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === 'presence' || message?.type === 'link-changed') render();

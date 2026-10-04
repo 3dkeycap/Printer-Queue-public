@@ -144,7 +144,7 @@ export const listParts = (query = {}) => {
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
               o.tracking_number, o.carrier,
               o.chitchats_import_status, o.chitchats_import_error, o.chitchats_shipment_id,
-              o.shipped_at AS order_shipped_at, o.created_at AS order_created_at, o.note AS order_note,
+              o.shipped_at AS order_shipped_at, o.created_at AS order_created_at, o.note AS order_note, o.pack_note,
               COALESCE(c.name, 'Non assigné') AS color_name,
               COALESCE(c.hex, '#7C7364') AS color_hex,
               COALESCE(c.sort_order, 999) AS color_sort,
@@ -234,7 +234,7 @@ export const getPart = (id) => {
   const db = getDb();
   const row = db
     .prepare(
-      `SELECT p.*, o.source, o.order_number, o.customer_name, o.customer_email, o.placed_at,
+      `SELECT p.*, o.source, o.order_number, o.customer_name, o.customer_email, o.placed_at, o.pack_note,
               o.external_id AS order_external_id, o.chitchats_shipment_id,
               o.chitchats_import_status, o.chitchats_import_error, o.chitchats_import_at,
               o.is_priority AS order_priority, o.tracking_number, o.carrier,

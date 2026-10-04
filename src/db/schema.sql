@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS packs (
   packer      TEXT,
   items       TEXT NOT NULL DEFAULT '[]',   -- [{ order_item_id, title, packed, total, reason }]
   complete    INTEGER NOT NULL DEFAULT 0,
+  note        TEXT,
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 

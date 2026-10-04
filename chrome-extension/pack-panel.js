@@ -17,13 +17,15 @@
   const CSS = `
     :host { all: initial; }
     * { box-sizing: border-box; }
-    .panel { position: fixed; top: 12px; right: 12px; bottom: 12px; width: min(420px, calc(100vw - 24px)); z-index: 2147483647;
-      display: flex; flex-direction: column; background: #fff; color: #14213d; border: 1px solid #d5dcea; border-radius: 14px;
-      box-shadow: 0 24px 60px -18px rgba(15, 30, 70, .45); font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
-      transform: translateX(110%); transition: transform .22s ease; }
-    .panel.open { transform: none; }
-    header { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid #e6ebf3; }
-    header h2 { margin: 0; font-size: 16px; }
+    .panel { position: fixed; right: 0; width: min(420px, calc(100vw - 16px)); z-index: 2147483646;
+      display: flex; flex-direction: column; background: #fff; color: #14213d; border: 1px solid #d5dcea; border-right: 0;
+      border-radius: 12px 0 0 12px; box-shadow: 0 24px 60px -18px rgba(15, 30, 70, .45);
+      font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      transform-origin: top right; transform: scaleY(.6); opacity: 0; transition: transform .16s ease, opacity .16s ease; }
+    .panel.open { transform: none; opacity: 1; }
+    textarea { font: inherit; width: 100%; min-height: 64px; padding: 8px; border: 1px solid #ccd5e5; border-radius: 8px; resize: vertical; color: #14213d; }
+    header { display: flex; align-items: center; gap: 10px; padding: 10px 14px 8px; border-bottom: 1px solid #e6ebf3; }
+    header h2 { margin: 0; font-size: 14.5px; }
     header .sub { color: #5b6a86; font-size: 12px; }
     .x { margin-left: auto; border: 0; background: #eef2f8; border-radius: 8px; width: 30px; height: 30px; font-size: 16px; cursor: pointer; color: #14213d; }
     .body { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -81,6 +83,19 @@
 
   let host = null;
   let root = null;
+  let anchor = null; // la barre (bouton accroché au bord droit) : la boîte s'ouvre juste en dessous
+  let currentOrder = null;
+
+  /** Place la boîte sous la barre, sur la hauteur restante de l'écran. */
+  const place = () => {
+    const panel = root?.querySelector('.panel');
+    if (!panel) return;
+    const rect = anchor?.isConnected ? anchor.getBoundingClientRect() : { bottom: 60 };
+    const top = Math.round(rect.bottom + 6);
+    panel.style.top = `${top}px`;
+    panel.style.maxHeight = `${Math.max(220, window.innerHeight - top - 10)}px`;
+  };
+  window.addEventListener('resize', place);
 
   const ensureHost = () => {
     if (host?.isConnected) return;
@@ -91,10 +106,14 @@
   };
 
   const close = () => {
+    currentOrder = null;
     const panel = root?.querySelector('.panel');
+    globalThis.dispatchEvent(new CustomEvent('resin-queue-pack', { detail: { open: false } }));
     if (!panel) return;
     panel.classList.remove('open');
-    setTimeout(() => host?.remove(), 250);
+    setTimeout(() => {
+      if (!currentOrder) host?.remove();
+    }, 200);
   };
 
   const fmt = (iso) => (iso ? new Date(iso).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }) : '');
@@ -113,6 +132,8 @@
     const panel = h('div', { class: `panel${wasOpen ? ' open' : ''}` });
     root.append(panel);
     if (!wasOpen) requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add('open')));
+    // la position est recalculée une fois le contenu ajouté
+    queueMicrotask(place);
 
     if (view?.error) {
       panel.append(
@@ -151,11 +172,11 @@
             [
               h('option', { value: '', selected: !state.reason && !state.other }, `Pourquoi il en manque ${item.total - state.packed} ?`),
               ...view.reasons.map((reason) => h('option', { value: reason, selected: reason === state.reason }, reason)),
-              h('option', { value: '__other__', selected: Boolean(state.other) || (state.reason && !known) }, 'Autre…'),
+              h('option', { value: '__other__', selected: Boolean(state.other) || Boolean(state.reason && !known) }, 'Autre…'),
             ],
           );
           reasonBox.append(select);
-          if (state.other || (state.reason && !known)) {
+          if (state.other || Boolean(state.reason && !known)) {
             const input = h('input', { placeholder: 'Raison', value: (state.reason && !known ? state.reason : state.other).trim() });
             input.addEventListener('input', () => {
               state.other = input.value || ' ';
@@ -237,6 +258,7 @@
         orderExternalId,
         body: {
           packer: who.value,
+          note: noteInput.value,
           items: view.items.map((item) => ({ orderItemId: item.id, packed: draft.get(item.id).packed, reason: draft.get(item.id).reason.trim() })),
         },
       });
@@ -258,56 +280,23 @@
     });
 
     const last = view.history[0];
+    const noteInput = h('textarea', { placeholder: 'Ex. bac 4, la keycap rouge est dans le sac à part…' });
+    noteInput.value = order.packNote ?? '';
     panel.append(
       h('header', {}, [
-        h('div', {}, [
-          h('h2', {}, `📦 Bac — commande ${order.number ?? ''}`),
-          h('div', { class: 'sub' }, [order.customer ?? '', order.placedAt ? ` · reçue le ${fmt(order.placedAt)}` : '']),
-        ]),
+        h('div', {}, [h('h2', {}, `📦 Bac — commande ${order.number ?? ''}`)]),
         h('button', { class: 'x', onclick: close, title: 'Fermer' }, '×'),
       ]),
       h('div', { class: 'body' }, [
         order.shippedAt ? h('div', { class: 'box bad' }, `Attention : commande déjà marquée expédiée le ${fmt(order.shippedAt)}.`) : null,
-        view.buyerDetails.length
-          ? h('div', { class: 'box note' }, [
-              h('h3', {}, 'Note / personnalisation du client'),
-              ...view.buyerDetails.flatMap((detail) => [h('div', { class: 'l' }, detail.label), h('div', { class: 'v' }, detail.value)]),
-            ])
-          : null,
         h('div', { class: 'box' }, [
           h('h3', {}, 'Mis dans le bac'),
           view.items.length ? h('div', { class: 'items' }, view.items.flatMap(itemRow)) : h('div', { class: 'empty' }, 'Aucun article'),
         ]),
-        h('div', { class: `box${order.chitchats === 'failed' ? ' bad' : ''}` }, [
-          h('h3', {}, 'Chit Chats'),
-          order.chitchats === 'true'
-            ? 'Envoi présent dans Chit Chats'
-            : order.chitchats === 'failed'
-              ? `Import échoué : ${order.chitchatsError ?? ''}`
-              : 'Pas encore dans Chit Chats',
-        ]),
-        h('div', { class: 'box' }, [
-          h('h3', {}, 'Historique du bac'),
-          view.history.length
-            ? h(
-                'div',
-                { class: 'hist' },
-                view.history.map((pack) => {
-                  const missing = pack.items.filter((line) => line.packed < line.total);
-                  return h('div', {}, [
-                    h('strong', {}, pack.packer ?? '?'),
-                    ` — ${fmt(pack.created_at)} — `,
-                    pack.complete
-                      ? '✓ complet'
-                      : `incomplet : ${missing.map((line) => `${line.total - line.packed}× ${line.title}${line.reason ? ` (${line.reason})` : ''}`).join(', ')}`,
-                  ]);
-                }),
-              )
-            : h('div', { class: 'hist' }, 'Jamais packée'),
-        ]),
+        h('div', { class: 'box' }, [h('h3', {}, 'Notes (internes, pas envoyées à Shopify)'), noteInput]),
       ]),
       h('footer', {}, [
-        last && !last.complete ? h('div', { class: 'msg err' }, `Dernier passage incomplet (${last.packer}). Complète les quantités.`) : null,
+        last ? h('div', { class: `msg ${last.complete ? 'ok' : 'err'}` }, last.complete ? `Déjà packée par ${last.packer} (${fmt(last.created_at)}).` : `Dernier passage incomplet (${last.packer}) : complète les quantités.`) : null,
         h('div', { class: 'who' }, [who]),
         h('div', { class: 'row' }, [allIn, save]),
         msg,
@@ -315,12 +304,25 @@
     );
   };
 
+  const open = async (orderExternalId, anchorNode) => {
+    anchor = anchorNode ?? anchor;
+    currentOrder = orderExternalId;
+    ensureHost();
+    globalThis.dispatchEvent(new CustomEvent('resin-queue-pack', { detail: { open: true } }));
+    const view = await send({ type: 'pack-get', orderExternalId });
+    if (currentOrder !== orderExternalId) return;
+    render(orderExternalId, view ?? { error: "Pas de réponse de l'app" });
+  };
+
   globalThis.ResinQueuePack = {
-    async open(orderExternalId) {
-      ensureHost();
-      const view = await send({ type: 'pack-get', orderExternalId });
-      render(orderExternalId, view ?? { error: "Pas de réponse de l'app" });
-    },
+    open,
     close,
+    place,
+    isOpen: () => Boolean(currentOrder),
+    /** « J'ai packé » : ouvre / referme la boîte sous la barre. */
+    toggle(orderExternalId, anchorNode) {
+      if (currentOrder === orderExternalId) close();
+      else open(orderExternalId, anchorNode);
+    },
   };
 })();

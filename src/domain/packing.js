@@ -73,6 +73,7 @@ export const getPackingView = (where) => {
       shippedAt: order.shipped_at,
       chitchats: order.chitchats_shipment_id ? 'true' : order.chitchats_import_status === 'error' ? 'failed' : 'false',
       chitchatsError: order.chitchats_import_error,
+      packNote: order.pack_note ?? '',
     },
     buyerDetails: buyerDetails(order, items),
     items: items.map((item) => {
@@ -102,7 +103,7 @@ export const getPackingView = (where) => {
  * Enregistre un passage de pack.
  * @param {{ packer: string, items: { orderItemId: number, packed: number, reason?: string }[] }} body
  */
-export const savePack = (where, { packer, items = [] } = {}) => {
+export const savePack = (where, { packer, items = [], note } = {}) => {
   const name = String(packer ?? '').trim();
   if (!name) throw badRequest('Choisis qui a packé la commande');
   const db = getDb();
@@ -147,18 +148,42 @@ export const savePack = (where, { packer, items = [] } = {}) => {
         }
       }
 
+      // pas dans le bac -> retour dans « À imprimer » (même un article en stock : il faut le refaire)
+      if (target < own.length) {
+        const missingParts = db
+          .prepare('SELECT * FROM parts WHERE order_id = ? AND order_item_id = ? AND packed_at IS NULL')
+          .all(order.id, Number(line.orderItemId));
+        for (const part of missingParts) {
+          const back = ['DONE', 'FAILED'].includes(part.status);
+          db.prepare(
+            `UPDATE parts SET not_printed = 0, updated_at = @ts,
+                    status = CASE WHEN @back THEN 'TO_PRINT' ELSE status END,
+                    status_changed_at = CASE WHEN @back THEN @ts ELSE status_changed_at END
+              WHERE id = @id`,
+          ).run({ id: part.id, ts, back: back ? 1 : 0 });
+          if (back || part.not_printed) {
+            db.prepare(
+              `INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+            ).run(part.id, part.status, back ? 'TO_PRINT' : part.status, `pack:${name}`, `Manquante au bac : remise dans « À imprimer »`, ts);
+          }
+        }
+      }
+
       const reason = target < own.length ? String(line.reason ?? '').trim() || null : null;
       lines.push({ order_item_id: Number(line.orderItemId), title, packed: target, total: own.length, reason });
     }
 
     const complete = lines.length > 0 && lines.every((line) => line.packed >= line.total);
-    db.prepare('INSERT INTO packs (order_id, packer, items, complete, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    const cleanNote = note === undefined ? undefined : String(note ?? '').trim() || null;
+    db.prepare('INSERT INTO packs (order_id, packer, items, complete, note, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
       order.id,
       name,
       JSON.stringify(lines),
       complete ? 1 : 0,
+      cleanNote ?? null,
       ts,
     );
+    if (cleanNote !== undefined) db.prepare('UPDATE orders SET pack_note = ?, updated_at = ? WHERE id = ?').run(cleanNote, ts, order.id);
     return complete;
   });
 
@@ -194,6 +219,7 @@ export const latestPacks = (orderIds) => {
       packer: pack.packer,
       at: pack.created_at,
       complete: Boolean(pack.complete),
+      note: pack.note ?? null,
       missing: items
         .filter((line) => line.packed < line.total)
         .map((line) => ({ order_item_id: line.order_item_id, title: line.title, missing: line.total - line.packed, reason: line.reason })),

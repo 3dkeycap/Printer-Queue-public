@@ -111,6 +111,13 @@ export const openDrawer = async (partId, actions) => {
           ])
         : null,
 
+      part.pack_note
+        ? el('div', { class: 'buyer-box pack-note-box' }, [
+            el('div', { class: 'buyer-title' }, [icon('box'), 'Note du bac (interne)']),
+            el('div', { class: 'buyer-line' }, el('div', {}, part.pack_note)),
+          ])
+        : null,
+
       part.chitchats_import_status === 'error'
         ? el('div', { class: 'cc-error-box' }, [
             el('div', { class: 'cc-error-title' }, [icon('alert'), "Import Chit Chats impossible"]),

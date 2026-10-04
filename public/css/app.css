@@ -722,3 +722,4 @@ tr.is-open-shop > td:first-child { box-shadow: inset 3px 0 0 var(--ok); }
 .buyer-title { display: flex; align-items: center; gap: 7px; font-weight: 600; }
 .buyer-line div { font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
 html.kiosk .card-note { font-size: 13px; -webkit-line-clamp: 5; }
+.pack-note-box { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }

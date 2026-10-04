@@ -140,6 +140,9 @@ export const migrate = () => {
   // pack : pièce mise dans le bac, par qui
   addColumnIfMissing(db, 'parts', 'packed_at', 'TEXT');
   addColumnIfMissing(db, 'parts', 'packed_by', 'TEXT');
+  // notes internes du bac (jamais envoyées à Shopify)
+  addColumnIfMissing(db, 'packs', 'note', 'TEXT');
+  addColumnIfMissing(db, 'orders', 'pack_note', 'TEXT');
   const notPrintedAdded = addColumnIfMissing(db, 'parts', 'not_printed', 'INTEGER NOT NULL DEFAULT 0');
   if (notPrintedAdded) restoreSkippedItems(db);
 

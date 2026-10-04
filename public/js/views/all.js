@@ -48,6 +48,11 @@ const chitchatsCell = (part) => {
 
 /** Bac : pièce mise dans le bac (par qui), ou manquante (et pourquoi). */
 const packCell = (part) => {
+  const note = part.pack_note ? el('div', { class: 'cell-note', title: part.pack_note }, ['📦 ', part.pack_note]) : null;
+  return el('div', {}, [packState(part), note]);
+};
+
+const packState = (part) => {
   if (part.packed_at) {
     return el('span', { class: 'cc-state is-true', title: `Mise dans le bac le ${new Date(part.packed_at).toLocaleString('fr-CA')}` }, `bac · ${part.packed_by ?? '?'}`);
   }
