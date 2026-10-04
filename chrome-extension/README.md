@@ -48,7 +48,8 @@ Les versions 1.0.0 n'ont pas encore ce bouton : il faut les remplacer une derni�
 Deux onglets côte à côte : une commande Shopify et Chit Chats.
 
 1. Sur la commande Shopify, clique **🔗 Link** (dans le bouton accroché au bord droit).
-2. Dans l'onglet Chit Chats, un bouton **🔗 Link** apparaît en bas : clique-le.
+2. Dans l'onglet Chit Chats, un bouton **🔗 Link** apparaît en bas : clique-le. Cette barre se
+   déplace n'importe où avec la poignée ⋮⋮ (position mémorisée ; double-clic sur ⋮⋮ = retour en bas).
 3. C'est **Live** : chaque commande que tu ouvres dans Shopify s'affiche automatiquement dans
    l'onglet Chit Chats (sens unique, Shopify → Chit Chats).
 4. **Stop live** (sur Shopify) coupe le lien. Fermer un des deux onglets le coupe aussi.
