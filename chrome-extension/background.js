@@ -37,6 +37,23 @@ const loadDefaults = async () => {
   }
 };
 
+const DEFAULT_CHITCHATS_TEMPLATE = 'https://chitchats.com/clients/{clientId}/shipments/search?locale=en&q={order}';
+
+/**
+ * Lien Chit Chats d'une commande, construit par l'extension elle-même : il
+ * marche même si l'app est injoignable (Client ID dans les réglages de
+ * l'extension, pré-rempli quand elle est téléchargée depuis l'app).
+ */
+const buildChitChatsUrl = async (orderNumber) => {
+  const defaults = await loadDefaults();
+  const { chitchatsClientId = defaults.chitchatsClientId ?? '' } = await chrome.storage.sync.get('chitchatsClientId');
+  const order = String(orderNumber ?? '').replace(/^#/, '').trim();
+  if (!order || !chitchatsClientId) return null;
+  return (defaults.chitchatsTemplate || DEFAULT_CHITCHATS_TEMPLATE)
+    .replaceAll('{order}', encodeURIComponent(order))
+    .replaceAll('{clientId}', encodeURIComponent(chitchatsClientId));
+};
+
 const getConfig = async () => {
   const defaults = await loadDefaults();
   const { appUrl = defaults.appUrl ?? '', user = '', authUser = '', authPassword = '', clientId } = await chrome.storage.sync.get([
@@ -98,12 +115,23 @@ const open = async (tabId, orderExternalId) => {
   if (expired[tabId] === orderExternalId) return;
   const tabs = await loadTabs();
   const current = tabs[tabId];
-  if (current?.orderExternalId === orderExternalId) return; // déjà signalée
-  if (current) await report(tabId, current.orderExternalId, 'close');
-  tabs[tabId] = { orderExternalId, openedAt: Date.now() };
+  // déjà signalée avec succès : rien à refaire (sinon on retente tout de suite)
+  if (current?.orderExternalId === orderExternalId && current.app && !current.app.error) return;
+  const sameOrder = current?.orderExternalId === orderExternalId;
+  if (current && !sameOrder) await report(tabId, current.orderExternalId, 'close');
+  tabs[tabId] = { orderExternalId, openedAt: sameOrder ? current.openedAt : Date.now() };
   await saveTabs(tabs);
   const result = await report(tabId, orderExternalId, 'open');
+  await remember(tabId, result);
   tellPage(tabId, { type: 'presence', orderExternalId, ...result });
+};
+
+/** Garde la dernière réponse de l'app pour l'onglet (numéro de commande, lien Chit Chats). */
+const remember = async (tabId, result) => {
+  const tabs = await loadTabs();
+  if (!tabs[tabId]) return;
+  tabs[tabId].app = result;
+  await saveTabs(tabs);
 };
 
 const close = async (tabId, { notifyPage = false, expire = false } = {}) => {
@@ -147,8 +175,21 @@ chrome.tabs.onRemoved.addListener((tabId) => serial(() => close(tabId)));
 // le script de la page signale aussi ses changements d'URL (plus fiable dans une SPA)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === 'url' && sender.tab?.id !== undefined) handleUrl(sender.tab.id, message.url);
-  if (message?.type === 'hello' && sender.tab?.id !== undefined) {
-    loadTabs().then((tabs) => sendResponse({ tracked: Boolean(tabs[sender.tab.id]) }));
+  // numéro de commande + lien Chit Chats, pour le bouton de la page et la fenêtre de l'extension
+  if (message?.type === 'resolve') {
+    const tabId = message.tabId ?? sender.tab?.id;
+    (async () => {
+      const entry = (await loadTabs())[tabId] ?? null;
+      const app = entry?.app ?? null;
+      const orderNumber = message.pageOrderNumber || app?.orderNumber || null;
+      const chitchatsUrl = (await buildChitChatsUrl(orderNumber)) || app?.chitchatsUrl || null;
+      sendResponse({
+        orderNumber,
+        chitchatsUrl,
+        tracked: Boolean(entry),
+        app: app ? (app.error ? { error: app.error } : { ok: true, known: app.known }) : null,
+      });
+    })();
     return true;
   }
   return false;
@@ -156,9 +197,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // signe de vie + limite des 30 minutes
 chrome.alarms.create('heartbeat', { periodInMinutes: 0.5 });
+// nouvelle version sur GitHub ? (affichée dans la fenêtre de l'extension)
+chrome.alarms.create('update-check', { periodInMinutes: 360, delayInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'heartbeat') serial(heartbeat);
+  if (alarm.name === 'update-check') checkForUpdate();
 });
+
+const checkForUpdate = async () => {
+  try {
+    const url = `https://raw.githubusercontent.com/3dkeycap/Printer-Queue-public/main/chrome-extension/manifest.json?t=${Date.now()}`;
+    const remote = (await (await fetch(url, { cache: 'no-store' })).json()).version;
+    const local = chrome.runtime.getManifest().version;
+    const isNewer = remote.split('.').map(Number).some((n, i, all) => {
+      const l = local.split('.').map(Number);
+      return all.slice(0, i).every((m, j) => m === (l[j] ?? 0)) && n > (l[i] ?? 0);
+    });
+    await chrome.storage.local.set({ updateAvailable: isNewer ? remote : null });
+    chrome.action.setBadgeText({ text: isNewer ? '↑' : '' });
+    chrome.action.setBadgeBackgroundColor({ color: '#d99a1c' });
+  } catch {
+    /* hors ligne : on réessaiera */
+  }
+};
 
 async function heartbeat() {
   const tabs = await loadTabs();
@@ -175,6 +236,7 @@ async function heartbeat() {
       continue;
     }
     const result = await report(id, entry.orderExternalId, 'open');
+    await remember(id, result);
     tellPage(id, { type: 'presence', orderExternalId: entry.orderExternalId, ...result });
   }
 }

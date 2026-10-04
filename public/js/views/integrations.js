@@ -434,7 +434,8 @@ const tabApparence = (actions) => [
         el('li', {}, ["Clique ", el('strong', {}, "Télécharger l'extension"), ' puis décompresse le fichier .zip.']),
         el('li', {}, ['Dans Chrome, ouvre ', el('code', {}, 'chrome://extensions'), ' et active le ', el('strong', {}, 'Mode développeur'), ' (en haut à droite).']),
         el('li', {}, [el('strong', {}, "Charger l'extension non empaquetée"), ' → choisis le dossier ', el('code', {}, 'resin-queue-extension'), '.']),
-        el('li', {}, ["Clique l'icône de l'extension : l'adresse de l'app est déjà remplie, ajoute ton nom puis « Enregistrer et tester »."]),
+        el('li', {}, ["Clique l'icône de l'extension → Réglages : l'adresse de l'app et le Client ID Chit Chats sont déjà remplis, ajoute ton nom puis « Enregistrer et tester »."]),
+        el('li', {}, ["Mises à jour : icône de l'extension → « Mettre à jour » (un seul clic depuis GitHub ; la première fois, choisis le dossier de l'extension)."]),
       ]),
       el('div', { class: 'panel-foot left' }, [
         el('a', { class: 'primary-btn', href: '/api/extension.zip', download: 'resin-queue-extension.zip' }, [icon('save'), "Télécharger l'extension"]),

@@ -580,3 +580,8 @@ Boutiques → Shopify → Reconnecter via OAuth) si les photos n'apparaissent pa
 
 **Commentaires multiples** — les commentaires sont des étiquettes : « + Ajouter » (liste
 prédéfinie ou « + Autre… »), × pour en retirer une. Visibles sur les cartes, la fiche et la vue « Tout ».
+
+**Extension v1.1** — bouton « Chit Chats #1234 » accroché au bord droit de la commande Shopify
+(déplaçable, loin du chat Sidekick de la nouvelle interface), fenêtre de l'extension avec un gros
+bouton « Ouvrir sur Chit Chats », numéro de commande lu sur la page (marche sans l'app), et
+mise à jour en un clic depuis GitHub (icône → Mettre à jour).

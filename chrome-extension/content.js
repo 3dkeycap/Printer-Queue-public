@@ -1,75 +1,115 @@
 /*
- * Sur une commande de l'admin Shopify : petit panneau en bas à droite qui
- * confirme que Resin Queue est prévenu, avec le bouton « Ouvrir sur Chit Chats ».
+ * Sur une commande de l'admin Shopify : un bouton « Chit Chats » accroché au
+ * bord droit de la page. Depuis la nouvelle interface Shopify (sept. 2026),
+ * le chat Sidekick flotte en bas de chaque page : on reste donc à l'écart des
+ * coins du bas, et le bouton se déplace (glisser vers le haut / le bas), sa
+ * position est mémorisée.
  */
 (() => {
+  const ORDER_URL = /\/orders\/(\d+)(?:[/?#]|$)/;
   let lastUrl = location.href;
-  let panel = null;
+  let dock = null;
+
+  const isOrderPage = () => ORDER_URL.test(location.pathname);
+
+  /** Numéro de commande lu sur la page (titre de l'onglet ou titre de la page), ex. « #5429 ». */
+  const pageOrderNumber = () => {
+    const sources = [document.title, document.querySelector('h1')?.textContent ?? ''];
+    for (const text of sources) {
+      const match = /#\s?([A-Za-z0-9-]*\d[A-Za-z0-9-]*)/.exec(text);
+      if (match) return `#${match[1]}`;
+    }
+    return null;
+  };
 
   const notifyUrl = () => chrome.runtime.sendMessage({ type: 'url', url: location.href }).catch(() => {});
 
-  // l'admin Shopify change d'URL sans recharger la page
+  const openChitChats = async (info) => {
+    try {
+      await navigator.clipboard.writeText(String(info.orderNumber ?? '').replace(/^#/, ''));
+    } catch {
+      /* presse-papiers refusé : on ouvre quand même */
+    }
+    window.open(info.chitchatsUrl, '_blank', 'noopener');
+  };
+
+  const removeDock = () => {
+    dock?.remove();
+    dock = null;
+  };
+
+  const render = async () => {
+    if (!isOrderPage()) return removeDock();
+    const info = await chrome.runtime
+      .sendMessage({ type: 'resolve', pageOrderNumber: pageOrderNumber() })
+      .catch(() => null);
+    if (!info?.chitchatsUrl || !isOrderPage()) return removeDock();
+
+    const { dockTop = 42 } = await chrome.storage.local.get('dockTop');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.setAttribute('data-resin-queue', '');
+      document.documentElement.append(dock);
+    }
+    dock.style.cssText =
+      `position:fixed;right:0;top:${dockTop}%;z-index:2147483646;display:flex;align-items:stretch;` +
+      'font:600 13px system-ui,-apple-system,sans-serif;box-shadow:0 8px 24px -8px rgba(20,30,60,.45);' +
+      'border-radius:10px 0 0 10px;overflow:hidden;user-select:none;';
+
+    const grip = document.createElement('span');
+    grip.title = 'Glisser pour déplacer';
+    grip.textContent = '⋮⋮';
+    grip.style.cssText = 'display:flex;align-items:center;padding:0 5px;background:#163f8f;color:#9db7ea;cursor:ns-resize;font-size:11px;letter-spacing:-2px;';
+
+    const status = info.app?.ok ? '#3ccf7a' : info.app?.error ? '#f07a7a' : '#c7cfdd';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.title = `Ouvrir ${info.orderNumber ?? 'la commande'} sur Chit Chats (le numéro est copié)`;
+    button.style.cssText =
+      'all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px 10px 11px;background:#1f5fd6;color:#fff;';
+    button.innerHTML = `<span style="width:8px;height:8px;border-radius:99px;background:${status}"></span>`;
+    button.append(`Chit Chats ${info.orderNumber ?? ''}`.trim());
+    button.addEventListener('click', () => openChitChats(info));
+
+    // glisser verticalement, position mémorisée (en % de la hauteur)
+    grip.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      grip.setPointerCapture(event.pointerId);
+      const move = (e) => {
+        const top = Math.min(92, Math.max(4, (e.clientY / window.innerHeight) * 100));
+        dock.style.top = `${top}%`;
+      };
+      const up = () => {
+        grip.removeEventListener('pointermove', move);
+        chrome.storage.local.set({ dockTop: Number.parseFloat(dock.style.top) });
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up, { once: true });
+    });
+
+    dock.replaceChildren(grip, button);
+  };
+
+  // l'admin Shopify change d'URL et de titre sans recharger la page
   setInterval(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
-      removePanel();
       notifyUrl();
+      render();
     }
-  }, 1000);
+  }, 800);
+  new MutationObserver(() => {
+    if (isOrderPage() && !dock) render();
+  }).observe(document.querySelector('title') ?? document.head, { childList: true, subtree: true, characterData: true });
+
   notifyUrl();
+  render();
 
-  function removePanel() {
-    panel?.remove();
-    panel = null;
-  }
-
-  const button = (label, onClick, primary) => {
-    const node = document.createElement('button');
-    node.textContent = label;
-    node.style.cssText = `all:unset;cursor:pointer;padding:7px 12px;border-radius:8px;font:600 13px system-ui,sans-serif;${
-      primary ? 'background:#1f5fd6;color:#fff;' : 'background:#eef1f6;color:#1d2433;'
-    }`;
-    node.addEventListener('click', onClick);
-    return node;
-  };
-
-  const showPanel = (data) => {
-    removePanel();
-    panel = document.createElement('div');
-    panel.style.cssText =
-      'position:fixed;right:18px;bottom:18px;z-index:2147483647;display:flex;align-items:center;gap:10px;padding:10px 12px;' +
-      'background:#fff;color:#1d2433;border:1px solid #d6dbe6;border-radius:12px;box-shadow:0 10px 30px -10px rgba(20,30,60,.35);' +
-      'font:13px system-ui,sans-serif;';
-
-    const dot = document.createElement('span');
-    dot.style.cssText = `width:9px;height:9px;border-radius:99px;background:${data.error ? '#c23b3b' : '#2f855a'};flex:none;`;
-    const text = document.createElement('span');
-    text.textContent = data.error
-      ? `Resin Queue : ${data.error}`
-      : data.known
-        ? `Resin Queue : commande ${data.orderNumber} signalée comme ouverte`
-        : 'Resin Queue : commande pas encore synchronisée';
-    panel.append(dot, text);
-
-    if (data.chitchatsUrl) {
-      panel.append(
-        button('Ouvrir sur Chit Chats', async () => {
-          try {
-            await navigator.clipboard.writeText(String(data.orderNumber ?? '').replace(/^#/, ''));
-          } catch {
-            /* presse-papiers refusé : on ouvre quand même */
-          }
-          window.open(data.chitchatsUrl, '_blank', 'noopener');
-        }, true),
-      );
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message?.type === 'presence') render();
+    if (message?.type === 'page-order') {
+      sendResponse({ orderNumber: pageOrderNumber(), isOrder: isOrderPage() });
     }
-    panel.append(button('×', removePanel, false));
-    document.body.append(panel);
-  };
-
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message?.type !== 'presence') return;
-    if (message.open || message.error) showPanel(message);
-    else removePanel();
+    return false;
   });
 })();

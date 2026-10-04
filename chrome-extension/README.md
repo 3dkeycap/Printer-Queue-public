@@ -4,7 +4,13 @@ Quand tu ouvres une commande dans l'admin Shopify, l'extension prévient l'app :
 
 - dans « À imprimer », les cartes de cette commande affichent **Ouvert sur Shopify** (avec ton nom)
   et un bouton **Ouvrir sur Chit Chats** ;
-- sur la page Shopify, un petit panneau en bas à droite confirme et propose le même bouton.
+- sur la page Shopify, un bouton **Chit Chats #1234** est accroché au bord droit (loin du chat
+  Sidekick de la nouvelle interface Shopify, en bas de page). Il se déplace en glissant la poignée ⋮⋮ ;
+- en cliquant l'icône de l'extension sur une commande : une fenêtre avec le numéro de commande et
+  un gros bouton **Ouvrir sur Chit Chats**.
+
+Le numéro de commande est lu directement sur la page Shopify : le bouton marche même si l'app
+est injoignable (il faut seulement le Client ID Chit Chats dans les réglages de l'extension).
 
 « Ouvrir sur Chit Chats » ouvre la page d'expédition Chit Chats (adresse réglable dans
 Réglages → Boutiques → Chit Chats, `{order}` = numéro de commande) **et copie le numéro de commande**
@@ -25,3 +31,14 @@ Le marquage disparaît tout seul quand :
 4. Clique l'icône de l'extension (pièce de puzzle → Resin Queue) : renseigne l'adresse de l'app
    (ex. `http://192.168.1.50:8080`), ton nom, et le mot de passe du dashboard s'il y en a un.
    **Enregistrer et tester** doit afficher « connexion à l'app OK ».
+
+## Mise à jour
+
+Icône de l'extension → **Mettre à jour** (un ↑ apparaît sur l'icône quand une nouvelle version
+est sur GitHub) → **Mettre à jour depuis GitHub**. La première fois, Chrome demande de choisir le
+dossier de l'extension (celui chargé dans `chrome://extensions`) ; ensuite c'est un seul clic :
+les fichiers sont téléchargés depuis GitHub, écrits dans ce dossier, et l'extension se recharge.
+Tes réglages et le fichier `defaults.json` sont conservés.
+
+Les versions 1.0.0 n'ont pas encore ce bouton : il faut les remplacer une dernière fois à la main
+(télécharger l'extension depuis l'app, remplacer le dossier, cliquer ↻ dans `chrome://extensions`).

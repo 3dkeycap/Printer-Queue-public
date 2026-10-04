@@ -1,18 +1,40 @@
 {
   "manifest_version": 3,
   "name": "Resin Queue — Shopify → Chit Chats",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Signale à Resin Queue la commande Shopify ouverte, et propose « Ouvrir sur Chit Chats » avec le bon numéro de commande.",
-  "permissions": ["storage", "alarms", "clipboardWrite"],
-  "host_permissions": ["https://admin.shopify.com/*", "https://*.myshopify.com/*"],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
-  "background": { "service_worker": "background.js" },
+  "permissions": [
+    "storage",
+    "alarms",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://admin.shopify.com/*",
+    "https://*.myshopify.com/*",
+    "https://api.github.com/*",
+    "https://raw.githubusercontent.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "options_page": "options.html",
-  "action": { "default_title": "Resin Queue", "default_popup": "options.html" },
+  "action": {
+    "default_title": "Resin Queue — Chit Chats",
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
-      "matches": ["https://admin.shopify.com/*", "https://*.myshopify.com/admin/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://admin.shopify.com/*",
+        "https://*.myshopify.com/admin/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]

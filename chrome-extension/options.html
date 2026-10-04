@@ -4,34 +4,63 @@
     <meta charset="utf-8" />
     <title>Resin Queue — réglages</title>
     <style>
-      body { font: 14px system-ui, sans-serif; color: #1d2433; margin: 0; padding: 18px; min-width: 340px; background: #f6f8fc; }
-      h1 { font-size: 16px; margin: 0 0 4px; }
-      p { color: #5b6680; margin: 0 0 14px; font-size: 12.5px; }
+      body { font: 14px system-ui, sans-serif; color: #1d2433; margin: 0; padding: 24px; background: #f6f8fc; }
+      .wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+      section { background: #fff; border: 1px solid #dde4f0; border-radius: 12px; padding: 18px; }
+      h1 { font-size: 18px; margin: 0; }
+      h2 { font-size: 15px; margin: 0 0 4px; }
+      p { color: #5b6680; margin: 0 0 10px; font-size: 12.5px; }
       label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #5b6680; margin: 12px 0 4px; }
       input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ccd4e3; border-radius: 8px; font: inherit; background: #fff; }
-      button { margin-top: 16px; padding: 9px 14px; border: 0; border-radius: 8px; background: #1f5fd6; color: #fff; font: 600 13px system-ui; cursor: pointer; }
-      #status { margin-top: 10px; font-size: 12.5px; }
+      button { margin-top: 14px; padding: 9px 14px; border: 0; border-radius: 8px; background: #1f5fd6; color: #fff; font: 600 13px system-ui; cursor: pointer; }
+      button.ghost { background: #eef1f6; color: #1d2433; }
+      button[disabled] { opacity: .6; cursor: default; }
+      .msg { margin-top: 10px; font-size: 12.5px; white-space: pre-line; }
       .ok { color: #2f855a; } .err { color: #c23b3b; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      .version { font-size: 13px; }
+      #update-section.flash { outline: 3px solid #e3c56c; }
     </style>
   </head>
   <body>
-    <h1>Resin Queue</h1>
-    <p>Quand tu ouvres une commande dans l'admin Shopify, l'app la marque « Ouvert sur Shopify ».</p>
+    <div class="wrap">
+      <h1>Resin Queue — extension Chrome</h1>
 
-    <label for="appUrl">Adresse de l'app</label>
-    <input id="appUrl" placeholder="http://192.168.1.50:8080" />
+      <section>
+        <h2>Connexion à l'app</h2>
+        <p>Quand tu ouvres une commande dans l'admin Shopify, l'app la marque « Ouvert sur Shopify ».</p>
 
-    <label for="user">Ton nom (affiché dans l'app)</label>
-    <input id="user" placeholder="Alex" />
+        <label for="appUrl">Adresse de l'app</label>
+        <input id="appUrl" placeholder="http://192.168.1.50:8080" />
 
-    <label for="authUser">Utilisateur du dashboard (si mot de passe)</label>
-    <input id="authUser" placeholder="admin" />
+        <label for="user">Ton nom (affiché dans l'app)</label>
+        <input id="user" placeholder="Alex" />
 
-    <label for="authPassword">Mot de passe du dashboard</label>
-    <input id="authPassword" type="password" placeholder="vide si pas de mot de passe" />
+        <label for="chitchatsClientId">Client ID Chit Chats</label>
+        <input id="chitchatsClientId" placeholder="314561" />
 
-    <button id="save">Enregistrer et tester</button>
-    <div id="status"></div>
+        <label for="authUser">Utilisateur du dashboard (si mot de passe)</label>
+        <input id="authUser" placeholder="admin" />
+
+        <label for="authPassword">Mot de passe du dashboard</label>
+        <input id="authPassword" type="password" placeholder="vide si pas de mot de passe" />
+
+        <button id="save">Enregistrer et tester</button>
+        <div id="status" class="msg"></div>
+      </section>
+
+      <section id="update-section">
+        <h2>Mise à jour</h2>
+        <p>Récupère la dernière version sur GitHub et l'installe dans le dossier de l'extension, puis la recharge.
+          La première fois, Chrome te demande de choisir ce dossier (celui que tu as chargé dans chrome://extensions).</p>
+        <div class="version" id="versions">…</div>
+        <div class="row">
+          <button id="update">Mettre à jour depuis GitHub</button>
+          <button id="pick" class="ghost">Changer de dossier</button>
+        </div>
+        <div id="update-status" class="msg"></div>
+      </section>
+    </div>
     <script src="options.js"></script>
   </body>
 </html>
