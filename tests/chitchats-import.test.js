@@ -90,7 +90,7 @@ describe('import des commandes dans Chit Chats', () => {
     assert.match(explainApiError(new ApiError(401, {}, 'u')), /accès refusé/);
     assert.match(
       explainApiError(new ApiError(422, { errors: { postal_code: ['is invalid'] } }, 'u')),
-      /code postal : is invalid/,
+      /^postal_code is invalid$/,
     );
     assert.match(explainApiError(new Error('fetch failed')), /injoignable/);
 
@@ -99,7 +99,9 @@ describe('import des commandes dans Chit Chats', () => {
       trigger: 'manual',
       client: fakeClient({ createError: new ApiError(422, { error: 'Province code is not valid for country' }, 'u') }),
     });
-    assert.match(orderRow('A5').chitchats_import_error, /Province code is not valid/);
+    assert.equal(orderRow('A5').chitchats_import_error, 'Province code is not valid for country');
+    assert.equal(explainApiError(new ApiError(400, { error: { message: 'line_items required' } }, 'u')), 'line_items required');
+    assert.equal(explainApiError(new ApiError(400, { message: 'line_items required' }, 'u')), 'line_items required');
   });
 
   it('international : détail des articles pour la douane', () => {

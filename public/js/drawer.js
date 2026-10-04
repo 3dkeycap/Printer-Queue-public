@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { clear, el, formatDate, fromNow, icon, swatch, toast } from './ui.js';
 import { openChitChats, presenceFor, printerOptions, state, statusMeta, uvOptions } from './store.js';
-import { buildCommentSelect } from './comment-select.js';
+import { buildCommentTags } from './comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -54,7 +54,7 @@ export const openDrawer = async (partId, actions) => {
 
   const uvSelect = buildSelect(uvOptions(), part.uv, 'Aucun poste UV', (value) =>
     actions.patchPart(part.id, { uv: value }));
-  const commentSelect = buildCommentSelect(part, actions, { placeholder: 'Aucun commentaire' });
+  const commentSelect = buildCommentTags(part, actions);
   const printerSelect = buildSelect(printerOptions(), part.printer, 'Aucune imprimante assignée', (value) =>
     actions.patchPart(part.id, { printer: value }));
 
@@ -188,7 +188,7 @@ export const openDrawer = async (partId, actions) => {
 
       el('div', { class: 'field' }, [el('label', {}, 'Couleur de résine'), colorSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uvSelect]),
-      el('div', { class: 'field' }, [el('label', {}, 'Commentaire'), commentSelect]),
+      el('div', { class: 'field' }, [el('label', {}, 'Commentaires'), commentSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Imprimante'), printerSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Notes libres'), notesInput]),
 

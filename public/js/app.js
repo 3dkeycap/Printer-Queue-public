@@ -168,10 +168,11 @@ const actions = {
     }
   },
 
-  async addCustomComment(partId) {
+  /** Nouveau commentaire libre : ajouté à la liste prédéfinie et à la pièce. Renvoie la nouvelle liste. */
+  async addCustomComment(partId, current = []) {
     const input = el('input', { placeholder: 'Attente client, pièce cassée…' });
 
-    await modal({
+    return modal({
       title: 'Ajouter un commentaire',
       body: el('div', { class: 'field' }, [el('label', {}, 'Commentaire'), input]),
       confirmLabel: 'Ajouter',
@@ -184,9 +185,11 @@ const actions = {
             await api.saveSettings({ 'production.commentOptions': [...options, value] });
             state.meta = await api.meta();
           }
-          await actions.patchPart(partId, { comment: value }, { silent: true });
+          const list = [...current.filter((item) => item !== value), value];
+          await actions.patchPart(partId, { comment: list }, { silent: true });
           toast('Commentaire ajouté');
           render();
+          return list;
         } catch (error) {
           toast(error.message, 'err');
         }
@@ -537,7 +540,12 @@ const renderBulkbar = () => {
         onclick: async () => {
           const value = await pickFromList('Commentaire', commentOptions());
           if (value !== null) {
-            for (const id of ids) await api.patchPart(id, { comment: value || null });
+            // ajouté aux commentaires existants ; « — vider — » les retire tous
+            for (const id of ids) {
+              const part = state.parts.find((item) => item.id === id);
+              const existing = String(part?.comment ?? '').split('\n').filter(Boolean);
+              await api.patchPart(id, { comment: value ? [...existing, value] : null });
+            }
             state.selection.clear();
             await refresh();
             toast('Commentaire appliqué');

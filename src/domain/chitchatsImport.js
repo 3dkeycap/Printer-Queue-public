@@ -124,7 +124,8 @@ export const buildShipment = (order, items, settings = getSettings()) => {
       .join(', ')
       .slice(0, 250) || 'Keycaps';
 
-  const international = address.country_code && !['CA', 'US'].includes(address.country_code);
+  // Chit Chats exige le détail des articles dès que le colis sort du Canada (États-Unis compris)
+  const international = address.country_code && address.country_code !== 'CA';
   const payload = {
     name: address.name,
     address_1: address.address_1,
@@ -174,21 +175,23 @@ export const explainApiError = (error) => {
   if (error.status === 429) return 'Chit Chats limite le nombre d\'appels : réessai à la prochaine heure';
   if (error.status >= 500) return `Chit Chats en panne (erreur ${error.status}) — réessai à la prochaine heure`;
 
+  // on affiche le message de Chit Chats tel quel (ex. « line_items required »)
   const body = error.body ?? {};
   const messages = [];
+  const GENERIC_KEYS = new Set(['message', 'error', 'errors', 'detail', 'details', 'raw']);
   const collect = (field, value) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [key, inner] of Object.entries(value)) collect(GENERIC_KEYS.has(key) ? field : key, inner);
+      return;
+    }
     const text = [].concat(value).map((v) => (typeof v === 'string' ? v : JSON.stringify(v))).join(', ');
-    messages.push(field ? `${FIELD_LABELS[field] ?? field} : ${text}` : text);
+    if (!text) return;
+    messages.push(field && !GENERIC_KEYS.has(field) ? `${field} ${text}` : text);
   };
   const errors = body.errors ?? body.error ?? body.message ?? body.raw;
-  if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
-    for (const [field, value] of Object.entries(errors)) collect(field, value);
-  } else if (Array.isArray(errors)) {
-    errors.forEach((value) => collect(null, value));
-  } else if (errors) {
-    collect(null, errors);
-  }
-  return `refusé par Chit Chats (${error.status})${messages.length ? ` — ${messages.join(' ; ')}` : ''}`;
+  if (Array.isArray(errors)) errors.forEach((value) => collect(null, value));
+  else if (errors) collect(null, errors);
+  return messages.length ? messages.join(' ; ') : `refusé par Chit Chats (erreur ${error.status})`;
 };
 
 const api = (settings) => {

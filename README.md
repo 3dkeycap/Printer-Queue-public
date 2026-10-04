@@ -574,3 +574,9 @@ l'affiche en **étiquette rouge sur les pièces** de la commande, avec le détai
 **Photo du produit** : la fiche d'une pièce affiche la photo Shopify / Etsy quand elle est connue.
 Pour Shopify, la photo demande le scope `read_products` : reconnecte la boutique (Réglages →
 Boutiques → Shopify → Reconnecter via OAuth) si les photos n'apparaissent pas.
+
+**Pièce déjà en inventaire** — sur une carte « À imprimer », les boutons **Imprimé** et
+**Expédié** la font passer directement à l'étape voulue, sans passer par l'impression.
+
+**Commentaires multiples** — les commentaires sont des étiquettes : « + Ajouter » (liste
+prédéfinie ou « + Autre… »), × pour en retirer une. Visibles sur les cartes, la fiche et la vue « Tout ».

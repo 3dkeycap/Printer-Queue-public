@@ -1,6 +1,6 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
 import { groupParts, printerOptions, state, statusMeta, uvOptions } from '../store.js';
-import { buildCommentSelect } from '../comment-select.js';
+import { buildCommentTags } from '../comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -54,7 +54,7 @@ const row = (part, actions) =>
       ]),
       el('td', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
       el('td', {}, select(uvOptions(), part.uv, (value) => actions.patchPart(part.id, { uv: value }, { silent: true }), 'UV…')),
-      el('td', {}, buildCommentSelect(part, actions, { className: 'cell-select', placeholder: 'Commentaire…', stopClickPropagation: true })),
+      el('td', {}, buildCommentTags(part, actions, { compact: true })),
       el('td', {}, select(printerOptions(), part.printer, (value) => actions.patchPart(part.id, { printer: value }, { silent: true }), 'Imprimante…')),
       el('td', {}, [
         el('div', {}, part.order_number ?? `#${part.order_id}`),

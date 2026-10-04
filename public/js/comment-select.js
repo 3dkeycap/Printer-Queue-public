@@ -1,33 +1,79 @@
-import { el } from './ui.js';
+import { el, icon } from './ui.js';
 import { commentOptions } from './store.js';
 
 const ADD_CUSTOM = '__add_custom__';
 
-/** Select de commentaire avec une option « + Ajouter » qui ouvre une invite pour un nouveau commentaire. */
-export const buildCommentSelect = (part, actions, { className, placeholder = 'Aucun commentaire', stopClickPropagation = false } = {}) => {
-  const options = commentOptions();
-  const node = el(
-    'select',
-    { class: className, onclick: stopClickPropagation ? (event) => event.stopPropagation() : undefined },
-    [
-      el('option', { value: '', selected: !part.comment }, placeholder),
-      ...options.map((option) => el('option', { value: option, selected: option === part.comment }, option)),
-      part.comment && !options.includes(part.comment)
-        ? el('option', { value: part.comment, selected: true }, part.comment)
-        : null,
-      el('option', { value: ADD_CUSTOM }, '+ Ajouter un commentaire…'),
-    ].filter(Boolean),
-  );
+/** Commentaires d'une pièce : une étiquette par ligne. */
+export const commentList = (part) =>
+  String(part?.comment ?? '')
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
 
-  node.addEventListener('change', async (event) => {
-    const value = event.target.value;
-    if (value === ADD_CUSTOM) {
-      node.value = part.comment || '';
-      await actions.addCustomComment(part.id);
-    } else {
-      await actions.patchPart(part.id, { comment: value || null }, { silent: true });
-    }
-  });
+/**
+ * Commentaires en étiquettes : chacune se retire avec ×, le menu en ajoute
+ * une (liste prédéfinie, ou « + Autre… » pour en écrire une nouvelle).
+ */
+export const buildCommentTags = (part, actions, { compact = false } = {}) => {
+  let current = commentList(part);
+  const root = el('div', { class: `comment-tags${compact ? ' is-compact' : ''}`, onclick: (event) => event.stopPropagation() });
 
-  return node;
+  const save = async (list) => {
+    current = list;
+    paint();
+    await actions.patchPart(part.id, { comment: list }, { silent: true });
+  };
+
+  function paint() {
+    const picker = el(
+      'select',
+      { class: compact ? 'cell-select comment-add' : 'comment-add', onclick: (event) => event.stopPropagation() },
+      [
+        el('option', { value: '', selected: true }, current.length ? '+ Ajouter' : '+ Commentaire'),
+        ...commentOptions()
+          .filter((option) => !current.includes(option))
+          .map((option) => el('option', { value: option }, option)),
+        el('option', { value: ADD_CUSTOM }, '+ Autre…'),
+      ],
+    );
+    picker.addEventListener('change', async (event) => {
+      const value = event.target.value;
+      picker.value = '';
+      if (!value) return;
+      if (value === ADD_CUSTOM) {
+        const added = await actions.addCustomComment(part.id, current);
+        if (added) {
+          current = added;
+          paint();
+        }
+      } else {
+        await save([...current, value]);
+      }
+    });
+
+    root.replaceChildren(
+      ...current.map((comment) =>
+        el('span', { class: 'comment-tag' }, [
+          comment,
+          el(
+            'button',
+            {
+              class: 'chip-x',
+              type: 'button',
+              title: 'Retirer ce commentaire',
+              onclick: (event) => {
+                event.stopPropagation();
+                save(current.filter((value) => value !== comment));
+              },
+            },
+            icon('close'),
+          ),
+        ]),
+      ),
+      picker,
+    );
+  }
+
+  paint();
+  return root;
 };

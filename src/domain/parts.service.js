@@ -321,6 +321,15 @@ export const bulkSetStatus = (ids, status, options = {}) => {
   return { updated, errors };
 };
 
+/** Liste (ou texte) de commentaires -> une étiquette par ligne, sans doublon ; null si vide. */
+export const normalizeComments = (value) => {
+  const list = (Array.isArray(value) ? value : String(value ?? '').split('\n'))
+    .map((item) => String(item ?? '').trim())
+    .filter(Boolean);
+  const unique = [...new Set(list)];
+  return unique.length ? unique.join('\n') : null;
+};
+
 const PATCHABLE = ['name', 'sku', 'variant_title', 'color_key', 'printer', 'uv', 'comment', 'notes'];
 
 export const updatePart = (id, patch, { actor = 'dashboard' } = {}) => {
@@ -330,6 +339,9 @@ export const updatePart = (id, patch, { actor = 'dashboard' } = {}) => {
 
   const fields = [];
   const values = { id: part.id, ts: nowIso() };
+
+  // plusieurs commentaires = étiquettes, stockées une par ligne
+  if (patch.comment !== undefined) patch = { ...patch, comment: normalizeComments(patch.comment) };
 
   for (const field of PATCHABLE) {
     if (patch[field] !== undefined) {
@@ -406,7 +418,7 @@ export const createManualPart = ({
                               priority, uv, comment, notes, status_changed_at, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(order.id, itemInfo.lastInsertRowid, index, name, sku, color_key, status, priority ? 1 : 0, uv, comment, notes, ts, ts, ts);
+        .run(order.id, itemInfo.lastInsertRowid, index, name, sku, color_key, status, priority ? 1 : 0, uv, normalizeComments(comment), notes, ts, ts, ts);
       recordEvent(db, {
         partId: info.lastInsertRowid,
         from: null,

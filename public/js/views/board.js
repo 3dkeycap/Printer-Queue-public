@@ -1,4 +1,5 @@
 import { attachImagePreview, el, icon, swatch } from '../ui.js';
+import { commentList } from '../comment-select.js';
 import { groupParts, openChitChats, presenceFor, state, statusMeta } from '../store.js';
 
 /** Raison courte pour l'étiquette ; le détail complet est dans l'infobulle et la fiche. */
@@ -83,7 +84,8 @@ const buildCard = (stack, actions) => {
               [icon('truck'), 'Ouvrir sur Chit Chats'],
             ),
         ]),
-      part.comment && el('div', { class: 'card-comment' }, [icon('note'), part.comment]),
+      part.comment &&
+        el('div', { class: 'card-comments' }, commentList(part).map((comment) => el('span', { class: 'comment-tag' }, [icon('note'), comment]))),
       el('div', { class: 'card-foot' }, [
         el('span', { class: 'who' }, count > 1 ? '—' : (part.customer_name ?? '—')),
         el('div', { class: 'card-actions' }, [
@@ -100,6 +102,33 @@ const buildCard = (stack, actions) => {
                 },
               },
               icon('alert'),
+            ),
+          // pièce déjà en inventaire : on saute l'impression
+          part.status === 'TO_PRINT' &&
+            el(
+              'button',
+              {
+                class: 'mini-btn',
+                title: 'Déjà en inventaire : marquer comme imprimé',
+                onclick: (event) => {
+                  event.stopPropagation();
+                  actions.move(ids, 'DONE', { force: true });
+                },
+              },
+              [icon('check'), statusMeta('DONE').labelFr],
+            ),
+          part.status === 'TO_PRINT' &&
+            el(
+              'button',
+              {
+                class: 'mini-btn',
+                title: 'Déjà en inventaire : marquer comme expédié',
+                onclick: (event) => {
+                  event.stopPropagation();
+                  actions.move(ids, 'SHIPPED', { force: true });
+                },
+              },
+              [icon('truck'), statusMeta('SHIPPED').labelFr],
             ),
           next &&
             el(
