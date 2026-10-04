@@ -220,6 +220,10 @@ En ligne de commande, le token peut aussi venir de `.env` (`GITHUB_TOKEN=...`,
 prioritaires pour le conteneur `updater`. Le token n'est envoyé qu'à github.com : il n'est
 écrit ni dans `.git/config`, ni dans l'image.
 
+**Dossier sans Git** (copié depuis une archive ZIP) : la mise à jour le transforme en clone
+toute seule au premier clic. L'état actuel est gardé comme point de départ (retour arrière
+possible) ; `.env`, `docker-compose.override.yml`, `data/` et `backups/` ne sont jamais touchés.
+
 **Première fois** (installation antérieure à cette fonction) : sur le serveur, une seule
 fois, `git pull && docker compose up -d --build`. Ensuite tout se fait depuis le dashboard.
 

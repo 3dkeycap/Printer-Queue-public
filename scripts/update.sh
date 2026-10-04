@@ -81,7 +81,25 @@ BACKUP_KEEP=${BACKUP_KEEP:-10}
 
 command -v git >/dev/null 2>&1 || die "git n'est pas installé"
 command -v docker >/dev/null 2>&1 || die "docker n'est pas installé"
-[ -d .git ] || die "$ROOT n'est pas un clone Git (installer avec « git clone »)"
+
+# Dossier copié sans Git (archive ZIP, copie de fichiers) : on le transforme en
+# clone. L'état actuel devient un commit local « de départ », ce qui permet le
+# même retour arrière qu'une installation normale. Les fichiers locaux ignorés
+# (.env, data, backups, docker-compose.override.yml) ne sont jamais touchés.
+# (le marqueur .git/rpq-bootstrap survit à une vérification --check ou à un échec)
+BOOTSTRAP=0
+if [ ! -e .git ]; then
+  say "$ROOT n'est pas un clone Git : initialisation."
+  git init -q
+  mkdir -p .git/info
+  printf '%s\n' .env data backups node_modules docker-compose.override.yml '*.db' '*.db-wal' '*.db-shm' >> .git/info/exclude
+  : > .git/rpq-bootstrap
+fi
+if [ -e .git/rpq-bootstrap ]; then
+  BOOTSTRAP=1
+  GITHUB_REPO=${GITHUB_REPO:-3dkeycap/Printer-Queue-public}
+  UPDATE_BRANCH=${UPDATE_BRANCH:-main}
+fi
 
 # --- un seul update à la fois (manuel + service updater)
 LOCK="$ROOT/.git/rpq-update.lock"
@@ -119,7 +137,7 @@ if [ -n "$GITHUB_REPO" ]; then
   SOURCE="https://github.com/$GITHUB_REPO.git"
 else
   ORIGIN=$(git remote get-url origin 2>/dev/null || true)
-  [ -n "$ORIGIN" ] || die "pas de remote « origin » : définir GITHUB_REPO=owner/depot dans .env"
+  ORIGIN=${ORIGIN:-https://github.com/3dkeycap/Printer-Queue-public.git}   # dépôt public par défaut
   case "$ORIGIN" in
     *github.com[:/]*)
       REPO=$(printf '%s' "$ORIGIN" | sed -E -e 's#^.*github\.com[:/]##' -e 's#/$##' -e 's#\.git$##')
@@ -128,7 +146,7 @@ else
   esac
 fi
 
-BRANCH=${UPDATE_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}
+BRANCH=${UPDATE_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}
 [ "$BRANCH" != "HEAD" ] || die "aucune branche extraite : définir UPDATE_BRANCH dans .env"
 
 # --- fetch (token passé par l'environnement : absent de .git/config et de « ps »)
@@ -153,12 +171,19 @@ if ! git fetch --quiet "$SOURCE" "$BRANCH" 2>"$ROOT/.git/rpq-fetch.err"; then
 fi
 rm -f "$ROOT/.git/rpq-fetch.err"
 
+if [ "$BOOTSTRAP" = 1 ] && ! git rev-parse --verify -q HEAD >/dev/null; then
+  git checkout -q -B "$BRANCH"
+  git add -A >/dev/null 2>&1
+  git -c user.name=rpq-updater -c user.email=updater@localhost commit -q --allow-empty -m "Installation avant la première mise à jour" >/dev/null
+fi
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse FETCH_HEAD)
 short() { git rev-parse --short "$1"; }
 LATEST=$(short "$REMOTE")
 
-if [ "$LOCAL" = "$REMOTE" ]; then
+if [ "$BOOTSTRAP" = 1 ]; then
+  UPDATE=1   # historiques sans rapport : on installe la version de GitHub telle quelle
+elif [ "$LOCAL" = "$REMOTE" ]; then
   UPDATE=0
 elif git merge-base --is-ancestor "$LOCAL" "$REMOTE"; then
   UPDATE=1
@@ -186,7 +211,7 @@ fi
 [ "$CHECK" = 0 ] || exit 0
 
 # --- modifications locales : elles bloqueraient le fast-forward
-if [ "$UPDATE" = 1 ] && ! git diff --quiet HEAD --; then
+if [ "$UPDATE" = 1 ] && [ "$BOOTSTRAP" = 0 ] && ! git diff --quiet HEAD --; then
   git status --short --untracked-files=no >&2
   die "des fichiers suivis ont été modifiés localement. Mettre les réglages dans .env ou docker-compose.override.yml, puis « git checkout -- . »"
 fi
@@ -285,7 +310,12 @@ deploy() {
   wait_healthy
 }
 
-[ "$UPDATE" = 0 ] || git merge --ff-only --quiet "$REMOTE"
+if [ "$BOOTSTRAP" = 1 ]; then
+  git reset --hard --quiet "$REMOTE"
+  rm -f "$ROOT/.git/rpq-bootstrap"
+elif [ "$UPDATE" = 1 ]; then
+  git merge --ff-only --quiet "$REMOTE"
+fi
 
 if deploy; then
   docker image prune -f >/dev/null 2>&1 || true
