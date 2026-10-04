@@ -60,12 +60,12 @@ const STEPS = [
   {
     selector: '.card',
     title: 'Une carte = une pièce',
-    text: "Nom, résine, UV, commande, rush ⚡, imprimante… Clique la carte pour ouvrir sa fiche (notes, commentaire, imprimante, historique). Le bouton en bas à droite la fait passer à l'étape suivante ; le triangle rouge la marque en échec.",
+    text: "Nom, résine, UV, commande, rush ⚡, imprimante… Clique la carte pour ouvrir sa fiche (tags, notes, imprimante, historique). Le bouton en bas à droite la fait passer à l'étape suivante ; le triangle rouge la marque en échec.",
   },
   {
     selector: '.card',
     title: 'Sélection multiple',
-    text: "Ctrl/Cmd/Maj + clic sur plusieurs cartes : une barre apparaît en bas pour changer leur statut, leur commentaire ou leur UV en une fois. Échap pour désélectionner.",
+    text: "Ctrl/Cmd/Maj + clic sur plusieurs cartes : une barre apparaît en bas pour changer leur statut, leurs tags ou leur UV en une fois. Échap pour désélectionner.",
   },
   {
     selector: '#theme-toggle',

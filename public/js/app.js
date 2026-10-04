@@ -168,6 +168,16 @@ const actions = {
     }
   },
 
+  /** Un tag tapé à la main rejoint la liste prédéfinie (suggestions sur les autres pièces). */
+  async addCommentOption(value) {
+    try {
+      await api.saveSettings({ 'production.commentOptions': [...commentOptions(), value] });
+      state.meta = await api.meta();
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
   /** Nouveau commentaire libre : ajouté à la liste prédéfinie et à la pièce. Renvoie la nouvelle liste. */
   async addCustomComment(partId, current = []) {
     const input = el('input', { placeholder: 'Attente client, pièce cassée…' });
@@ -328,7 +338,7 @@ const actions = {
       ...uvOptions().map((option) => el('option', { value: option, selected: option === state.meta?.defaultUv }, option)),
     ]);
     const comment = el('select', {}, [
-      el('option', { value: '' }, 'Aucun commentaire'),
+      el('option', { value: '' }, 'Aucun tag'),
       ...commentOptions().map((option) => el('option', { value: option }, option)),
     ]);
 
@@ -341,7 +351,7 @@ const actions = {
         el('div', { class: 'field' }, [el('label', {}, 'Pour qui'), customer]),
         el('div', { class: 'field' }, [el('label', {}, 'Résine'), color]),
         el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uv]),
-        el('div', { class: 'field' }, [el('label', {}, 'Commentaire'), comment]),
+        el('div', { class: 'field' }, [el('label', {}, 'Tag'), comment]),
       ]),
       confirmLabel: 'Créer',
       onConfirm: async () => {
@@ -538,7 +548,7 @@ const renderBulkbar = () => {
       {
         class: 'chip',
         onclick: async () => {
-          const value = await pickFromList('Commentaire', commentOptions());
+          const value = await pickFromList('Tag', commentOptions());
           if (value !== null) {
             // ajouté aux commentaires existants ; « — vider — » les retire tous
             for (const id of ids) {
@@ -548,11 +558,11 @@ const renderBulkbar = () => {
             }
             state.selection.clear();
             await refresh();
-            toast('Commentaire appliqué');
+            toast('Tag ajouté');
           }
         },
       },
-      [icon('note'), 'Commentaire'],
+      [icon('note'), 'Tag'],
     ),
     el(
       'button',

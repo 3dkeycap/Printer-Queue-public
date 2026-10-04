@@ -118,7 +118,7 @@ export const renderAll = (root, actions) => {
             el('th', {}, 'Pièce'),
             el('th', {}, 'Résine'),
             el('th', {}, 'UV'),
-            el('th', {}, 'Commentaire'),
+            el('th', {}, 'Tags'),
             el('th', {}, 'Imprimante'),
             el('th', {}, 'Commande'),
             el('th', {}, 'Pour qui'),

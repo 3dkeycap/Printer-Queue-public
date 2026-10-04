@@ -188,7 +188,7 @@ export const openDrawer = async (partId, actions) => {
 
       el('div', { class: 'field' }, [el('label', {}, 'Couleur de résine'), colorSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uvSelect]),
-      el('div', { class: 'field' }, [el('label', {}, 'Commentaires'), commentSelect]),
+      el('div', { class: 'field' }, [el('label', {}, 'Tags'), commentSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Imprimante'), printerSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Notes libres'), notesInput]),
 

@@ -1,7 +1,7 @@
 import { el, icon } from './ui.js';
 import { commentOptions } from './store.js';
 
-const ADD_CUSTOM = '__add_custom__';
+let datalistSeq = 0;
 
 /** Commentaires d'une pièce : une étiquette par ligne. */
 export const commentList = (part) =>
@@ -11,12 +11,20 @@ export const commentList = (part) =>
     .filter(Boolean);
 
 /**
- * Commentaires en étiquettes : chacune se retire avec ×, le menu en ajoute
- * une (liste prédéfinie, ou « + Autre… » pour en écrire une nouvelle).
+ * Tags d'une pièce, comme les listes des Réglages : on tape puis Entrée (ou
+ * virgule) pour ajouter, avec les tags prédéfinis en suggestion ; × retire.
+ * Un nouveau tag rejoint automatiquement la liste prédéfinie.
  */
 export const buildCommentTags = (part, actions, { compact = false } = {}) => {
   let current = commentList(part);
-  const root = el('div', { class: `comment-tags${compact ? ' is-compact' : ''}`, onclick: (event) => event.stopPropagation() });
+  const listId = `tag-options-${(datalistSeq += 1)}`;
+  const root = el('div', {
+    class: `comment-tags chip-editor${compact ? ' is-compact' : ''}`,
+    onclick: (event) => {
+      event.stopPropagation();
+      root.querySelector('input')?.focus();
+    },
+  });
 
   const save = async (list) => {
     current = list;
@@ -24,43 +32,48 @@ export const buildCommentTags = (part, actions, { compact = false } = {}) => {
     await actions.patchPart(part.id, { comment: list }, { silent: true });
   };
 
+  const add = async (raw) => {
+    const value = String(raw ?? '').replace(/,$/, '').trim();
+    if (!value || current.includes(value)) return;
+    await save([...current, value]);
+    if (!commentOptions().includes(value)) await actions.addCommentOption(value);
+    root.querySelector('input')?.focus();
+  };
+
   function paint() {
-    const picker = el(
-      'select',
-      { class: compact ? 'cell-select comment-add' : 'comment-add', onclick: (event) => event.stopPropagation() },
-      [
-        el('option', { value: '', selected: true }, current.length ? '+ Ajouter' : '+ Commentaire'),
-        ...commentOptions()
-          .filter((option) => !current.includes(option))
-          .map((option) => el('option', { value: option }, option)),
-        el('option', { value: ADD_CUSTOM }, '+ Autre…'),
-      ],
-    );
-    picker.addEventListener('change', async (event) => {
-      const value = event.target.value;
-      picker.value = '';
-      if (!value) return;
-      if (value === ADD_CUSTOM) {
-        const added = await actions.addCustomComment(part.id, current);
-        if (added) {
-          current = added;
-          paint();
-        }
-      } else {
-        await save([...current, value]);
+    const input = el('input', {
+      class: 'chip-input',
+      list: listId,
+      placeholder: current.length ? 'Ajouter…' : 'Ajouter un tag…',
+      enterkeyhint: 'done',
+      onclick: (event) => event.stopPropagation(),
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ',') {
+        event.preventDefault();
+        add(input.value);
+      } else if (event.key === 'Backspace' && !input.value && current.length) {
+        save(current.slice(0, -1)).then(() => root.querySelector('input')?.focus());
       }
+    });
+    // choix d'une suggestion dans la liste : ajouté directement
+    input.addEventListener('input', () => {
+      if (commentOptions().includes(input.value) && !current.includes(input.value)) add(input.value);
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) add(input.value);
     });
 
     root.replaceChildren(
       ...current.map((comment) =>
-        el('span', { class: 'comment-tag' }, [
+        el('span', { class: 'chip-tag' }, [
           comment,
           el(
             'button',
             {
               class: 'chip-x',
               type: 'button',
-              title: 'Retirer ce commentaire',
+              title: 'Retirer ce tag',
               onclick: (event) => {
                 event.stopPropagation();
                 save(current.filter((value) => value !== comment));
@@ -70,7 +83,8 @@ export const buildCommentTags = (part, actions, { compact = false } = {}) => {
           ),
         ]),
       ),
-      picker,
+      input,
+      el('datalist', { id: listId }, commentOptions().filter((o) => !current.includes(o)).map((o) => el('option', { value: o }))),
     );
   }
 

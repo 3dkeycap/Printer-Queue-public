@@ -667,3 +667,7 @@ html.kiosk .card-open-shop .open-cc { min-height: 38px; }
 .field .comment-add { width: auto; }
 .comment-tags.is-compact { gap: 4px; }
 .comment-tags.is-compact .comment-tag { font-size: 11px; }
+.comment-tags.chip-editor { padding: 5px; cursor: text; }
+.comment-tags.is-compact { padding: 3px; min-width: 160px; }
+.comment-tags.is-compact .chip-tag { font-size: 11px; padding: 1px 3px 1px 8px; }
+.comment-tags.is-compact .chip-input { min-width: 70px; flex-basis: 70px; font-size: 12px; padding: 2px 4px; }

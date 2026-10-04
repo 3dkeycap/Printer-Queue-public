@@ -7,7 +7,7 @@ import { api } from '../api.js';
    ========================================================================== */
 
 const TABS = [
-  { key: 'atelier', label: 'Atelier', icon: 'printer', desc: "Imprimantes, postes UV, commentaires, et ce qu'on n'imprime pas." },
+  { key: 'atelier', label: 'Atelier', icon: 'printer', desc: "Imprimantes, postes UV, tags, et ce qu'on n'imprime pas." },
   { key: 'resines', label: 'Résines', icon: 'drop', desc: 'Les couleurs de résine, leur stock et leurs alias de détection.' },
   { key: 'boutiques', label: 'Boutiques', icon: 'plug', desc: 'Connexion à Shopify, Etsy et Chit Chats.' },
   { key: 'synchro', label: 'Synchronisation', icon: 'refresh', desc: 'À quelle fréquence on va chercher les commandes.' },
@@ -259,8 +259,8 @@ const tabAtelier = (draft, touch, actions) => {
       f('production.uvOptions', { label: 'Options UV', hint: null }),
       f('production.defaultUv', { label: 'Valeur UV par défaut', hint: 'Laisser vide pour ne rien pré-remplir.' }),
     ]),
-    section('Commentaires prédéfinis', 'La liste déroulante « Commentaire » disponible sur chaque pièce.', [
-      f('production.commentOptions', { label: 'Commentaires', hint: null }),
+    section('Tags prédéfinis', 'Proposés en suggestion quand on ajoute un tag à une pièce (plusieurs tags par pièce). Un tag tapé à la main sur une pièce est ajouté ici automatiquement.', [
+      f('production.commentOptions', { label: 'Tags', hint: null }),
     ]),
     section(
       'UV automatique',

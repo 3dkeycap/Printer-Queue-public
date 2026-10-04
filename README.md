@@ -578,8 +578,8 @@ Boutiques → Shopify → Reconnecter via OAuth) si les photos n'apparaissent pa
 **Pièce déjà en inventaire** — sur une carte « À imprimer », les boutons **Imprimé** et
 **Expédié** la font passer directement à l'étape voulue, sans passer par l'impression.
 
-**Commentaires multiples** — les commentaires sont des étiquettes : « + Ajouter » (liste
-prédéfinie ou « + Autre… »), × pour en retirer une. Visibles sur les cartes, la fiche et la vue « Tout ».
+**Tags** — plusieurs tags par pièce, ajoutés comme dans les Réglages : taper puis Entrée (suggestions
+= tags prédéfinis ; un nouveau tag y est ajouté automatiquement), × pour en retirer un. Visibles sur les cartes, la fiche et la vue « Tout ». Le tableau reste groupé par couleur.
 
 **Extension v1.1** — bouton « Chit Chats #1234 » accroché au bord droit de la commande Shopify
 (déplaçable, loin du chat Sidekick de la nouvelle interface), fenêtre de l'extension avec un gros
