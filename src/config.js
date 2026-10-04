@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +15,21 @@ const int = (value, fallback) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+/**
+ * Identifiant de la version déployée : le commit Git passé au build
+ * (scripts/update.sh), sinon l'empreinte du code calculée dans le Dockerfile.
+ */
+const readBuildId = () => {
+  if (process.env.GIT_SHA && process.env.GIT_SHA !== 'unknown') return process.env.GIT_SHA;
+  try {
+    return fs.readFileSync(path.join(rootDir, 'BUILD_ID'), 'utf8').trim() || 'dev';
+  } catch {
+    return 'dev';
+  }
+};
+
+const databasePath = process.env.DATABASE_PATH || path.join(rootDir, 'data', 'printer-queue.db');
+
 export const config = {
   rootDir,
   env: process.env.NODE_ENV || 'development',
@@ -21,7 +37,14 @@ export const config = {
   host: process.env.HOST || '0.0.0.0',
   logLevel: process.env.LOG_LEVEL || 'info',
   publicDir: path.join(rootDir, 'public'),
-  databasePath: process.env.DATABASE_PATH || path.join(rootDir, 'data', 'printer-queue.db'),
+  databasePath,
+  buildId: readBuildId(),
+
+  // sauvegardes SQLite : dans le même volume que la base, rotation automatique
+  backup: {
+    dir: process.env.BACKUP_DIR || path.join(path.dirname(databasePath), 'backups'),
+    keep: int(process.env.BACKUP_KEEP, 10),
+  },
 
   auth: {
     user: process.env.DASHBOARD_USER || 'admin',

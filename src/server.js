@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { backupBeforeUpgrade, recordBuild } from './db/backup.js';
 import { closeDb } from './db/index.js';
 import { migrate } from './db/migrate.js';
 import { createLogger } from './lib/logger.js';
@@ -7,7 +8,10 @@ import { startScheduler } from './jobs/scheduler.js';
 
 const log = createLogger('server');
 
+// mise à jour : copie de la base avant que les migrations n'y touchent
+backupBeforeUpgrade();
 migrate();
+recordBuild();
 
 const app = createApp();
 const server = app.listen(config.port, config.host, () => {
@@ -15,6 +19,7 @@ const server = app.listen(config.port, config.host, () => {
     url: `http://${config.host}:${config.port}`,
     mode: config.integrations.mode,
     auth: config.auth.enabled ? 'basic' : 'disabled',
+    build: config.buildId,
   });
 });
 

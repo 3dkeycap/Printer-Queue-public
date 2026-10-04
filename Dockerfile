@@ -28,6 +28,13 @@ COPY src ./src
 COPY public ./public
 COPY scripts ./scripts
 
+# Version affichée dans le dashboard et utilisée pour la sauvegarde automatique
+# au premier démarrage d'une nouvelle version : le commit passé par
+# scripts/update.sh, sinon une empreinte du code embarqué.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
+RUN find package.json src public scripts -type f | sort | xargs sha256sum | sha256sum | cut -c1-12 > BUILD_ID
+
 # the named volume inherits this ownership on first mount
 RUN mkdir -p /data && chown -R node:node /data /app
 

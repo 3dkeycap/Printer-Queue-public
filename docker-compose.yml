@@ -7,8 +7,16 @@
 #  boutiques, les crons et les listes UV / commentaires se saisissent ensuite
 #  dans la page « Intégrations » du dashboard (stockés en base).
 #
+#  Mettre à jour depuis GitHub (dépôt privé OK, données conservées) :
+#    sh scripts/update.sh
+#  Mise à jour automatique (vérifie GitHub toutes les heures) :
+#    docker compose --profile autoupdate up -d
+#
 #  Vider la production (commandes + pièces) :
 #    docker compose exec app node scripts/reset-data.js --yes
+#
+#  ⚠ Ne JAMAIS lancer « docker compose down -v » : -v supprime le volume
+#    rpq-data, donc la base et ses sauvegardes.
 # ---------------------------------------------------------------------------
 
 x-app-env: &app-env
@@ -36,11 +44,15 @@ x-app-env: &app-env
   CHITCHATS_API_BASE: ${CHITCHATS_API_BASE:-https://chitchats.com/api/v1}
   CHITCHATS_WEBHOOK_SECRET: ${CHITCHATS_WEBHOOK_SECRET:-}
   SHIP_ALL_PARTS_ON_SHIPMENT: ${SHIP_ALL_PARTS_ON_SHIPMENT:-true}
+  BACKUP_KEEP: ${BACKUP_KEEP:-10}
 
 services:
   # ---- Dashboard + API (sert aussi le front-end statique) ------------------
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     image: resin-print-queue:latest
     container_name: rpq-app
     restart: unless-stopped
@@ -60,17 +72,54 @@ services:
 
   # ---- Worker : cron des commandes (5 min) + réconciliation Chit Chats ----
   worker:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
     image: resin-print-queue:latest
     container_name: rpq-worker
     restart: unless-stopped
     command: ["node", "src/jobs/worker.js"]
     environment: *app-env
+    # le healthcheck de l'image interroge le port HTTP, que le worker n'ouvre pas
+    healthcheck:
+      disable: true
     volumes:
       - pq-data:/data
     depends_on:
       app:
         condition: service_healthy
+
+  # ---- Mise à jour automatique depuis GitHub (optionnelle) ----------------
+  #   docker compose --profile autoupdate up -d
+  # Vérifie la branche toutes les UPDATE_INTERVAL secondes et lance
+  # scripts/update.sh (sauvegarde -> pull -> rebuild -> redémarrage, avec
+  # retour arrière si l'app ne redevient pas saine). Dépôt privé : renseigner
+  # GITHUB_TOKEN dans .env. Accède au socket Docker de l'hôte.
+  updater:
+    image: docker:27-cli
+    container_name: rpq-updater
+    profiles: ["autoupdate"]
+    restart: unless-stopped
+    working_dir: /repo
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPO: ${GITHUB_REPO:-}
+      UPDATE_BRANCH: ${UPDATE_BRANCH:-}
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL:-3600}
+      TZ: ${TZ:-America/Toronto}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/repo
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        command -v git >/dev/null || apk add --no-cache git >/dev/null
+        git config --global --add safe.directory '*'
+        while true; do
+          sh scripts/update.sh --auto || echo "update failed, retry later"
+          sleep "$${UPDATE_INTERVAL}"
+        done
 
 volumes:
   pq-data:

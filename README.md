@@ -101,7 +101,7 @@ seules les pièces manquantes sont ajoutées.
 
 ```
 .
-├── docker-compose.yml          app + worker + profil « demo »
+├── docker-compose.yml          app + worker + profil « autoupdate »
 ├── Dockerfile                  image multi-stage, non-root, healthcheck
 ├── .env.example                toute la configuration documentée
 ├── src/
@@ -111,6 +111,7 @@ seules les pièces manquantes sont ajoutées.
 │   ├── db/
 │   │   ├── schema.sql          schéma SQLite complet
 │   │   ├── migrate.js          application idempotente + seed des résines
+│   │   ├── backup.js           sauvegardes SQLite (VACUUM INTO) + rotation
 │   │   ├── colors.seed.json    catalogue de résines (noms, hex, alias)
 │   │   └── index.js            connexion, PRAGMA WAL, settings
 │   ├── domain/
@@ -137,6 +138,8 @@ seules les pièces manquantes sont ajoutées.
 │   ├── index.html
 │   ├── css/app.css             thème beige & noir, clair / sombre
 │   └── js/                     api, store, drawer, views/{board,all,integrations}
+├── scripts/update.sh           mise à jour depuis GitHub (privé OK), sauvegarde + retour arrière
+├── scripts/backup.js           sauvegarde / liste des sauvegardes de la base
 ├── scripts/reset-data.js       purge des commandes et des pièces
 ├── scripts/diagnose-shopify.js interroge Shopify en direct (0 commande sans erreur ?)
 └── tests/                      58 tests (node:test)
@@ -169,6 +172,71 @@ docker compose exec app node scripts/reset-data.js --yes
 ```
 
 Dashboard : **http://localhost:8080** (changer le port : `APP_PORT=9000 docker compose up -d`).
+
+### Mettre à jour depuis GitHub (sans perdre les données)
+
+Les données (commandes, pièces, réglages, tokens) vivent dans le **volume Docker
+`rpq-data`**, pas dans l'image : reconstruire l'image ne les touche pas. La mise à jour
+se fait en une commande, depuis le dossier du clone :
+
+```bash
+sh scripts/update.sh            # met à jour si GitHub a une version plus récente
+sh scripts/update.sh --check    # dit seulement s'il y a une mise à jour
+```
+
+Le script :
+
+1. récupère la branche suivie sur GitHub ;
+2. **sauvegarde la base** dans le volume (`/data/backups`) **et** sur l'hôte (`./backups/`) ;
+3. avance le code, reconstruit l'image, redémarre `app` + `worker` ;
+4. attend que l'app réponde ; sinon **revient tout seul à la version précédente**.
+
+L'app fait aussi une sauvegarde automatique au premier démarrage de chaque nouvelle
+version, avant les migrations (les 10 dernières sont gardées, `BACKUP_KEEP`). Version
+installée : en bas du menu de gauche.
+
+**Dépôt privé** : créer un token GitHub en lecture seule
+([fine-grained token](https://github.com/settings/personal-access-tokens/new), accès au
+seul dépôt `Printer-Queue`, permission *Contents : Read-only*) et le mettre dans `.env` :
+
+```bash
+GITHUB_TOKEN=github_pat_xxxxxxxx
+GITHUB_REPO=3dkeycap/Printer-Queue
+UPDATE_BRANCH=main               # vide = la branche actuellement extraite
+```
+
+Le token n'est envoyé qu'à github.com : il n'est écrit ni dans `.git/config`, ni dans
+l'image, ni dans les conteneurs `app` / `worker`.
+
+**Première fois** (installation antérieure à ce script) : `git pull` une seule fois pour
+récupérer `scripts/update.sh`, puis `sh scripts/update.sh --force`.
+
+**Mise à jour automatique** (optionnelle) : un petit conteneur vérifie GitHub toutes les
+heures (`UPDATE_INTERVAL`, en secondes) et lance le même script :
+
+```bash
+docker compose --profile autoupdate up -d
+docker compose logs -f updater
+```
+
+Il a accès au socket Docker de l'hôte (nécessaire pour reconstruire l'image).
+
+> ⚠ Ne jamais lancer `docker compose down -v` : l'option `-v` supprime le volume
+> `rpq-data`, donc la base **et** ses sauvegardes internes. `docker compose down` (sans
+> `-v`), `up --build`, `pull` ou la suppression de l'image sont sans danger.
+>
+> Ne modifiez pas les fichiers suivis par Git (sinon la mise à jour s'arrête) : vos
+> réglages vont dans `.env`, vos ajustements Docker dans `docker-compose.override.yml`.
+
+**Restaurer une sauvegarde** :
+
+```bash
+docker compose exec app node scripts/backup.js --list
+docker compose stop app worker
+docker compose run --rm --no-deps app sh -c \
+  'cp /data/backups/<fichier>.db /data/printer-queue.db && rm -f /data/printer-queue.db-wal /data/printer-queue.db-shm'
+docker compose up -d
+```
 
 ### En local, sans Docker
 
@@ -213,16 +281,18 @@ Chaque changement est écrit dans `part_events` avec son auteur (`dashboard`, `w
   « Glow in the dark » d'un coup. Regroupement possible aussi par UV ou par commande.
 * Chaque carte affiche la **résine**, le **poste UV**, le **commentaire**, la source, le
   numéro de commande, l'**imprimante assignée** et le drapeau rush.
-* Filtres : pastilles de couleur et d'UV avec compteurs, source, rush, recherche plein
-  texte (`/` pour y accéder au clavier).
+* Filtres : pastilles de couleur et d'UV (dont « Sans UV ») avec compteurs, source,
+  rush, recherche plein texte (`/` pour y accéder au clavier). Les compteurs tiennent
+  compte des autres filtres actifs : avec « Etsy » coché, la pastille « Noir » indique
+  le nombre de pièces noires **Etsy**.
 
 **Page « Tout »**
 
 * Toutes les pièces, tous statuts confondus, en **tableau éditable** : statut, UV,
   commentaire et imprimante se changent directement dans la ligne, comme dans la feuille
   de calcul.
-* Uniquement des filtres en haut de page (aucun compteur), groupes par couleur / UV /
-  commande.
+* Mêmes filtres, plus un filtre par statut (propre à cette page : il ne vide jamais le
+  tableau « À imprimer »). Groupes par couleur / UV / commande.
 * Sélection multiple (cases à cocher) puis changement de statut, d'UV ou de commentaire
   **en lot**.
 
@@ -375,7 +445,8 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check (utilisé par Docker) |
 | `GET` | `/api/meta` | Statuts, mode, expressions cron |
-| `GET` | `/api/parts` | Liste filtrable : `status`, `color`, `uv`, `source`, `q`, `priority`, `sort`, `scope=board` |
+| `GET` | `/api/parts` | Liste filtrable : `status`, `color`, `uv` (`__none__` = sans UV), `source`, `q`, `priority`, `sort`, `scope=board` |
+| `GET` | `/api/parts/facets` | Compteurs des filtres (mêmes paramètres), chaque dimension sans son propre filtre |
 | `POST` | `/api/parts` | Pièce manuelle (réimpression, production pour le stock) |
 | `GET` | `/api/parts/:id` | Fiche + historique |
 | `PATCH` | `/api/parts/:id` | Couleur, UV, commentaire, imprimante, notes, priorité, statut |
@@ -415,8 +486,9 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 
 ## 8. Exploitation
 
-* **Sauvegarde** : `docker compose exec app node -e "require('better-sqlite3')(process.env.DATABASE_PATH).backup('/data/backup.db')"`
-  puis récupérer le fichier depuis le volume `rpq-data`.
+* **Sauvegarde** : `docker compose exec app node scripts/backup.js` (fichier dans
+  `/data/backups`, rotation `BACKUP_KEEP`), puis `docker cp rpq-app:/data/backups/<fichier>.db .`
+  pour la garder hors du serveur. Automatique avant chaque mise à jour (voir § 2).
 * **Authentification** : renseigner `DASHBOARD_PASSWORD` active une authentification HTTP
   Basic sur le dashboard et l'API (les webhooks et le health check restent ouverts, ils
   ont leur propre secret).

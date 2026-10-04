@@ -8,3 +8,4 @@ data/
 npm-debug.log*
 coverage/
 .scratch/
+backups/

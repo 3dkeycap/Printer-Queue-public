@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { config } from '../config.js';
 import { getDb } from '../db/index.js';
 import { BOARD_STATUSES, STATUSES } from '../domain/statuses.js';
 import { connectorStatus, getSettings } from '../domain/settings.service.js';
@@ -28,5 +29,6 @@ metaRouter.get('/meta', (req, res) => {
     shipmentCron: settings['schedule.shipmentCron'],
     connectors: connectorStatus(),
     version: '2.0.0',
+    build: config.buildId,
   });
 });
