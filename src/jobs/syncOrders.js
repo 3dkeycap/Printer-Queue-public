@@ -3,6 +3,7 @@ import { ingestOrders } from '../domain/ingest.js';
 import { createLogger } from '../lib/logger.js';
 import * as etsy from '../integrations/etsy.js';
 import * as shopify from '../integrations/shopify.js';
+import { backfillShopifyImages } from '../domain/shopifyImages.js';
 import { getSettings } from '../domain/settings.service.js';
 
 const log = createLogger('sync:orders');
@@ -77,6 +78,8 @@ export const syncSource = async (source, { trigger = 'cron' } = {}) => {
 
     finishRun(runId, 'success', summary);
     log.info('sync done', { source, ...summary });
+    // photos des commandes Shopify déjà importées sans photo (best-effort)
+    if (source === 'shopify') await backfillShopifyImages().catch((error) => log.warn('image backfill failed', { error: error.message }));
     return { source, status: 'success', ...summary };
   } catch (error) {
     finishRun(runId, 'error', {}, error.message);

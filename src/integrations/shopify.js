@@ -25,36 +25,81 @@ export const normalizeLineItem = (lineItem) => {
   };
 };
 
-// product_id -> URL de la photo principale (ou null si le produit n'en a pas).
-// En mémoire pour la durée de vie du process : la fenêtre de synchro revoit
-// souvent les mêmes commandes ouvertes d'un cycle à l'autre, ça évite de
-// refaire un appel API pour un produit déjà résolu.
+/*
+ * Photos produits. Deux sources, dans cet ordre :
+ *  1. GraphQL `LineItem.image` : la photo de la ligne de commande (variante
+ *     achetée), lisible avec le seul scope read_orders ;
+ *  2. REST /products/{id}.json : demande read_products, souvent absent. Au
+ *     premier refus (403), on arrête de l'appeler pour la durée du process.
+ * Best-effort : une erreur ne bloque jamais la synchro.
+ */
 const productImageCache = new Map();
+let productsApiForbidden = false;
 
-/** Photo principale d'un produit Shopify. Best-effort : une erreur ne bloque jamais la synchro. */
+const graphqlUrl = (settings) =>
+  `https://${settings['shopify.shopDomain']}/admin/api/${settings['shopify.apiVersion']}/graphql.json`;
+
+/** { [lineItemId]: url } pour une liste d'id de commandes Shopify (REST, numériques). */
+export const fetchLineItemImages = async (orderIds, settings) => {
+  const images = {};
+  const ids = [...new Set(orderIds.map(String).filter((id) => /^\d+$/.test(id)))];
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50).map((id) => `gid://shopify/Order/${id}`);
+    try {
+      const payload = await requestJson(graphqlUrl(settings), {
+        method: 'POST',
+        headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'], 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query ($ids: [ID!]!) { nodes(ids: $ids) { ... on Order { lineItems(first: 100) { nodes { id image { url } } } } } }`,
+          variables: { ids: batch },
+        }),
+        retries: 1,
+      });
+      if (payload?.errors?.length) log.warn('graphql line item images', { error: payload.errors[0]?.message });
+      for (const order of payload?.data?.nodes ?? []) {
+        for (const line of order?.lineItems?.nodes ?? []) {
+          const lineId = String(line.id ?? '').split('/').pop();
+          if (lineId && line.image?.url) images[lineId] = line.image.url;
+        }
+      }
+    } catch (error) {
+      log.warn('failed to fetch line item images', { error: error.message });
+    }
+  }
+  return images;
+};
+
+/** Photo principale d'un produit (REST, scope read_products). */
 export const fetchProductImage = async (productId, settings) => {
-  if (!productId) return null;
+  if (!productId || productsApiForbidden) return null;
   if (productImageCache.has(productId)) return productImageCache.get(productId);
 
   try {
     const url = `https://${settings['shopify.shopDomain']}/admin/api/${settings['shopify.apiVersion']}/products/${productId}.json?fields=id,image`;
     const payload = await requestJson(url, {
       headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'] },
+      retries: 1,
     });
     const imageUrl = payload?.product?.image?.src ?? null;
     productImageCache.set(productId, imageUrl);
     return imageUrl;
   } catch (error) {
-    log.warn('failed to fetch product image', { productId, error: error.message });
+    if (error.status === 403 || error.status === 401) {
+      productsApiForbidden = true;
+      log.info('shopify products API not allowed (scope read_products missing): line item images only');
+    } else {
+      log.warn('failed to fetch product image', { productId, error: error.message });
+    }
     return null;
   }
 };
 
 /** Ajoute `imageUrl` à chaque article, sans jamais faire échouer la synchro. */
 export const attachProductImages = async (orders, settings) => {
+  const lineImages = await fetchLineItemImages(orders.map((order) => order.externalId), settings);
   for (const order of orders) {
     for (const item of order.items) {
-      item.imageUrl = await fetchProductImage(item.productId, settings);
+      item.imageUrl = lineImages[item.externalId] ?? (await fetchProductImage(item.productId, settings));
     }
   }
   return orders;

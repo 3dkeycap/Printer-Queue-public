@@ -572,8 +572,9 @@ l'affiche en **étiquette rouge sur les pièces** de la commande, avec le détai
 « Réessayer maintenant » dans la fiche. Les commandes en erreur sont retentées à chaque heure.
 
 **Photo du produit** : la fiche d'une pièce affiche la photo Shopify / Etsy quand elle est connue.
-Pour Shopify, la photo demande le scope `read_products` : reconnecte la boutique (Réglages →
-Boutiques → Shopify → Reconnecter via OAuth) si les photos n'apparaissent pas.
+Pour Shopify, la photo vient de la ligne de commande (API GraphQL, scope `read_orders` suffit) ;
+l'API produits (`read_products`) ne sert plus qu'en secours. Les commandes déjà importées sans
+photo la reçoivent automatiquement à la synchro Shopify suivante.
 
 **Pièce déjà en inventaire** — sur une carte « À imprimer », les boutons **Imprimé** et
 **Expédié** la font passer directement à l'étape voulue, sans passer par l'impression.
