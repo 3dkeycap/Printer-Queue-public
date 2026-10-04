@@ -16,8 +16,10 @@ const EXTENSION_DIR = path.join(config.rootDir, 'chrome-extension');
 extensionRouter.get('/extension.zip', (req, res) => {
   if (!fs.existsSync(EXTENSION_DIR)) return res.status(404).json({ error: 'Extension absente de cette installation' });
 
+  // tous les fichiers, sous-dossiers compris (icons/…)
   const files = fs
-    .readdirSync(EXTENSION_DIR)
+    .readdirSync(EXTENSION_DIR, { recursive: true })
+    .map((name) => String(name).split(path.sep).join('/'))
     .filter((name) => fs.statSync(path.join(EXTENSION_DIR, name)).isFile())
     .map((name) => ({ name: `resin-queue-extension/${name}`, data: fs.readFileSync(path.join(EXTENSION_DIR, name)) }));
 

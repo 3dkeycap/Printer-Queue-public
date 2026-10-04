@@ -152,9 +152,18 @@ $('update').addEventListener('click', async () => {
     }
 
     show($('update-status'), 'Téléchargement depuis GitHub…', true);
-    const listing = await fetch(`https://api.github.com/repos/${REPO}/contents/${DIR}?ref=${BRANCH}`, { cache: 'no-store' });
-    if (!listing.ok) throw new Error(`GitHub répond ${listing.status} (trop de requêtes ? réessaie dans quelques minutes)`);
-    const files = (await listing.json()).filter((entry) => entry.type === 'file' && !LOCAL_ONLY.has(entry.name));
+    // liste récursive (icons/…) : chemin relatif au dossier de l'extension
+    const listDir = async (dir) => {
+      const listing = await fetch(`https://api.github.com/repos/${REPO}/contents/${dir}?ref=${BRANCH}`, { cache: 'no-store' });
+      if (!listing.ok) throw new Error(`GitHub répond ${listing.status} (trop de requêtes ? réessaie dans quelques minutes)`);
+      const entries = [];
+      for (const entry of await listing.json()) {
+        if (entry.type === 'dir') entries.push(...(await listDir(entry.path)));
+        else if (entry.type === 'file') entries.push({ ...entry, name: entry.path.slice(DIR.length + 1) });
+      }
+      return entries;
+    };
+    const files = (await listDir(DIR)).filter((entry) => !LOCAL_ONLY.has(entry.name));
 
     // tout télécharger AVANT d'écrire : pas d'extension à moitié mise à jour
     const downloads = [];
@@ -164,7 +173,10 @@ $('update').addEventListener('click', async () => {
       downloads.push({ name: entry.name, data: await response.arrayBuffer() });
     }
     for (const { name, data } of downloads) {
-      const writable = await (await folder.getFileHandle(name, { create: true })).createWritable();
+      const parts = name.split('/');
+      let dir = folder;
+      for (const segment of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(segment, { create: true });
+      const writable = await (await dir.getFileHandle(parts.at(-1), { create: true })).createWritable();
       await writable.write(data);
       await writable.close();
     }
