@@ -44,6 +44,7 @@ export const state = {
   updateStatus: null, // service de mise à jour (Intégrations > Mises à jour)
   selection: new Set(),
   focusedColumn: null, // clé de statut affichée seule, en grille, pour une vue d'ensemble
+  presence: [],       // commandes ouvertes sur Shopify (extension Chrome)
   loading: false,
 };
 
@@ -115,6 +116,22 @@ export const groupParts = (parts, groupBy) => {
 
 export const statusMeta = (key) =>
   state.meta?.statuses.find((s) => s.key === key) ?? { key, labelFr: key, accent: '#8C8579', icon: 'inbox' };
+
+/** Commande ouverte sur Shopify en ce moment (extension Chrome), ou null. */
+export const presenceFor = (orderId) => state.presence.find((entry) => entry.orderId === orderId) ?? null;
+
+/**
+ * Ouvre la page d'expédition Chit Chats et copie le numéro de commande :
+ * si la page ne le pré-remplit pas, il n'y a plus qu'à le coller.
+ */
+export const openChitChats = async (entry) => {
+  try {
+    await navigator.clipboard.writeText(String(entry.orderNumber ?? '').replace(/^#/, ''));
+  } catch {
+    /* presse-papiers indisponible (http) : on ouvre quand même */
+  }
+  window.open(entry.chitchatsUrl, '_blank', 'noopener');
+};
 
 export const uvOptions = () => state.meta?.uvOptions ?? [];
 export const commentOptions = () => state.meta?.commentOptions ?? [];

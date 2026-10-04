@@ -48,6 +48,7 @@ export const api = {
   saveSettings: (body) => request('/api/settings', { method: 'PUT', body }),
   disconnectOAuth: (provider) => request(`/api/integrations/${provider}/oauth/disconnect`, { method: 'POST' }),
 
+  presence: () => request('/api/presence'),
   summary: () => request('/api/stats/summary'),
   runs: () => request('/api/sync/runs'),
   sync: (source = 'all') => request(`/api/sync/run?source=${source}`, { method: 'POST' }),

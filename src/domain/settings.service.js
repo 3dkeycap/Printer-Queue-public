@@ -58,6 +58,15 @@ export const DEFINITIONS = [
   { key: 'chitchats.accessToken', group: 'chitchats', label: "Token d'accès", type: 'secret', fallback: () => config.chitchats.accessToken },
   { key: 'chitchats.apiBase', group: 'chitchats', label: 'URL de l\'API', type: 'text', fallback: () => config.chitchats.apiBase },
   { key: 'chitchats.webhookSecret', group: 'chitchats', label: 'Secret webhook (X-Webhook-Secret)', type: 'secret', fallback: () => config.chitchats.webhookSecret },
+  {
+    key: 'chitchats.shipUrlTemplate',
+    group: 'chitchats',
+    label: "Page d'expédition Chit Chats",
+    type: 'text',
+    placeholder: 'https://chitchats.com/clients/{clientId}/shipments?q={order}',
+    hint: "Adresse ouverte par « Ouvrir sur Chit Chats » quand une commande est ouverte sur Shopify. {order} = numéro de commande (sans #), {clientId} = Client ID ci-dessus. Le numéro est aussi copié dans le presse-papiers.",
+    fallback: () => 'https://chitchats.com/clients/{clientId}/shipments?q={order}',
+  },
   { key: 'chitchats.shipAllParts', group: 'chitchats', label: 'Expédier toutes les pièces du colis', type: 'boolean', hint: 'Sinon, seules les pièces déjà imprimées passent à Expédié.', fallback: () => config.chitchats.shipAllParts },
 
   // --- Planification ------------------------------------------------------

@@ -548,3 +548,11 @@ imprimées ne sont pas touchées.
 « Ouvrir sur Shopify / Etsy » (commande dans l'admin de la boutique) et « Ouvrir sur Chit Chats »
 (page de suivi du colis) apparaissent quand le lien peut être construit : le domaine Shopify doit
 être configuré, et le colis doit avoir un numéro de suivi.
+
+## Extension Chrome : « Ouvert sur Shopify » → « Ouvrir sur Chit Chats »
+
+Dossier [`chrome-extension/`](chrome-extension/README.md). Quand une commande est ouverte dans
+l'admin Shopify, ses cartes affichent **Ouvert sur Shopify** (avec le nom de la personne) et un
+bouton **Ouvrir sur Chit Chats**, qui ouvre la page d'expédition (adresse réglable dans
+Réglages → Boutiques → Chit Chats, `{order}` = numéro de commande) et copie le numéro de commande.
+Le marquage disparaît en changeant de page, en fermant l'onglet, ou après 30 min sur la même page.

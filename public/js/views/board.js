@@ -1,5 +1,5 @@
 import { attachImagePreview, el, icon, swatch } from '../ui.js';
-import { groupParts, state, statusMeta } from '../store.js';
+import { groupParts, openChitChats, presenceFor, state, statusMeta } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -25,11 +25,12 @@ const buildCard = (stack, actions) => {
   const ids = stack.map((item) => item.id);
   const count = stack.length;
   const allSelected = ids.every((id) => state.selection.has(id));
+  const open = presenceFor(part.order_id);
   const next = actions.nextStatus(part.status);
   const card = el(
     'article',
     {
-      class: `card${allSelected ? ' is-selected' : ''}${part.priority || part.order_priority ? ' is-rush' : ''}`,
+      class: `card${allSelected ? ' is-selected' : ''}${open ? ' is-open-shop' : ''}${part.priority || part.order_priority ? ' is-rush' : ''}`,
       draggable: 'true',
       style: { '--card-color': part.color_hex },
       dataset: { id: String(part.id), status: part.status },
@@ -50,6 +51,24 @@ const buildCard = (stack, actions) => {
         part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),
+      open &&
+        el('div', { class: 'card-open-shop' }, [
+          el('span', { class: 'open-dot' }),
+          el('span', {}, `Ouvert sur Shopify${open.users.length ? ` · ${open.users.join(', ')}` : ''}`),
+          open.chitchatsUrl &&
+            el(
+              'button',
+              {
+                class: 'mini-btn open-cc',
+                title: 'Ouvre Chit Chats et copie le numéro de commande',
+                onclick: (event) => {
+                  event.stopPropagation();
+                  openChitChats(open);
+                },
+              },
+              [icon('truck'), 'Ouvrir sur Chit Chats'],
+            ),
+        ]),
       part.comment && el('div', { class: 'card-comment' }, [icon('note'), part.comment]),
       el('div', { class: 'card-foot' }, [
         el('span', { class: 'who' }, count > 1 ? '—' : (part.customer_name ?? '—')),

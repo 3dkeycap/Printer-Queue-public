@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Resin Queue — réglages</title>
+    <style>
+      body { font: 14px system-ui, sans-serif; color: #1d2433; margin: 0; padding: 18px; min-width: 340px; background: #f6f8fc; }
+      h1 { font-size: 16px; margin: 0 0 4px; }
+      p { color: #5b6680; margin: 0 0 14px; font-size: 12.5px; }
+      label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #5b6680; margin: 12px 0 4px; }
+      input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ccd4e3; border-radius: 8px; font: inherit; background: #fff; }
+      button { margin-top: 16px; padding: 9px 14px; border: 0; border-radius: 8px; background: #1f5fd6; color: #fff; font: 600 13px system-ui; cursor: pointer; }
+      #status { margin-top: 10px; font-size: 12.5px; }
+      .ok { color: #2f855a; } .err { color: #c23b3b; }
+    </style>
+  </head>
+  <body>
+    <h1>Resin Queue</h1>
+    <p>Quand tu ouvres une commande dans l'admin Shopify, l'app la marque « Ouvert sur Shopify ».</p>
+
+    <label for="appUrl">Adresse de l'app</label>
+    <input id="appUrl" placeholder="http://192.168.1.50:8080" />
+
+    <label for="user">Ton nom (affiché dans l'app)</label>
+    <input id="user" placeholder="Alex" />
+
+    <label for="authUser">Utilisateur du dashboard (si mot de passe)</label>
+    <input id="authUser" placeholder="admin" />
+
+    <label for="authPassword">Mot de passe du dashboard</label>
+    <input id="authPassword" type="password" placeholder="vide si pas de mot de passe" />
+
+    <button id="save">Enregistrer et tester</button>
+    <div id="status"></div>
+    <script src="options.js"></script>
+  </body>
+</html>

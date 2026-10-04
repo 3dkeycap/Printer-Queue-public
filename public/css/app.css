@@ -625,3 +625,16 @@ html.kiosk .savebar { left: 12px; right: 12px; }
 .purge-list { margin: 8px 0; padding-left: 20px; max-height: 200px; overflow-y: auto; font-size: 13px; }
 .drawer-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .drawer-links .ghost-btn { text-decoration: none; }
+
+/* ------------------------------------------- ouvert sur Shopify (extension) - */
+.card.is-open-shop { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 45%, transparent); }
+.card-open-shop {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 8px 0 0 8px; padding: 6px 8px; border-radius: 8px;
+  font-size: 12px; color: var(--text); background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ok) 35%, var(--line));
+}
+.card-open-shop .open-cc { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
+.open-dot { width: 8px; height: 8px; border-radius: 99px; background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: open-pulse 1.8s infinite; flex: none; }
+@keyframes open-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+.drawer-open-shop { margin: 0; padding: 10px 12px; font-size: 13px; }
+.drawer-open-shop .primary-btn { margin-left: auto; }
+html.kiosk .card-open-shop .open-cc { min-height: 38px; }

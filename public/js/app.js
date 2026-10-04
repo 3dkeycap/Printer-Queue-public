@@ -632,12 +632,14 @@ const refresh = async ({ silent = false } = {}) => {
       state.summary = summary;
     } else {
       const params = queryParams();
-      const [summary, parts, facets] = await Promise.all([
+      const [summary, parts, facets, presence] = await Promise.all([
         api.summary(),
         api.parts(params),
         api.facets(params),
+        api.presence().catch(() => ({ items: [] })),
       ]);
       if (seq !== refreshSeq) return;
+      state.presence = presence.items;
       state.summary = summary;
       state.parts = parts.items;
       state.facets = facets;
@@ -736,6 +738,22 @@ const bindEvents = () => {
     const view = location.hash.replace('#', '');
     if (!isKiosk && VIEW_META[view] && view !== state.view) setView(view);
   });
+
+  // « ouvert sur Shopify » change vite : on suit plus souvent que le reste
+  let presenceKey = '';
+  setInterval(async () => {
+    if (document.visibilityState !== 'visible' || state.view === 'integrations') return;
+    try {
+      const { items } = await api.presence();
+      const key = JSON.stringify(items);
+      if (key === presenceKey) return;
+      presenceKey = key;
+      state.presence = items;
+      if (!state.selection.size) render();
+    } catch {
+      /* hors ligne : on réessaie au prochain tour */
+    }
+  }, 8000);
 
   // le worker importe en arrière-plan : on rafraîchit sans déranger l'opérateur
   setInterval(() => {

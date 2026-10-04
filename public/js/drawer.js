@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { clear, el, formatDate, fromNow, icon, swatch, toast } from './ui.js';
-import { printerOptions, state, statusMeta, uvOptions } from './store.js';
+import { openChitChats, presenceFor, printerOptions, state, statusMeta, uvOptions } from './store.js';
 import { buildCommentSelect } from './comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -95,6 +95,16 @@ export const openDrawer = async (partId, actions) => {
         el('div', { class: 'section-title' }, 'Changer le statut'),
         el('div', { class: 'status-flow' }, statusButtons),
       ]),
+
+      presenceFor(part.order_id)
+        ? el('div', { class: 'card-open-shop drawer-open-shop' }, [
+            el('span', { class: 'open-dot' }),
+            el('span', {}, `Cette commande est ouverte sur Shopify${presenceFor(part.order_id).users.length ? ` par ${presenceFor(part.order_id).users.join(', ')}` : ''}`),
+            presenceFor(part.order_id).chitchatsUrl
+              ? el('button', { class: 'primary-btn', onclick: () => openChitChats(presenceFor(part.order_id)) }, [icon('truck'), 'Ouvrir sur Chit Chats'])
+              : null,
+          ])
+        : null,
 
       Object.keys(part.links ?? {}).length
         ? el(

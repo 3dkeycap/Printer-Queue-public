@@ -420,6 +420,25 @@ const tabApparence = (actions) => [
       el('button', { class: 'primary-btn', onclick: () => actions.startTutorial() }, [icon('help'), 'Lancer le tutoriel']),
     ]),
   ]),
+  section(
+    'Extension Chrome (Shopify → Chit Chats)',
+    "Quand quelqu'un ouvre une commande dans l'admin Shopify, ses cartes affichent « Ouvert sur Shopify » et un bouton « Ouvrir sur Chit Chats ». Le marquage disparaît en changeant de page, en fermant l'onglet ou après 30 min.",
+    [
+      el('p', { class: 'field-hint' }, [
+        "Installation : chrome://extensions → Mode développeur → « Charger l'extension non empaquetée » → dossier ",
+        el('code', {}, 'chrome-extension'),
+        " du dépôt. Puis, dans l'extension, l'adresse de l'app : ",
+        el('code', {}, location.origin),
+      ]),
+      el('div', { class: 'panel-foot left' }, [
+        el(
+          'a',
+          { class: 'ghost-btn', href: 'https://github.com/3dkeycap/Printer-Queue-public/tree/main/chrome-extension', target: '_blank', rel: 'noopener' },
+          [icon('link'), "Voir l'extension sur GitHub"],
+        ),
+      ]),
+    ],
+  ),
   section('Mode kiosque (iPad)', "Une version sans menu, pensée pour l'écran tactile de l'atelier : uniquement la file « À imprimer », avec de gros boutons.", [
     el('p', { class: 'field-hint mono' }, `${location.origin}/kiosk`),
     el('div', { class: 'panel-foot left' }, [
