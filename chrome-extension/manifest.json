@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resin Queue — Shopify → Chit Chats",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Signale à Resin Queue la commande Shopify ouverte, et propose « Ouvrir sur Chit Chats » avec le bon numéro de commande.",
   "permissions": [
     "storage",

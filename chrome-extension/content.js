@@ -69,7 +69,70 @@
   const removeDock = () => {
     dock?.remove();
     dock = null;
+    bubble?.remove();
+    bubble = null;
   };
+
+  /*
+   * Petite bulle sous la barre quand le bac de cette commande est déjà
+   * commencé (au moins un passage « J'ai packé ») : qui, combien, complet ou
+   * pas. Cachée quand la boîte du bac est ouverte (elle prend cette place).
+   */
+  let bubble = null;
+  const packCache = new Map(); // orderId -> { at, view }
+  const PACK_CACHE_MS = 20000;
+
+  const packSummary = async (orderId) => {
+    const cached = packCache.get(orderId);
+    if (cached && Date.now() - cached.at < PACK_CACHE_MS) return cached.view;
+    const view = await send({ type: 'pack-get', orderExternalId: orderId });
+    packCache.set(orderId, { at: Date.now(), view });
+    return view;
+  };
+
+  const placeBubble = () => {
+    if (!bubble || !dock) return;
+    const rect = dock.getBoundingClientRect();
+    bubble.style.top = `${Math.round(rect.bottom + 6)}px`;
+  };
+
+  async function renderBubble() {
+    const orderId = orderIdFromPath();
+    if (!dock || !orderId || globalThis.ResinQueuePack?.isOpen()) {
+      bubble?.remove();
+      bubble = null;
+      return;
+    }
+    const view = await packSummary(orderId);
+    const last = view?.history?.[0];
+    if (!last || orderIdFromPath() !== orderId || globalThis.ResinQueuePack?.isOpen()) {
+      bubble?.remove();
+      bubble = null;
+      return;
+    }
+    const packed = view.items.reduce((sum, item) => sum + item.packed, 0);
+    const total = view.items.reduce((sum, item) => sum + item.total, 0);
+    const missing = last.items.filter((line) => line.packed < line.total);
+
+    if (!bubble) {
+      bubble = document.createElement('div');
+      bubble.setAttribute('data-resin-queue', '');
+      bubble.addEventListener('click', () => globalThis.ResinQueuePack?.toggle(orderIdFromPath(), dock));
+      document.documentElement.append(bubble);
+    }
+    const complete = last.complete;
+    bubble.title = complete
+      ? `Bac complet — ${last.packer}`
+      : `Manque : ${missing.map((line) => `${line.total - line.packed}× ${line.title}${line.reason ? ` (${line.reason})` : ''}`).join(', ')}`;
+    bubble.textContent = complete
+      ? `✓ Bac complet · ${last.packer}`
+      : `📦 Bac commencé · ${last.packer} · ${packed}/${total}`;
+    bubble.style.cssText =
+      'position:fixed;right:10px;z-index:2147483645;cursor:pointer;max-width:320px;padding:5px 11px;border-radius:999px;' +
+      'font:600 12px system-ui,-apple-system,sans-serif;box-shadow:0 6px 18px -8px rgba(20,30,60,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
+      (complete ? 'background:#e3f6ea;color:#16663a;border:1px solid #9ad4b0;' : 'background:#fff3e0;color:#8a4b0c;border:1px solid #f0c27d;');
+    placeBubble();
+  }
 
   const render = async () => {
     if (!isOrderPage()) return removeDock();
@@ -116,6 +179,7 @@
         const top = Math.min(92, Math.max(4, (e.clientY / window.innerHeight) * 100));
         dock.style.top = `${top}%`;
         globalThis.ResinQueuePack?.place();
+        placeBubble();
       };
       const up = () => {
         grip.removeEventListener('pointermove', move);
@@ -171,6 +235,7 @@
 
     dock.replaceChildren(...[grip, info.chitchatsUrl && button, packButton, info.chitchatsUrl && linkPart].filter(Boolean));
     globalThis.ResinQueuePack?.place();
+    renderBubble();
 
     // boîte du bac laissée ouverte : elle se rouvre sur cette commande
     const pack = globalThis.ResinQueuePack;
@@ -197,7 +262,12 @@
   notifyUrl();
   render();
   // la boîte du bac s'ouvre / se ferme : on met à jour la flèche du bouton
-  globalThis.addEventListener('resin-queue-pack', () => render());
+  globalThis.addEventListener('resin-queue-pack', (event) => {
+    // après un enregistrement, la bulle reprend les nouvelles quantités
+    if (event.detail?.saved) packCache.delete(orderIdFromPath());
+    render();
+  });
+  window.addEventListener('resize', placeBubble);
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === 'presence' || message?.type === 'link-changed') render();

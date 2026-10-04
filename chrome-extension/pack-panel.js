@@ -280,6 +280,7 @@
       }
       const complete = result.history?.[0]?.complete;
       render(orderExternalId, result, { ok: true, text: complete ? '✓ Bac complet enregistré.' : '✓ Enregistré — bac incomplet (raisons notées).' });
+      globalThis.dispatchEvent(new CustomEvent('resin-queue-pack', { detail: { open: true, saved: true } }));
     });
 
     const allIn = h('button', { class: 'btn ghost' }, 'Tout est dans le bac');

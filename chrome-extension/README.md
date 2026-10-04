@@ -62,3 +62,7 @@ la commande n'apparaît pas dans Chit Chats. Une commande pas encore importée e
 
 La boîte « 📦 J'ai packé » garde ton choix : ouverte, elle se rouvre toute seule sur chaque
 commande (et après un rechargement) ; fermée (bouton ▴ ou ×), elle reste fermée.
+
+Quand le bac d'une commande est **déjà commencé**, une petite bulle apparaît sous la barre :
+« 📦 Bac commencé · Alex · 2/3 » (orange, le survol liste ce qui manque et pourquoi) ou
+« ✓ Bac complet · Alex » (vert). Un clic dessus ouvre la boîte du bac.
