@@ -2,13 +2,6 @@ import { attachImagePreview, el, icon, swatch } from '../ui.js';
 import { commentList } from '../comment-select.js';
 import { groupParts, openChitChats, orderAge, presenceFor, state, statusMeta } from '../store.js';
 
-/** Raison courte pour l'étiquette ; le détail complet est dans l'infobulle et la fiche. */
-const shortReason = (reason) => {
-  const text = String(reason ?? 'erreur');
-  const first = text.split(/ ; | — |\(/)[0].trim();
-  return first.length > 42 ? `${first.slice(0, 40)}…` : first;
-};
-
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
 /**
@@ -63,13 +56,7 @@ const buildCard = (stack, actions) => {
         el('span', { class: 'tag' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
         part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
-        part.chitchats_import_status === 'error' &&
-          el('span', { class: 'tag cc-error', title: `Import Chit Chats impossible : ${part.chitchats_import_error ?? ''}` }, [
-            icon('alert'),
-            `Chit Chats : ${shortReason(part.chitchats_import_error)}`,
-          ]),
-        ['imported', 'linked'].includes(part.chitchats_import_status) &&
-          el('span', { class: 'tag cc-ok', title: 'Envoi créé dans Chit Chats' }, [icon('truck'), 'Chit Chats']),
+        // l'état de l'import Chit Chats n'encombre pas les cartes : il est dans la fiche et dans « Tout »
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),
       open &&
