@@ -53,3 +53,19 @@ describe('mots à ne pas imprimer : « contient », y compris le nom de la rési
     assert.ok(listParts({}).items.some((p) => /nylon/i.test(p.color_name)), '« Tout » les garde');
   });
 });
+
+describe('liens « ouvrir sur… »', () => {
+  it('construit les liens Shopify et Chit Chats quand c\'est possible', async () => {
+    const { getPart } = await import('../src/domain/parts.service.js');
+    const { getDb } = await import('../src/db/index.js');
+    updateSettings({ 'shopify.shopDomain': 'ma-boutique.myshopify.com' });
+    const { orderId } = ingestOrder(makeOrder({ externalId: '9001', orderNumber: '#9001', items: [{ externalId: 'z', title: 'Link test', quantity: 1 }] }));
+    const part = getDb().prepare('SELECT id FROM parts WHERE order_id = ?').get(orderId);
+    assert.equal(getPart(part.id).links.shop.url, 'https://ma-boutique.myshopify.com/admin/orders/9001');
+    assert.equal(getPart(part.id).links.chitchats, undefined);
+    getDb().prepare("UPDATE orders SET tracking_number = 'CC123' WHERE id = ?").run(orderId);
+    assert.equal(getPart(part.id).links.chitchats.url, 'https://chitchats.com/tracking/CC123');
+    getDb().prepare("UPDATE orders SET source = 'etsy', external_id = '555' WHERE id = ?").run(orderId);
+    assert.match(getPart(part.id).links.shop.url, /etsy\.com\/your\/orders\/sold\?order_id=555/);
+  });
+});

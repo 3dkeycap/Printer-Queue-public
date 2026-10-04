@@ -96,6 +96,19 @@ export const openDrawer = async (partId, actions) => {
         el('div', { class: 'status-flow' }, statusButtons),
       ]),
 
+      Object.keys(part.links ?? {}).length
+        ? el(
+            'div',
+            { class: 'drawer-links' },
+            Object.values(part.links).map((link) =>
+              el('a', { class: 'ghost-btn', href: link.url, target: '_blank', rel: 'noopener noreferrer' }, [
+                icon('link'),
+                link.label,
+              ]),
+            ),
+          )
+        : null,
+
       el('div', {}, [
         el('div', { class: 'section-title' }, 'Fiche'),
         el('dl', { class: 'kv' }, [

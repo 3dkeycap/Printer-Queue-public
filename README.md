@@ -543,3 +543,8 @@ parcourt la file, montre ce qui serait retiré (aperçu + confirmation) puis sup
 « À imprimer » / « Échec » dont le titre, la variante ou le SKU contient un des mots de la
 liste (même non enregistrée). Les pièces ajoutées à la main, en cours d'impression ou déjà
 imprimées ne sont pas touchées.
+
+**Ouvrir sur la boutique** — dans la fiche d'une pièce (clic sur la carte), des boutons
+« Ouvrir sur Shopify / Etsy » (commande dans l'admin de la boutique) et « Ouvrir sur Chit Chats »
+(page de suivi du colis) apparaissent quand le lien peut être construit : le domaine Shopify doit
+être configuré, et le colis doit avoir un numéro de suivi.

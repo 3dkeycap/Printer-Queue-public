@@ -1,6 +1,7 @@
 import { getDb, nowIso } from '../db/index.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
 import { hiddenColorKeys } from './addons.js';
+import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
 
 const SORTS = {
@@ -196,6 +197,7 @@ export const getPart = (id) => {
   const row = db
     .prepare(
       `SELECT p.*, o.source, o.order_number, o.customer_name, o.customer_email, o.placed_at,
+              o.external_id AS order_external_id, o.chitchats_shipment_id,
               o.is_priority AS order_priority, o.tracking_number, o.carrier,
               COALESCE(c.name, 'Non assigné') AS color_name,
               COALESCE(c.hex, '#7C7364') AS color_hex,
@@ -207,7 +209,42 @@ export const getPart = (id) => {
        WHERE p.id = ?`,
     )
     .get(Number(id));
-  return row ? hydrate(row) : null;
+  return row ? { ...hydrate(row), links: orderLinks(row) } : null;
+};
+
+/**
+ * Liens « ouvrir sur… » d'une commande : seulement ceux qu'on sait construire
+ * avec les données disponibles (boutique configurée, colis expédié...).
+ */
+export const orderLinks = (order) => {
+  const links = {};
+  const settings = getSettings();
+
+  if (order.source === 'shopify' && order.order_external_id) {
+    const domain = String(settings['shopify.shopDomain'] ?? '')
+      .trim()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/.*$/, '');
+    if (domain) {
+      links.shop = {
+        label: 'Ouvrir sur Shopify',
+        url: `https://${domain}/admin/orders/${encodeURIComponent(order.order_external_id)}`,
+      };
+    }
+  } else if (order.source === 'etsy' && order.order_external_id) {
+    links.shop = {
+      label: 'Ouvrir sur Etsy',
+      url: `https://www.etsy.com/your/orders/sold?order_id=${encodeURIComponent(order.order_external_id)}`,
+    };
+  }
+
+  if (order.tracking_number) {
+    links.chitchats = {
+      label: 'Ouvrir sur Chit Chats',
+      url: `https://chitchats.com/tracking/${encodeURIComponent(order.tracking_number)}`,
+    };
+  }
+  return links;
 };
 
 export const listEvents = (partId) =>
