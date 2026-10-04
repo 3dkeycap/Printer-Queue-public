@@ -74,8 +74,8 @@ export const DEFINITIONS = [
     hint: 'Nécessaire si le dépôt est privé. Fine-grained token limité à ce dépôt, permission « Contents : Read-only ».',
     fallback: () => process.env.GITHUB_TOKEN || '',
   },
-  { key: 'update.githubRepo', group: 'update', label: 'Dépôt GitHub', type: 'text', placeholder: '3dkeycap/Printer-Queue', hint: 'owner/dépôt. Vide = le dépôt d\'origine du clone.', fallback: () => process.env.GITHUB_REPO || '3dkeycap/Printer-Queue' },
-  { key: 'update.branch', group: 'update', label: 'Branche suivie', type: 'text', placeholder: 'main', hint: 'Vide = la branche actuellement installée.', fallback: () => process.env.UPDATE_BRANCH || '' },
+  { key: 'update.githubRepo', group: 'update', label: 'Dépôt GitHub', type: 'text', placeholder: '3dkeycap/Printer-Queue-public', hint: 'owner/dépôt. Le dépôt public ne demande aucun token. Vide = le dépôt d\'origine du clone.', fallback: () => process.env.GITHUB_REPO || '3dkeycap/Printer-Queue-public' },
+  { key: 'update.branch', group: 'update', label: 'Branche suivie', type: 'text', placeholder: 'main', hint: 'Vide = la branche actuellement installée.', fallback: () => process.env.UPDATE_BRANCH || 'main' },
   { key: 'update.autoEnabled', group: 'update', label: 'Mise à jour automatique', type: 'boolean', hint: 'Installe toute seule les nouvelles versions (sauvegarde + retour arrière si échec).', fallback: () => true },
   { key: 'update.intervalMinutes', group: 'update', label: 'Vérifier toutes les (minutes)', type: 'number', fallback: () => 60 },
 

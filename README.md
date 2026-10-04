@@ -181,7 +181,9 @@ Les données (commandes, pièces, réglages, tokens) vivent dans le **volume Doc
 
 **Depuis le dashboard** : *Intégrations → Mises à jour*
 
-* **Token GitHub** (dépôt privé) : token en lecture seule
+* **Dépôt / branche** : par défaut `3dkeycap/Printer-Queue-public`, branche `main`
+  (dépôt public : aucun token nécessaire).
+* **Token GitHub** (seulement pour un dépôt privé) : token en lecture seule
   ([fine-grained token](https://github.com/settings/personal-access-tokens/new), accès au
   seul dépôt `Printer-Queue`, permission *Contents : Read-only*). Comme les autres
   secrets, il n'est jamais renvoyé par l'API.

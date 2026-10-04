@@ -104,8 +104,8 @@ services:
       RPQ_STATUS_DIR: /data/updater
       # valeurs par défaut : celles saisies dans le dashboard sont prioritaires
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      GITHUB_REPO: ${GITHUB_REPO:-}
-      UPDATE_BRANCH: ${UPDATE_BRANCH:-}
+      GITHUB_REPO: ${GITHUB_REPO:-3dkeycap/Printer-Queue-public}
+      UPDATE_BRANCH: ${UPDATE_BRANCH:-main}
       UPDATE_INTERVAL: ${UPDATE_INTERVAL:-3600}
       BACKUP_KEEP: ${BACKUP_KEEP:-10}
       TZ: ${TZ:-America/Toronto}
