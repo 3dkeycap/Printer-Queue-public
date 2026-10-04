@@ -8,9 +8,8 @@
 #  dans la page « Intégrations » du dashboard (stockés en base).
 #
 #  Mettre à jour depuis GitHub (dépôt privé OK, données conservées) :
-#    sh scripts/update.sh
-#  Mise à jour automatique (vérifie GitHub toutes les heures) :
-#    docker compose --profile autoupdate up -d
+#    dashboard > Intégrations > Mises à jour (token, bouton, mode auto)
+#    ou, en ligne de commande : sh scripts/update.sh
 #
 #  Vider la production (commandes + pièces) :
 #    docker compose exec app node scripts/reset-data.js --yes
@@ -90,36 +89,32 @@ services:
       app:
         condition: service_healthy
 
-  # ---- Mise à jour automatique depuis GitHub (optionnelle) ----------------
-  #   docker compose --profile autoupdate up -d
-  # Vérifie la branche toutes les UPDATE_INTERVAL secondes et lance
-  # scripts/update.sh (sauvegarde -> pull -> rebuild -> redémarrage, avec
-  # retour arrière si l'app ne redevient pas saine). Dépôt privé : renseigner
-  # GITHUB_TOKEN dans .env. Accède au socket Docker de l'hôte.
+  # ---- Mises à jour depuis GitHub ------------------------------------------
+  # Exécute les demandes du dashboard (Intégrations > Mises à jour : bouton
+  # « Mettre à jour », token, mise à jour automatique) via scripts/update.sh :
+  # sauvegarde -> pull -> rebuild -> redémarrage, avec retour arrière si l'app
+  # ne redevient pas saine. A accès au socket Docker de l'hôte (nécessaire pour
+  # reconstruire l'image) ; l'app, elle, n'y a pas accès.
   updater:
     image: docker:27-cli
     container_name: rpq-updater
-    profiles: ["autoupdate"]
     restart: unless-stopped
     working_dir: /repo
     environment:
+      RPQ_STATUS_DIR: /data/updater
+      # valeurs par défaut : celles saisies dans le dashboard sont prioritaires
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITHUB_REPO: ${GITHUB_REPO:-}
       UPDATE_BRANCH: ${UPDATE_BRANCH:-}
       UPDATE_INTERVAL: ${UPDATE_INTERVAL:-3600}
+      BACKUP_KEEP: ${BACKUP_KEEP:-10}
       TZ: ${TZ:-America/Toronto}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/repo
+      - pq-data:/data
     entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        command -v git >/dev/null || apk add --no-cache git >/dev/null
-        git config --global --add safe.directory '*'
-        while true; do
-          sh scripts/update.sh --auto || echo "update failed, retry later"
-          sleep "$${UPDATE_INTERVAL}"
-        done
+    command: ["cp scripts/updater.sh /tmp/updater.sh && exec sh /tmp/updater.sh"]
 
 volumes:
   pq-data:

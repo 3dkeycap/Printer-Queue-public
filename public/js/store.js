@@ -31,6 +31,7 @@ export const state = {
   runs: [],
   settings: [],
   connectors: {},
+  updateStatus: null, // service de mise à jour (Intégrations > Mises à jour)
   selection: new Set(),
   focusedColumn: null, // clé de statut affichée seule, en grille, pour une vue d'ensemble
   loading: false,

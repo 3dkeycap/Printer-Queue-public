@@ -37,7 +37,21 @@ ROOT=$(pwd)
 APP_CONTAINER=rpq-app
 
 say() { printf '[update %s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
-die() { say "ERREUR : $*" >&2; exit 1; }
+
+# État lu par le dashboard (Intégrations > Mises à jour) quand le script est
+# lancé par le service updater (RPQ_STATUS_DIR = dossier partagé avec l'app).
+STATUS_DIR=${RPQ_STATUS_DIR:-}
+set_status() {
+  [ -n "$STATUS_DIR" ] || return 0
+  {
+    printf 'state=%s\n' "$1"
+    printf 'message=%s\n' "$(printf '%s' "$2" | tr '\n' ' ')"
+    printf 'current=%s\n' "$(git rev-parse --short HEAD 2>/dev/null || true)"
+    printf 'latest=%s\n' "${LATEST:-}"
+    printf 'at=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  } > "$STATUS_DIR/status.tmp" && mv "$STATUS_DIR/status.tmp" "$STATUS_DIR/status"
+}
+die() { say "ERREUR : $*" >&2; set_status error "$*"; exit 1; }
 
 CHECK=0
 FORCE=0
@@ -71,7 +85,8 @@ command -v docker >/dev/null 2>&1 || die "docker n'est pas installé"
 
 # --- un seul update à la fois (manuel + service updater)
 LOCK="$ROOT/.git/rpq-update.lock"
-mkdir "$LOCK" 2>/dev/null || die "une mise à jour est déjà en cours (sinon supprimer $LOCK)"
+# (pas de die ici : il écraserait l'état de la mise à jour en cours)
+mkdir "$LOCK" 2>/dev/null || { say "Une mise à jour est déjà en cours (sinon supprimer $LOCK)." >&2; exit 1; }
 
 cleanup() {
   rmdir "$LOCK" 2>/dev/null || true
@@ -128,10 +143,11 @@ if [ -n "$GITHUB_TOKEN" ]; then
 fi
 
 [ "$AUTO" = 1 ] || say "Vérification de $BRANCH sur ${GITHUB_REPO:-origin}…"
+set_status checking "Vérification de $BRANCH sur GitHub…"
 if ! git fetch --quiet "$SOURCE" "$BRANCH" 2>"$ROOT/.git/rpq-fetch.err"; then
   cat "$ROOT/.git/rpq-fetch.err" >&2
   if [ -z "$GITHUB_TOKEN" ]; then
-    die "impossible de lire le dépôt. Dépôt privé ? Ajouter GITHUB_TOKEN=... dans .env"
+    die "impossible de lire le dépôt. Dépôt privé ? Renseigner le token GitHub (Intégrations > Mises à jour, ou GITHUB_TOKEN dans .env)"
   fi
   die "impossible de lire le dépôt (token expiré, sans accès « Contents: Read » à ce dépôt, ou branche « $BRANCH » inexistante)"
 fi
@@ -140,6 +156,7 @@ rm -f "$ROOT/.git/rpq-fetch.err"
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse FETCH_HEAD)
 short() { git rev-parse --short "$1"; }
+LATEST=$(short "$REMOTE")
 
 if [ "$LOCAL" = "$REMOTE" ]; then
   UPDATE=0
@@ -155,9 +172,16 @@ fi
 if [ "$UPDATE" = 1 ]; then
   say "Mise à jour disponible : $(short "$LOCAL") -> $(short "$REMOTE")"
   git --no-pager log --oneline --no-decorate "$LOCAL..$REMOTE" | head -n 20 | sed 's/^/    /'
-elif [ "$FORCE" = 0 ]; then
-  [ "$AUTO" = 1 ] || say "Déjà à jour ($(short "$LOCAL"))."
-  exit 0
+  [ -z "$STATUS_DIR" ] || git --no-pager log --oneline --no-decorate "$LOCAL..$REMOTE" | head -n 30 > "$STATUS_DIR/pending"
+  set_status available "Nouvelle version disponible : $(short "$REMOTE")"
+else
+  [ -z "$STATUS_DIR" ] || : > "$STATUS_DIR/pending"
+  LATEST=$(short "$LOCAL")
+  if [ "$FORCE" = 0 ]; then
+    [ "$AUTO" = 1 ] || say "Déjà à jour ($(short "$LOCAL"))."
+    set_status up_to_date "Déjà à jour"
+    exit 0
+  fi
 fi
 [ "$CHECK" = 0 ] || exit 0
 
@@ -190,6 +214,7 @@ BACKUP_FILE=""
 if [ "$BACKUP" = 1 ]; then
   if docker inspect "$APP_CONTAINER" >/dev/null 2>&1; then
     say "Sauvegarde de la base…"
+    set_status updating "Sauvegarde de la base…"
     REASON="pre-update-$(short "$REMOTE")"
     if [ "$(docker inspect -f '{{.State.Status}}' "$APP_CONTAINER")" = "running" ]; then
       BACKUP_FILE=$(docker exec "$APP_CONTAINER" node -e "$BACKUP_JS" "$REASON" "$BACKUP_KEEP" | tail -n 1) || BACKUP_FILE=""
@@ -246,11 +271,13 @@ deploy() {
   GIT_SHA=$(git rev-parse --short HEAD)
   export GIT_SHA
   say "Construction de l'image ($GIT_SHA)…"
+  set_status updating "Construction de l'image $GIT_SHA…"
   if ! $DC build app; then
     say "La construction de l'image a échoué."
     return 1
   fi
   say "Redémarrage de app + worker (les données du volume rpq-data sont conservées)…"
+  set_status updating "Redémarrage de l'application…"
   # « up » échoue aussi quand l'app ne devient pas saine (le worker l'attend) :
   # c'est wait_healthy qui tranche
   $DC up -d app worker || true
@@ -263,6 +290,8 @@ deploy() {
 if deploy; then
   docker image prune -f >/dev/null 2>&1 || true
   say "Mise à jour terminée : version $(short HEAD) en ligne."
+  [ -z "$STATUS_DIR" ] || : > "$STATUS_DIR/pending"
+  set_status success "Version $(short HEAD) installée"
   exit 0
 fi
 
@@ -271,6 +300,7 @@ say "La nouvelle version ne démarre pas. Derniers logs :"
 docker logs --tail 20 "$APP_CONTAINER" 2>&1 | sed 's/^/    /' || true
 if [ "$UPDATE" = 1 ]; then
   say "Retour à la version précédente ($(short "$LOCAL"))…"
+  set_status updating "Échec : retour à la version précédente…"
   git reset --hard --quiet "$LOCAL"
   deploy || die "la version précédente ne redémarre pas non plus. Sauvegarde : ${BACKUP_FILE:-aucune}"
   die "mise à jour annulée, version $(short "$LOCAL") restaurée et en ligne. Sauvegarde : ${BACKUP_FILE:-aucune}"

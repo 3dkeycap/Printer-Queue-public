@@ -50,5 +50,7 @@ export const api = {
   summary: () => request('/api/stats/summary'),
   runs: () => request('/api/sync/runs'),
   sync: (source = 'all') => request(`/api/sync/run?source=${source}`, { method: 'POST' }),
+  updateStatus: () => request('/api/system/update'),
+  requestUpdate: (action) => request('/api/system/update', { method: 'POST', body: { action } }),
   shipOrder: (id, body = {}) => request(`/api/orders/${id}/ship`, { method: 'POST', body }),
 };

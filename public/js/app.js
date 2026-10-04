@@ -557,13 +557,15 @@ const refresh = async ({ silent = false } = {}) => {
   if (!silent) state.loading = true;
   try {
     if (state.view === 'integrations') {
-      const [settings, colors, runs, summary] = await Promise.all([
+      const [settings, colors, runs, summary, updateStatus] = await Promise.all([
         api.settings(),
         api.colors(),
         api.runs(),
         api.summary(),
+        api.updateStatus().catch(() => null),
       ]);
       if (seq !== refreshSeq) return;
+      state.updateStatus = updateStatus;
       state.settings = settings.items;
       state.connectors = settings.connectors;
       state.colors = colors.items;

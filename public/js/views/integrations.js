@@ -1,5 +1,6 @@
-import { el, formatDate, fromNow, icon, swatch } from '../ui.js';
+import { el, formatDate, fromNow, icon, swatch, toast } from '../ui.js';
 import { state } from '../store.js';
+import { api } from '../api.js';
 
 const GROUPS = [
   { key: 'shopify', title: 'Shopify', hint: 'App personnalisée avec le scope read_orders.' },
@@ -7,6 +8,11 @@ const GROUPS = [
   { key: 'chitchats', title: 'Chit Chats', hint: 'Un colis scanné bascule les pièces en « Expédié ».' },
   { key: 'schedule', title: 'Planification', hint: 'Expressions cron appliquées par le worker (prise en compte < 1 min).' },
   { key: 'production', title: 'Production', hint: 'Listes déroulantes disponibles sur chaque pièce.' },
+  {
+    key: 'update',
+    title: 'Mises à jour',
+    hint: 'Installe la dernière version depuis GitHub. Les données sont conservées et sauvegardées avant chaque mise à jour.',
+  },
 ];
 
 /** Construit le champ correspondant au type de réglage. */
@@ -108,6 +114,7 @@ const groupCard = (group, actions) => {
     group.key === 'chitchats'
       ? el('p', { class: 'field-hint mono' }, `Webhook : POST ${location.origin}/api/webhooks/chitchats`)
       : null,
+    group.key === 'update' ? updateBlock() : null,
     el('div', { class: 'panel-foot' }, [
       ['shopify', 'etsy', 'chitchats'].includes(group.key)
         ? el(
@@ -180,6 +187,132 @@ const oauthBlock = (actions, { provider, label }) => {
         : null,
     ]),
   ]);
+};
+
+/* ---------------------------------------------------------- mises à jour - */
+
+const UPDATE_STATES = {
+  checking: { label: 'Vérification…', pill: 'var(--warn)' },
+  updating: { label: 'Mise à jour en cours…', pill: 'var(--warn)' },
+  available: { label: 'Mise à jour disponible', pill: 'var(--warn)' },
+  up_to_date: { label: 'À jour', pill: 'var(--ok)' },
+  success: { label: 'À jour', pill: 'var(--ok)' },
+  error: { label: 'Erreur', pill: 'var(--danger)' },
+};
+
+let updatePoll = 0;
+
+/**
+ * Statut du service « updater » + boutons. Se repeint lui-même (sans toucher
+ * au reste de la page, qui peut contenir une saisie en cours) et suit une
+ * opération en cours, y compris pendant le redémarrage de l'app.
+ */
+const updateBlock = () => {
+  const root = el('div', { class: 'oauth-block update-block' });
+  // version chargée par cette page : si elle change, le JS doit être rechargé
+  const pageBuild = state.meta?.build;
+  let status = state.updateStatus;
+  let unreachable = false;
+  let lastAction = null;
+
+  const busy = () =>
+    Boolean(status?.requested) || ['checking', 'updating'].includes(status?.state) || (unreachable && lastAction === 'update');
+
+  const trigger = async (action) => {
+    try {
+      lastAction = action;
+      status = await api.requestUpdate(action);
+      toast(action === 'update' ? 'Mise à jour lancée' : 'Vérification lancée');
+      paint();
+      schedule();
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  };
+
+  const poll = async () => {
+    try {
+      status = await api.updateStatus();
+      unreachable = false;
+      state.updateStatus = status;
+      if (pageBuild && status.build !== pageBuild && status.state === 'success') {
+        toast(`Version ${status.build} installée, rechargement…`);
+        setTimeout(() => location.reload(), 1200);
+        return;
+      }
+    } catch {
+      unreachable = true; // l'app redémarre pendant la mise à jour
+    }
+    if (!document.body.contains(root)) return;
+    paint();
+    schedule();
+  };
+
+  function schedule() {
+    clearTimeout(updatePoll);
+    if (busy()) updatePoll = setTimeout(poll, 2500);
+  }
+
+  function paint() {
+    const meta = UPDATE_STATES[status?.state] ?? null;
+    const connected = status?.connected;
+
+    const children = [
+      el('div', { class: 'update-row' }, [
+        el('span', {}, ['Version installée : ', el('strong', { class: 'mono' }, status?.build ?? pageBuild ?? '—')]),
+        unreachable
+          ? el('span', { class: 'status-pill', style: { '--pill': 'var(--warn)' } }, [el('span', { class: 'dot' }), 'Redémarrage de l\'app…'])
+          : meta
+            ? el('span', { class: 'status-pill', style: { '--pill': meta.pill } }, [el('span', { class: 'dot' }), meta.label])
+            : null,
+      ]),
+      status?.message && !unreachable
+        ? el('p', { class: 'field-hint' }, [status.message, status.at ? ` · ${fromNow(status.at)}` : ''])
+        : null,
+      status?.pending?.length
+        ? el('ul', { class: 'update-commits' }, status.pending.map((line) => el('li', { class: 'mono' }, line)))
+        : null,
+      connected === false && !unreachable
+        ? el('p', { class: 'field-hint' }, [
+            'Le service de mise à jour ne tourne pas. Sur le serveur, une seule fois : ',
+            el('code', {}, 'git pull && docker compose up -d'),
+          ])
+        : null,
+      el('div', { class: 'oauth-actions' }, [
+        el(
+          'button',
+          { class: 'primary-btn', disabled: !connected || busy(), onclick: () => trigger('update') },
+          [icon('refresh', `icon${busy() ? ' spin' : ''}`), status?.state === 'available' ? 'Mettre à jour maintenant' : 'Mettre à jour'],
+        ),
+        el(
+          'button',
+          { class: 'ghost-btn', disabled: !connected || busy(), onclick: () => trigger('check') },
+          [icon('check'), 'Vérifier'],
+        ),
+      ]),
+      status?.log
+        ? el('details', {
+            class: 'update-log',
+            open: status.state === 'error',
+            // le résumé (et l'erreur éventuelle) est à la fin du journal
+            ontoggle: (event) => {
+              const pre = event.currentTarget.querySelector('pre');
+              pre.scrollTop = pre.scrollHeight;
+            },
+          }, [
+            el('summary', {}, 'Journal de la dernière opération'),
+            el('pre', {}, status.log),
+          ])
+        : null,
+    ];
+    root.replaceChildren(...children.filter(Boolean));
+  }
+
+  paint();
+  schedule();
+  // le statut chargé avec la page peut dater : on le rafraîchit tout de suite
+  if (!busy()) setTimeout(poll, 0);
+  return root;
 };
 
 const colorRow = (color, actions) => {

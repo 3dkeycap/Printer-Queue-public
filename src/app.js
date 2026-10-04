@@ -14,6 +14,7 @@ import { settingsRouter } from './routes/settings.js';
 import { shopifyOAuthRouter } from './routes/shopifyOAuth.js';
 import { statsRouter } from './routes/stats.js';
 import { syncRouter } from './routes/sync.js';
+import { systemRouter } from './routes/system.js';
 import { webhooksRouter } from './routes/webhooks.js';
 
 const log = createLogger('http');
@@ -74,6 +75,7 @@ export const createApp = () => {
   app.use('/api/stats', statsRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/sync', syncRouter);
+  app.use('/api/system', systemRouter);
 
   app.use(express.static(config.publicDir, { extensions: ['html'], maxAge: '1h' }));
 

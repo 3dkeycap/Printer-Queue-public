@@ -40,6 +40,9 @@ export const config = {
   databasePath,
   buildId: readBuildId(),
 
+  // échange de fichiers avec le conteneur « updater » (même volume que la base)
+  updaterDir: process.env.UPDATER_DIR || path.join(path.dirname(databasePath), 'updater'),
+
   // sauvegardes SQLite : dans le même volume que la base, rotation automatique
   backup: {
     dir: process.env.BACKUP_DIR || path.join(path.dirname(databasePath), 'backups'),

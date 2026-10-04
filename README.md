@@ -101,7 +101,7 @@ seules les pièces manquantes sont ajoutées.
 
 ```
 .
-├── docker-compose.yml          app + worker + profil « autoupdate »
+├── docker-compose.yml          app + worker + updater (mises à jour)
 ├── Dockerfile                  image multi-stage, non-root, healthcheck
 ├── .env.example                toute la configuration documentée
 ├── src/
@@ -139,6 +139,7 @@ seules les pièces manquantes sont ajoutées.
 │   ├── css/app.css             thème beige & noir, clair / sombre
 │   └── js/                     api, store, drawer, views/{board,all,integrations}
 ├── scripts/update.sh           mise à jour depuis GitHub (privé OK), sauvegarde + retour arrière
+├── scripts/updater.sh          boucle du conteneur updater (bouton et mode auto du dashboard)
 ├── scripts/backup.js           sauvegarde / liste des sauvegardes de la base
 ├── scripts/reset-data.js       purge des commandes et des pièces
 ├── scripts/diagnose-shopify.js interroge Shopify en direct (0 commande sans erreur ?)
@@ -176,50 +177,49 @@ Dashboard : **http://localhost:8080** (changer le port : `APP_PORT=9000 docker c
 ### Mettre à jour depuis GitHub (sans perdre les données)
 
 Les données (commandes, pièces, réglages, tokens) vivent dans le **volume Docker
-`rpq-data`**, pas dans l'image : reconstruire l'image ne les touche pas. La mise à jour
-se fait en une commande, depuis le dossier du clone :
+`rpq-data`**, pas dans l'image : reconstruire l'image ne les touche pas.
+
+**Depuis le dashboard** : *Intégrations → Mises à jour*
+
+* **Token GitHub** (dépôt privé) : token en lecture seule
+  ([fine-grained token](https://github.com/settings/personal-access-tokens/new), accès au
+  seul dépôt `Printer-Queue`, permission *Contents : Read-only*). Comme les autres
+  secrets, il n'est jamais renvoyé par l'API.
+* **Dépôt / branche suivis**, **mise à jour automatique** (activée par défaut) et
+  **intervalle de vérification**.
+* Boutons **Vérifier** (liste les nouveaux commits) et **Mettre à jour** : la page suit
+  l'opération, puis se recharge toute seule sur la nouvelle version. Le journal de la
+  dernière opération est consultable sous les boutons.
+
+Le bouton est exécuté par le conteneur `updater` (démarré avec le reste de la stack), le
+seul à avoir accès au socket Docker de l'hôte ; l'app et le worker n'y ont pas accès. Les
+deux échangent par fichiers dans le volume (`/data/updater`).
+
+**En ligne de commande** (même procédure, depuis le dossier du clone) :
 
 ```bash
 sh scripts/update.sh            # met à jour si GitHub a une version plus récente
 sh scripts/update.sh --check    # dit seulement s'il y a une mise à jour
 ```
 
-Le script :
+Chaque mise à jour :
 
 1. récupère la branche suivie sur GitHub ;
 2. **sauvegarde la base** dans le volume (`/data/backups`) **et** sur l'hôte (`./backups/`) ;
 3. avance le code, reconstruit l'image, redémarre `app` + `worker` ;
-4. attend que l'app réponde ; sinon **revient tout seul à la version précédente**.
+4. attend que l'app réponde ; sinon **revient toute seule à la version précédente**.
 
 L'app fait aussi une sauvegarde automatique au premier démarrage de chaque nouvelle
 version, avant les migrations (les 10 dernières sont gardées, `BACKUP_KEEP`). Version
 installée : en bas du menu de gauche.
 
-**Dépôt privé** : créer un token GitHub en lecture seule
-([fine-grained token](https://github.com/settings/personal-access-tokens/new), accès au
-seul dépôt `Printer-Queue`, permission *Contents : Read-only*) et le mettre dans `.env` :
+En ligne de commande, le token peut aussi venir de `.env` (`GITHUB_TOKEN=...`,
+`GITHUB_REPO=`, `UPDATE_BRANCH=`) ; les valeurs saisies dans le dashboard sont
+prioritaires pour le conteneur `updater`. Le token n'est envoyé qu'à github.com : il n'est
+écrit ni dans `.git/config`, ni dans l'image.
 
-```bash
-GITHUB_TOKEN=github_pat_xxxxxxxx
-GITHUB_REPO=3dkeycap/Printer-Queue
-UPDATE_BRANCH=main               # vide = la branche actuellement extraite
-```
-
-Le token n'est envoyé qu'à github.com : il n'est écrit ni dans `.git/config`, ni dans
-l'image, ni dans les conteneurs `app` / `worker`.
-
-**Première fois** (installation antérieure à ce script) : `git pull` une seule fois pour
-récupérer `scripts/update.sh`, puis `sh scripts/update.sh --force`.
-
-**Mise à jour automatique** (optionnelle) : un petit conteneur vérifie GitHub toutes les
-heures (`UPDATE_INTERVAL`, en secondes) et lance le même script :
-
-```bash
-docker compose --profile autoupdate up -d
-docker compose logs -f updater
-```
-
-Il a accès au socket Docker de l'hôte (nécessaire pour reconstruire l'image).
+**Première fois** (installation antérieure à cette fonction) : sur le serveur, une seule
+fois, `git pull && docker compose up -d --build`. Ensuite tout se fait depuis le dashboard.
 
 > ⚠ Ne jamais lancer `docker compose down -v` : l'option `-v` supprime le volume
 > `rpq-data`, donc la base **et** ses sauvegardes internes. `docker compose down` (sans
@@ -460,6 +460,8 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |
 | `POST` | `/api/sync/run?source=all\|shopify\|etsy\|chitchats` | Synchronisation manuelle |
 | `GET` | `/api/sync/runs` · `/api/sync/webhooks` | Journal des exécutions et des webhooks |
+| `GET` | `/api/system/update` | Version installée, état du service updater, commits disponibles, journal |
+| `POST` | `/api/system/update` | `{ action: "check" \| "update" }` : exécuté par le conteneur updater |
 | `POST` | `/api/webhooks/{chitchats,shopify,etsy}` | Entrées webhook |
 | `GET` | `/api/integrations/{shopify,etsy}/oauth/start` | Démarre le flux OAuth (navigation, pas un fetch) |
 | `GET` | `/api/integrations/{shopify,etsy}/oauth/callback` | Retour du fournisseur : vérifie state (+ HMAC pour Shopify, PKCE pour Etsy), échange le code |

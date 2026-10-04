@@ -65,6 +65,20 @@ export const DEFINITIONS = [
   { key: 'schedule.shipmentCron', group: 'schedule', label: 'Cron des expéditions', type: 'text', fallback: () => config.jobs.shipmentCron },
   { key: 'schedule.lookbackDays', group: 'schedule', label: 'Fenêtre de rattrapage (jours)', type: 'number', fallback: () => config.integrations.lookbackDays },
 
+  // --- Mises à jour (lues par le service « updater », voir updater.service) -
+  {
+    key: 'update.githubToken',
+    group: 'update',
+    label: 'Token GitHub (lecture seule)',
+    type: 'secret',
+    hint: 'Nécessaire si le dépôt est privé. Fine-grained token limité à ce dépôt, permission « Contents : Read-only ».',
+    fallback: () => process.env.GITHUB_TOKEN || '',
+  },
+  { key: 'update.githubRepo', group: 'update', label: 'Dépôt GitHub', type: 'text', placeholder: '3dkeycap/Printer-Queue', hint: 'owner/dépôt. Vide = le dépôt d\'origine du clone.', fallback: () => process.env.GITHUB_REPO || '3dkeycap/Printer-Queue' },
+  { key: 'update.branch', group: 'update', label: 'Branche suivie', type: 'text', placeholder: 'main', hint: 'Vide = la branche actuellement installée.', fallback: () => process.env.UPDATE_BRANCH || '' },
+  { key: 'update.autoEnabled', group: 'update', label: 'Mise à jour automatique', type: 'boolean', hint: 'Installe toute seule les nouvelles versions (sauvegarde + retour arrière si échec).', fallback: () => true },
+  { key: 'update.intervalMinutes', group: 'update', label: 'Vérifier toutes les (minutes)', type: 'number', fallback: () => 60 },
+
   // --- Production ---------------------------------------------------------
   { key: 'production.uvOptions', group: 'production', label: 'Options UV', type: 'list', hint: 'Une valeur par ligne. Affichée sur chaque carte.', fallback: () => ['Standard', 'A', 'B', 'C'] },
   { key: 'production.commentOptions', group: 'production', label: 'Commentaires prédéfinis', type: 'list', hint: 'Liste déroulante disponible sur chaque pièce.', fallback: () => ['Réimpression', 'Support à revoir', 'Attente client', 'Pièce cassée', 'Prioritaire', 'Échantillon'] },
