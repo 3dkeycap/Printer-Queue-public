@@ -648,3 +648,9 @@ téléchargement `.md` et de la capture, « Marquer résolu », supprimer.
 
 Capture : [html-to-image](https://github.com/bubkoo/html-to-image) (MIT), embarqué dans
 `public/vendor/`, chargé seulement au premier clic.
+
+**Photos génériques (Etsy)** — quand un article n'a pas de vraie photo, Etsy renvoie quand même une
+image générique. Elle est reconnue automatiquement (une même image utilisée par au moins 3 articles
+différents n'est pas la photo d'un produit) et n'est affichée nulle part. Dans la fiche,
+« Pas la bonne photo » masque une image à la main (liste dans Réglages → Atelier → Photos masquées).
+Le mode simple retire aussi le bouton « Synchroniser » (la synchro automatique continue).

@@ -97,8 +97,28 @@ export const openDrawer = async (partId, actions) => {
       ]),
 
       part.image_url
-        ? el('a', { class: 'drawer-image', href: part.image_url, target: '_blank', rel: 'noopener noreferrer', title: 'Ouvrir la photo en grand' }, [
-            el('img', { src: part.image_url, alt: part.name, loading: 'lazy' }),
+        ? el('div', { class: 'drawer-image-wrap' }, [
+            el('a', { class: 'drawer-image', href: part.image_url, target: '_blank', rel: 'noopener noreferrer', title: 'Ouvrir la photo en grand' }, [
+              el('img', { src: part.image_url, alt: part.name, loading: 'lazy' }),
+            ]),
+            el(
+              'button',
+              {
+                class: 'mini-btn drawer-image-block',
+                title: "Image générique ou mauvaise photo : ne plus l'afficher (pour toutes les pièces)",
+                onclick: async () => {
+                  try {
+                    await api.blockImage(part.image_url);
+                    toast('Photo masquée');
+                    await actions.patchPart(part.id, {}, { silent: true });
+                    openDrawer(part.id, actions);
+                  } catch (error) {
+                    toast(error.message, 'err');
+                  }
+                },
+              },
+              [icon('close'), 'Pas la bonne photo'],
+            ),
           ])
         : null,
 

@@ -773,3 +773,5 @@ html.kiosk #bug-button { left: auto; right: 12px; }
 .toasts { bottom: 76px !important; }
 .savebar { right: 80px; }
 a.ghost-btn, a.primary-btn { text-decoration: none; }
+.drawer-image-wrap { position: relative; flex: none; }
+.drawer-image-block { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; background: color-mix(in srgb, var(--surface) 88%, transparent); }

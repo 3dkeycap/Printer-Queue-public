@@ -162,6 +162,14 @@ export const DEFINITIONS = [
     hint: "Proposées quand une pièce n'est pas mise dans le bac (un texte libre reste possible).",
     fallback: () => ['Pas encore imprimée', 'Cassée', 'Mauvaise couleur', 'Pas en stock', 'Introuvable'],
   },
+  {
+    key: 'production.blockedImages',
+    group: 'production',
+    label: 'Photos masquées',
+    type: 'list',
+    hint: "Adresses d'images à ne jamais afficher (ajoutées avec « Pas la bonne photo » dans la fiche). Les images génériques partagées par plusieurs articles sont déjà masquées automatiquement.",
+    fallback: () => [],
+  },
   { key: 'production.lateWarnDays', group: 'production', label: 'Commande « en attente » après (jours)', type: 'number', hint: "L'âge de la commande s'affiche en orange sur la carte.", fallback: () => 3 },
   { key: 'production.lateDays', group: 'production', label: 'Commande « en retard » après (jours)', type: 'number', hint: 'En rouge sur la carte, et comptée dans le filtre « En retard ».', fallback: () => 7 },
   {

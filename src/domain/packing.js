@@ -3,6 +3,7 @@ import { badRequest, notFound } from '../lib/errors.js';
 import { createLogger } from '../lib/logger.js';
 import { normalizeComments } from './parts.service.js';
 import { getSettings, updateSettings } from './settings.service.js';
+import { placeholderImages, realImage } from './images.js';
 
 const log = createLogger('packing');
 
@@ -62,6 +63,7 @@ export const getPackingView = (where) => {
     .map((pack) => ({ ...pack, items: JSON.parse(pack.items || '[]'), complete: Boolean(pack.complete) }));
   const lastReasons = new Map((history[0]?.items ?? []).map((line) => [line.order_item_id, line.reason ?? null]));
   const settings = getSettings();
+  const placeholders = placeholderImages();
 
   return {
     order: {
@@ -85,7 +87,7 @@ export const getPackingView = (where) => {
         title: item.title,
         variant: item.variant_title,
         sku: item.sku,
-        image: item.image_url,
+        image: realImage(item.image_url, placeholders),
         total: own.length || Number(item.quantity) || 1,
         packed: own.filter((part) => part.packed_at).length,
         notPrinted: own.some((part) => part.not_printed),

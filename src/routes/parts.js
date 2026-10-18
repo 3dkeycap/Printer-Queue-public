@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { purgeNow } from '../domain/addons.js';
+import { blockImage } from '../domain/images.js';
 import { asyncRoute, badRequest, notFound } from '../lib/errors.js';
 import {
   bulkSetStatus,
@@ -26,6 +27,14 @@ partsRouter.post(
   asyncRoute((req, res) => {
     const { keywords, dryRun } = req.body ?? {};
     res.json(purgeNow({ keywords, dryRun: Boolean(dryRun) }));
+  }),
+);
+
+/** « Pas la bonne photo » : cette image ne s'affiche plus nulle part. */
+partsRouter.post(
+  '/blocked-images',
+  asyncRoute((req, res) => {
+    res.json(blockImage(req.body?.url));
   }),
 );
 

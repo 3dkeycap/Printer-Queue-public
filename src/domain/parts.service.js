@@ -3,6 +3,7 @@ import { badRequest, conflict, notFound } from '../lib/errors.js';
 import { hiddenColorKeys } from './addons.js';
 import { chitchatsContext, chitchatsState } from './chitchatsImport.js';
 import { buyerDetails, latestPacks } from './packing.js';
+import { placeholderImages, realImage } from './images.js';
 import { chitchatsShipUrl } from './presence.js';
 import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
@@ -168,11 +169,13 @@ export const listParts = (query = {}) => {
   // pourquoi chaque pièce est (ou pas) dans Chit Chats, pour la colonne de « Tout »
   const ctx = chitchatsContext();
   const packs = latestPacks([...new Set(rows.map((row) => row.order_id))]);
+  const placeholders = placeholderImages();
   const items = rows.map((row) => {
     const cc = chitchatsState({ ...row, created_at: row.order_created_at }, ctx);
     const pack = packs[row.order_id];
     return {
       ...hydrate(row),
+      image_url: realImage(row.image_url, placeholders),
       chitchats_state: cc.state,
       chitchats_reason: cc.reason,
       // bac : dernier passage de la commande, et ce qui manque pour CETTE ligne
@@ -252,7 +255,12 @@ export const getPart = (id) => {
   const db2 = getDb();
   const order = db2.prepare('SELECT * FROM orders WHERE id = ?').get(row.order_id);
   const items = db2.prepare('SELECT * FROM order_items WHERE order_id = ?').all(row.order_id);
-  return { ...hydrate(row), links: orderLinks(row), buyer_details: buyerDetails(order, items) };
+  return {
+    ...hydrate(row),
+    image_url: realImage(row.image_url, placeholderImages()),
+    links: orderLinks(row),
+    buyer_details: buyerDetails(order, items),
+  };
 };
 
 /**
