@@ -49,8 +49,12 @@ export const STATUSES = [
 
 export const STATUS_KEYS = STATUSES.map((s) => s.key);
 
-/** Colonnes du tableau « À imprimer » (SHIPPED quitte la production). */
-export const BOARD_STATUSES = STATUS_KEYS.filter((key) => key !== 'SHIPPED');
+/**
+ * Colonnes du tableau « À imprimer » : SHIPPED quitte la production, et FAILED
+ * n'est plus une colonne (un échec est enregistré dans l'historique « Échecs »
+ * puis la pièce retourne directement dans « À imprimer »).
+ */
+export const BOARD_STATUSES = STATUS_KEYS.filter((key) => key !== 'SHIPPED' && key !== 'FAILED');
 
 /** Alias historique conservé pour les filtres « scope=board ». */
 export const ACTIVE_STATUSES = BOARD_STATUSES;

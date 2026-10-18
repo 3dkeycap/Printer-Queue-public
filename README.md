@@ -266,7 +266,7 @@ npm test                      # 58 tests : ingestion, statuts, réglages, Chit C
 | --- | --- | --- |
 | `TO_PRINT` | À imprimer | aucune case cochée |
 | `PRINTING` | En impression | Print Started |
-| `FAILED` | Échec | Print Fail (incrémente `fail_count`) |
+| `FAILED` | Échec | Print Fail : **n'est plus une colonne**. Le clic sur Échec consigne l'échec (page « Échecs », table `print_results`, `fail_count` +1) et la pièce retourne directement dans `TO_PRINT` |
 | `DONE` | Imprimé | Printed Successfully |
 | `SHIPPED` | Expédié | Done — **sort du tableau de production** |
 
@@ -468,6 +468,7 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `GET` | `/api/colors` · `POST` · `PATCH /api/colors/:key` · `DELETE` | Catalogue de résines, alias, stock en grammes |
 | `GET` | `/api/settings` | Tous les réglages (secrets masqués) + état des connecteurs |
 | `PUT` | `/api/settings` | Enregistre un lot de réglages |
+| `GET` | `/api/failures` | Historique des échecs + taux d'échec par fichier (échecs / (échecs + impressions réussies)) |
 | `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |
 | `POST` | `/api/sync/run?source=all\|shopify\|etsy\|chitchats` | Synchronisation manuelle |
 | `GET` | `/api/sync/runs` · `/api/sync/webhooks` | Journal des exécutions et des webhooks |

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { getDb, getSetting, nowIso, setSetting } from './index.js';
 import { createLogger } from '../lib/logger.js';
 import { LEGACY_STATUS_MAP } from '../domain/statuses.js';
+import { backfillPrintResults } from '../domain/failures.service.js';
 
 const require = createRequire(import.meta.url);
 const log = createLogger('migrate');
@@ -119,6 +120,36 @@ const resetCorruptedSyncCursors = (db) => {
   setSetting(CURSOR_RATCHET_FIXED_KEY, '1');
 };
 
+const FAILED_COLUMN_KEY = 'internal.failedColumnRemoved';
+
+/**
+ * La colonne « Échec » n'existe plus : un échec est consigné dans l'historique
+ * (table print_results) et la pièce retourne dans « À imprimer ». Une seule
+ * fois : on reconstitue l'historique depuis part_events, puis on remet dans
+ * « À imprimer » les pièces qui attendaient encore dans l'ancienne colonne.
+ */
+const migrateFailedColumn = (db) => {
+  if (getSetting(FAILED_COLUMN_KEY)) return;
+
+  db.transaction(() => {
+    const rebuilt = backfillPrintResults(db);
+    const parked = db.prepare(`SELECT id FROM parts WHERE status = 'FAILED'`).all();
+    const ts = nowIso();
+    for (const { id } of parked) {
+      db.prepare(
+        `UPDATE parts SET status = 'TO_PRINT', status_changed_at = ?, updated_at = ?, printed_at = NULL WHERE id = ?`,
+      ).run(ts, ts, id);
+      db.prepare(
+        `INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at)
+         VALUES (?, 'FAILED', 'TO_PRINT', 'system', 'Colonne Échec retirée : remise dans « À imprimer »', ?)`,
+      ).run(id, ts);
+    }
+    log.info('failed column removed', { historyRebuiltForParts: rebuilt, partsMovedToQueue: parked.length });
+  })();
+
+  setSetting(FAILED_COLUMN_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -159,6 +190,7 @@ export const migrate = () => {
 
   purgeLegacyMockData(db);
   resetCorruptedSyncCursors(db);
+  migrateFailedColumn(db);
 
   const insertColor = db.prepare(
     `INSERT INTO resin_colors (key, name, hex, aliases, sort_order, updated_at)

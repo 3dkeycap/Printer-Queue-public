@@ -43,7 +43,7 @@ describe('API HTTP', () => {
   it('expose les statuts et les listes réglables au front-end', async () => {
     const { body } = await call('/api/meta');
     assert.equal(body.statuses.length, 5);
-    assert.deepEqual(body.boardStatuses, ['TO_PRINT', 'PRINTING', 'FAILED', 'DONE']);
+    assert.deepEqual(body.boardStatuses, ['TO_PRINT', 'PRINTING', 'DONE']);
     assert.ok(body.uvOptions.includes('Standard'));
     assert.ok(Array.isArray(body.commentOptions));
   });

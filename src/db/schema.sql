@@ -106,6 +106,26 @@ CREATE TABLE IF NOT EXISTS part_events (
 
 CREATE INDEX IF NOT EXISTS idx_part_events_part ON part_events (part_id, id DESC);
 
+-- Résultat de chaque impression (réussie ou ratée), pour le taux d'échec par
+-- fichier. Photo des champs au moment du résultat, SANS clé étrangère : un
+-- échec reste dans l'historique même si la pièce ou la commande est supprimée.
+CREATE TABLE IF NOT EXISTS print_results (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  part_id       INTEGER,
+  outcome       TEXT NOT NULL,                      -- failed | success
+  name          TEXT NOT NULL,
+  sku           TEXT,
+  variant_title TEXT,
+  color_key     TEXT,
+  order_number  TEXT,
+  source        TEXT,
+  actor         TEXT,
+  created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_print_results_name ON print_results (name, outcome);
+CREATE INDEX IF NOT EXISTS idx_print_results_part ON print_results (part_id, id DESC);
+
 CREATE TABLE IF NOT EXISTS sync_runs (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   source         TEXT NOT NULL,                     -- shopify | etsy | chitchats

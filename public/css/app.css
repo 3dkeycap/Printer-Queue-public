@@ -349,6 +349,16 @@ table.grid th {
   position: sticky; top: 0; z-index: 2;
 }
 table.grid td { padding: 9px 12px; border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent); vertical-align: middle; }
+/* page « Échecs » */
+.failures-summary { margin: 0 0 16px; font-size: 13.5px; color: var(--text-soft); }
+.failures-history-title { display: flex; align-items: center; gap: 10px; }
+.rate { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; }
+.rate-bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--text) 10%, transparent); overflow: hidden; }
+.rate-bar span { display: block; height: 100%; border-radius: 99px; background: var(--ok); }
+.rate-mid .rate-bar span { background: var(--warn); }
+.rate-high .rate-bar span { background: var(--danger); }
+.rate-high strong { color: var(--danger); }
+.rate-colors { display: flex; flex-wrap: wrap; gap: 4px; }
 table.grid tbody tr:hover { background: var(--surface-2); }
 table.grid tr.is-selected { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 table.grid tr.group-row td { background: var(--surface-3); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-soft); }

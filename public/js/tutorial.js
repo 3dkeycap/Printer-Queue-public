@@ -15,7 +15,7 @@ const STEPS = [
   {
     selector: '.column',
     title: 'Les colonnes',
-    text: "Une pièce avance de gauche à droite : À imprimer → En impression → Imprimé. Si l'impression rate, elle va dans « Échec » pour être refaite.",
+    text: "Une pièce avance de gauche à droite : À imprimer → En impression → Imprimé. Si l'impression rate, appuie sur le triangle rouge : la pièce retourne dans « À imprimer » pour être refaite, et l'échec est gardé dans la page « Échecs ».",
   },
   {
     selector: '.card',

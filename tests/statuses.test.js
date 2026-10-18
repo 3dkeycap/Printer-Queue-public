@@ -15,7 +15,7 @@ describe('machine à états des pièces', () => {
   });
 
   it('retire SHIPPED du tableau « À imprimer »', () => {
-    assert.deepEqual(BOARD_STATUSES, ['TO_PRINT', 'PRINTING', 'FAILED', 'DONE']);
+    assert.deepEqual(BOARD_STATUSES, ['TO_PRINT', 'PRINTING', 'DONE']);
   });
 
   it('n\'expose plus « fichier prêt » ni « en stock »', () => {

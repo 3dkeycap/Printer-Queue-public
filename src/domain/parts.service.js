@@ -7,6 +7,7 @@ import { placeholderImages, realImage } from './images.js';
 import { chitchatsShipUrl } from './presence.js';
 import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
+import { recordTransition } from './failures.service.js';
 
 const SORTS = {
   smart: 'p.priority DESC, o.is_priority DESC, COALESCE(o.placed_at, o.created_at) ASC, p.id ASC',
@@ -338,6 +339,21 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
 
   const ts = nowIso();
   const apply = db.transaction(() => {
+    recordTransition(db, part, part.status, status, { actor, at: ts });
+
+    // Échec : consigné dans l'historique « Échecs », puis la pièce retourne
+    // directement dans « À imprimer » (il n'y a plus de colonne Échec).
+    if (status === 'FAILED') {
+      db.prepare(
+        `UPDATE parts SET status = 'TO_PRINT', status_changed_at = @ts, updated_at = @ts,
+                          fail_count = fail_count + 1, printed_at = NULL, shipped_at = NULL
+         WHERE id = @id`,
+      ).run({ id: part.id, ts });
+      recordEvent(db, { partId: part.id, from: part.status, to: 'FAILED', actor, note });
+      recordEvent(db, { partId: part.id, from: 'FAILED', to: 'TO_PRINT', actor, note: 'Échec enregistré : remise dans « À imprimer »' });
+      return;
+    }
+
     db.prepare(
       `UPDATE parts SET
          status = @status,

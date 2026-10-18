@@ -20,6 +20,7 @@ import {
 import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
+import { renderFailures } from './views/failures.js';
 import { closeDrawer, openDrawer } from './drawer.js';
 import { startTutorial, tutorialSeen } from './tutorial.js';
 import { mountFullscreen } from './fullscreen.js';
@@ -35,6 +36,7 @@ const NEXT_STATUS = {
 const VIEW_META = {
   board: { title: 'À imprimer', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
   all: { title: 'Tout', subtitle: 'Toutes les pièces, tous statuts confondus.' },
+  failures: { title: 'Échecs', subtitle: 'Chaque impression ratée est gardée ici, avec le taux d’échec par fichier.' },
   integrations: { title: 'Réglages', subtitle: 'Tout ce qui se configure, rangé par thème.' },
 };
 
@@ -57,8 +59,10 @@ const actions = {
   async move(ids, status, options = {}) {
     // optimiste : on repeint tout de suite, on réconcilie ensuite
     const snapshot = state.parts.map((part) => ({ ...part }));
+    // un échec retourne directement dans « À imprimer » (et est consigné dans « Échecs »)
+    const shownStatus = status === 'FAILED' ? 'TO_PRINT' : status;
     for (const part of state.parts) {
-      if (ids.includes(part.id)) part.status = status;
+      if (ids.includes(part.id)) part.status = shownStatus;
     }
     render();
 
@@ -68,7 +72,11 @@ const actions = {
         const result = await api.bulkStatus(ids, status, options);
         if (result.errors?.length) toast(`${result.errors.length} transition(s) refusée(s)`, 'err');
       }
-      toast(`${ids.length} pièce(s) → ${statusMeta(status).labelFr}`);
+      toast(
+        status === 'FAILED'
+          ? `${ids.length} échec(s) enregistré(s) : remis dans « À imprimer »`
+          : `${ids.length} pièce(s) → ${statusMeta(status).labelFr}`,
+      );
       state.selection.clear();
       await refresh({ silent: true });
     } catch (error) {
@@ -101,6 +109,11 @@ const actions = {
   toggleSelectAll(select) {
     state.selection.clear();
     if (select) for (const part of state.parts) state.selection.add(part.id);
+    render();
+  },
+
+  selectFailureFile(name) {
+    state.failureFile = state.failureFile === name ? '' : name;
     render();
   },
 
@@ -391,7 +404,7 @@ const chip = (label, isOn, onclick, extra = [], count = null) =>
   ].filter(Boolean));
 
 const renderToolbar = () => {
-  if (state.view === 'integrations') {
+  if (state.view === 'integrations' || state.view === 'failures') {
     dom.toolbar.hidden = true;
     return;
   }
@@ -416,7 +429,7 @@ const renderToolbar = () => {
     );
 
   const statusChips = usesStatusFilter()
-    ? state.meta.statuses.map((status) =>
+    ? state.meta.statuses.filter((status) => status.key !== 'FAILED').map((status) =>
         chip(
           status.labelFr,
           state.filters.statuses.has(status.key),
@@ -648,6 +661,7 @@ const render = () => {
       );
     } else renderBoard(root, actions);
   } else if (state.view === 'all') renderAll(root, actions);
+  else if (state.view === 'failures') renderFailures(root, actions);
   else renderIntegrations(root, actions);
   restoreScroll(scroll);
 };
@@ -704,6 +718,11 @@ const refresh = async ({ silent = false } = {}) => {
       state.colors = colors.items;
       state.runs = runs.items;
       state.summary = summary;
+    } else if (state.view === 'failures') {
+      const [summary, failures] = await Promise.all([api.summary(), api.failures()]);
+      if (seq !== refreshSeq) return;
+      state.summary = summary;
+      state.failures = failures;
     } else {
       const params = queryParams();
       const [summary, parts, facets, presence] = await Promise.all([
@@ -732,7 +751,7 @@ const refresh = async ({ silent = false } = {}) => {
 
 const updateNavCounts = () => {
   const totals = state.summary?.totals ?? {};
-  const counts = { board: totals.parts_active ?? 0, all: totals.parts_total ?? 0 };
+  const counts = { board: totals.parts_active ?? 0, all: totals.parts_total ?? 0, failures: totals.failures_total ?? 0 };
   document.querySelectorAll('.nav-count').forEach((node) => {
     const value = counts[node.dataset.count];
     node.textContent = value ? String(value) : '';

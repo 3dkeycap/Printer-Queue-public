@@ -48,6 +48,8 @@ export const state = {
   runs: [],
   settings: [],
   connectors: {},
+  failures: null, // historique des échecs (page « Échecs »)
+  failureFile: '', // fichier dont on regarde les échecs ('' = tous)
   updateStatus: null, // service de mise à jour (Intégrations > Mises à jour)
   selection: new Set(),
   focusedColumn: null, // clé de statut affichée seule, en grille, pour une vue d'ensemble

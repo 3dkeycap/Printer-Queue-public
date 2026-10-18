@@ -94,7 +94,7 @@ const buildCard = (stack, actions) => {
               'button',
               {
                 class: 'mini-btn danger',
-                title: 'Marquer comme échec',
+                title: "Impression ratée : la pièce retourne dans « À imprimer » et l'échec est gardé dans « Échecs »",
                 onclick: (event) => {
                   event.stopPropagation();
                   actions.move(ids, 'FAILED');
