@@ -7,7 +7,7 @@ import { api } from '../api.js';
    ========================================================================== */
 
 const TABS = [
-  { key: 'atelier', label: 'Atelier', icon: 'printer', desc: "Imprimantes, postes UV, tags, et ce qu'on n'imprime pas." },
+  { key: 'atelier', label: 'Atelier', icon: 'printer', desc: "Postes UV, tags, et ce qu'on n'imprime pas." },
   { key: 'resines', label: 'Résines', icon: 'drop', desc: 'Les couleurs de résine, leur stock et leurs alias de détection.' },
   { key: 'boutiques', label: 'Boutiques', icon: 'plug', desc: 'Connexion à Shopify, Etsy et Chit Chats.' },
   { key: 'synchro', label: 'Synchronisation', icon: 'refresh', desc: 'À quelle fréquence on va chercher les commandes.' },
@@ -259,9 +259,6 @@ const tabAtelier = (draft, touch, actions) => {
     section('Délais', "L'âge de chaque commande s'affiche sur les cartes ; le filtre « En retard » montre celles qui dépassent le seuil rouge.", [
       f('production.lateWarnDays', { label: 'Orange après (jours)', hint: null }),
       f('production.lateDays', { label: 'Rouge / « En retard » après (jours)', hint: null }),
-    ]),
-    section('Imprimantes', 'Les machines proposées dans la liste « Imprimante » de chaque pièce.', [
-      f('production.printerOptions', { label: 'Liste des imprimantes', placeholder: 'Ex. Mars 5 Ultra #1 — puis Entrée', hint: null }),
     ]),
     section('Postes UV', 'Les choix proposés pour le champ UV de chaque pièce.', [
       f('production.uvOptions', { label: 'Options UV', hint: null }),

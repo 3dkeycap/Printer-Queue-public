@@ -12,7 +12,7 @@ const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 const stackParts = (parts) => {
   const stacks = new Map();
   for (const part of parts) {
-    const key = [part.name, part.color_key, part.variant_title, part.uv, part.comment, part.printer, part.priority || part.order_priority]
+    const key = [part.name, part.color_key, part.variant_title, part.uv, part.comment, part.priority || part.order_priority]
       .map((value) => String(value ?? ''))
       .join('|');
     if (!stacks.has(key)) stacks.set(key, []);
@@ -55,7 +55,6 @@ const buildCard = (stack, actions) => {
         el('span', { class: `tag src-${part.source} adv` }, SOURCE_LABEL[part.source] ?? part.source),
         el('span', { class: 'tag adv' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush adv' }, [icon('bolt'), 'Rush']),
-        part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
         // l'état de l'import Chit Chats n'encombre pas les cartes : il est dans la fiche et dans « Tout »
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),

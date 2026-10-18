@@ -60,7 +60,7 @@ const STEPS = [
   {
     selector: '.card',
     title: 'Une carte = une pièce',
-    text: "Nom, résine, UV, commande, rush ⚡, imprimante… Clique la carte pour ouvrir sa fiche (tags, notes, imprimante, historique). Le bouton en bas à droite la fait passer à l'étape suivante ; le triangle rouge la marque en échec.",
+    text: "Nom, résine, UV, commande, rush ⚡… Clique la carte pour ouvrir sa fiche (tags, notes, historique). Le bouton en bas à droite la fait passer à l'étape suivante ; le triangle rouge la marque en échec.",
   },
   {
     selector: '.card',
@@ -75,7 +75,7 @@ const STEPS = [
   {
     selector: '.nav-item[data-view="integrations"]',
     title: 'Réglages',
-    text: "Imprimantes, postes UV, résines, boutiques connectées, synchronisation et mises à jour. Tout y est rangé par onglet.",
+    text: "Postes UV, résines, boutiques connectées, synchronisation et mises à jour. Tout y est rangé par onglet.",
   },
   {
     title: 'Mode kiosque 📱',

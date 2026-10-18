@@ -1,6 +1,6 @@
 import { api } from './api.js';
-import { clear, el, formatDate, fromNow, icon, swatch, toast } from './ui.js';
-import { openChitChats, presenceFor, printerOptions, state, statusMeta, uvOptions } from './store.js';
+import { clear, el, formatDate, fromNow, icon, toast } from './ui.js';
+import { openChitChats, presenceFor, state, statusMeta, uvOptions } from './store.js';
 import { buildCommentTags } from './comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -55,8 +55,6 @@ export const openDrawer = async (partId, actions) => {
   const uvSelect = buildSelect(uvOptions(), part.uv, 'Aucun poste UV', (value) =>
     actions.patchPart(part.id, { uv: value }));
   const commentSelect = buildCommentTags(part, actions);
-  const printerSelect = buildSelect(printerOptions(), part.printer, 'Aucune imprimante assignée', (value) =>
-    actions.patchPart(part.id, { printer: value }));
 
   const notesInput = el('textarea', { placeholder: 'Notes de production…' }, part.notes ?? '');
   notesInput.addEventListener('change', () => actions.patchPart(part.id, { notes: notesInput.value }));
@@ -203,12 +201,6 @@ export const openDrawer = async (partId, actions) => {
           el('dd', {}, part.sku ?? '—'),
           el('dt', {}, 'Variante'),
           el('dd', {}, part.variant_title ?? '—'),
-          el('dt', {}, 'Résine'),
-          el('dd', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
-          el('dt', { class: 'adv' }, 'UV'),
-          el('dd', { class: 'adv' }, part.uv ?? '—'),
-          el('dt', {}, 'Imprimante'),
-          el('dd', {}, part.printer ?? '—'),
           el('dt', {}, 'Échecs'),
           el('dd', {}, String(part.fail_count)),
           el('dt', {}, 'Suivi'),
@@ -225,7 +217,6 @@ export const openDrawer = async (partId, actions) => {
       el('div', { class: 'field' }, [el('label', {}, 'Couleur de résine'), colorSelect]),
       el('div', { class: 'field adv' }, [el('label', {}, 'Poste UV'), uvSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Tags'), commentSelect]),
-      el('div', { class: 'field' }, [el('label', {}, 'Imprimante'), printerSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Notes libres'), notesInput]),
 
       el('div', {}, [

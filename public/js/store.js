@@ -26,7 +26,7 @@ export const state = {
   sort: prefs.sort ?? 'smart',
   theme: THEMES.some((theme) => theme.key === prefs.theme) ? prefs.theme : 'dark',
   // simple : vue épurée (pas d'UV, de Rush, de provenance, de n° de commande, de Chit Chats…)
-  mode: prefs.mode === 'simple' ? 'simple' : 'advanced',
+  mode: 'simple', // toujours simple : plus de bascule simple / avancé
   stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
   filters: {
     q: '',

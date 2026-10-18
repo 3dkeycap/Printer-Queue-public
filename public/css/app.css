@@ -730,6 +730,7 @@ html.mode-simple .card.is-rush { border-color: var(--line); }
 .mode-toggle button { height: 30px; }
 /* bouton « Plein écran » : kiosque seulement */
 .kiosk-only { display: none; }
+html.kiosk .not-kiosk { display: none; }
 html.kiosk .kiosk-only { display: inline-flex; }
 html.kiosk .kiosk-only { min-height: 36px; }
 html.kiosk .mode-toggle button { height: 36px; padding: 0 14px; }

@@ -1,5 +1,5 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
-import { effectiveGroupBy, groupParts, openChitChats, orderAge, presenceFor, printerOptions, state, statusMeta, uvOptions } from '../store.js';
+import { effectiveGroupBy, groupParts, openChitChats, orderAge, presenceFor, state, statusMeta, uvOptions } from '../store.js';
 import { buildCommentTags } from '../comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -117,7 +117,6 @@ const row = (part, actions) => {
       el('td', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
       el('td', { class: 'adv' }, select(uvOptions(), part.uv, (value) => actions.patchPart(part.id, { uv: value }, { silent: true }), 'UV…')),
       el('td', {}, buildCommentTags(part, actions, { compact: true })),
-      el('td', {}, select(printerOptions(), part.printer, (value) => actions.patchPart(part.id, { printer: value }, { silent: true }), 'Imprimante…')),
       el('td', { class: 'adv' }, [
         el('div', {}, part.order_number ?? `#${part.order_id}`),
         el('div', { class: 'cell-sub' }, SOURCE_LABEL[part.source] ?? part.source),
@@ -189,7 +188,6 @@ export const renderAll = (root, actions) => {
             el('th', {}, 'Résine'),
             el('th', { class: 'adv' }, 'UV'),
             el('th', {}, 'Tags'),
-            el('th', {}, 'Imprimante'),
             el('th', { class: 'adv' }, 'Commande'),
             el('th', {}, 'Pour qui'),
             el('th', {}, 'Bac'),
