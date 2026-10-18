@@ -734,3 +734,42 @@ html.mode-simple .simple-only { display: block; }
 /* mode simple : pas de barre latérale (ni « Tout » ni Réglages), toute la largeur pour la file */
 html.mode-simple .app { grid-template-columns: 1fr; }
 html.mode-simple .sidebar { display: none; }
+
+/* --------------------------------------------- signaler un bug (coccinelle) */
+#bug-button {
+  position: fixed; left: 16px; bottom: 16px; z-index: 70; width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center; border: 2px solid #fff3; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #ff6b5b, #d1291a 70%); color: #1a0d0b;
+  box-shadow: 0 8px 22px -8px rgb(180 30 20 / .8); transition: transform .15s ease;
+}
+#bug-button:hover { transform: scale(1.08); }
+#bug-button .icon { width: 26px; height: 26px; color: #1a0d0b; stroke: #1a0d0b; }
+#bug-button.is-busy { animation: bug-pulse 0.8s infinite alternate; }
+@keyframes bug-pulse { to { transform: scale(0.88); opacity: 0.7; } }
+html.kiosk #bug-button { width: 52px; height: 52px; left: 12px; bottom: 12px; }
+.bug-dialog { width: min(560px, 94vw); }
+.bug-head { display: flex; align-items: center; gap: 10px; }
+.bug-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #d1291a; }
+.bug-dot .icon { width: 18px; height: 18px; color: #1a0d0b; stroke: #1a0d0b; }
+.bug-shot { display: flex; flex-direction: column; gap: 8px; }
+.bug-shot img { width: 100%; max-height: 240px; object-fit: contain; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); }
+.bug-shot-empty { padding: 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line-strong); border-radius: var(--radius); font-size: 12.5px; }
+.bug-shot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.bug-error { color: var(--danger); font-size: 12.5px; min-height: 1em; }
+.bug-dialog textarea { width: 100%; }
+.bug-list tr { cursor: pointer; }
+.bug-list tr.is-resolved td { opacity: .6; }
+.bug-desc { max-width: 420px; }
+.bug-desc .icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; color: var(--muted); }
+.bug-detail:not(:empty) { border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.bug-detail-head { display: flex; align-items: center; gap: 10px; }
+.bug-detail-head h4 { margin: 0; font-size: 14px; flex: 1; }
+.bug-text { white-space: pre-wrap; font-size: 14px; }
+.bug-detail-shot { width: 100%; max-height: 420px; object-fit: contain; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.bug-log { max-height: 260px; overflow: auto; font: 11px/1.45 var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; white-space: pre-wrap; word-break: break-all; }
+/* coccinelle en bas à droite (la barre latérale occupe le bas à gauche) */
+#bug-button { left: auto; right: 18px; }
+html.kiosk #bug-button { left: auto; right: 12px; }
+.toasts { bottom: 76px !important; }
+.savebar { right: 80px; }
+a.ghost-btn, a.primary-btn { text-decoration: none; }

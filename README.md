@@ -633,3 +633,18 @@ qui concerne Chit Chats, la provenance (Shopify / Etsy), le numéro de commande,
 qui touche à l'UV (cartes, barre de filtres, « Tout », fiche, ajout de pièce, sélection multiple).
 Le mode simple retire aussi la barre latérale (on reste sur « À imprimer », sans « Tout » ni
 Réglages), le nom du client et le bouton « Couleurs masquées ». Le mode **avancé** est l'affichage complet.
+
+## Signaler un bug (coccinelle)
+
+Le bouton rond rouge en bas à droite (partout : tableau, kiosque, mode simple) ouvre « Signaler un
+bug » : une **capture de l'écran** est prise automatiquement (on peut la remplacer par une image,
+ou en coller une avec Ctrl/Cmd + V), la personne **explique ce qui se passe** et indique son nom.
+Les **journaux** sont joints : navigateur (erreurs, requêtes à l'API, changements de vue) et
+serveur (dernières lignes), plus le contexte (vue, mode, filtres, écran, version, dernières synchros).
+
+Les signalements se consultent dans **Réglages → Mises à jour → Bugs signalés** : capture,
+journaux, « **Copier pour Claude** » (rapport Markdown complet à coller dans une conversation),
+téléchargement `.md` et de la capture, « Marquer résolu », supprimer.
+
+Capture : [html-to-image](https://github.com/bubkoo/html-to-image) (MIT), embarqué dans
+`public/vendor/`, chargé seulement au premier clic.

@@ -17,6 +17,7 @@ import { syncRouter } from './routes/sync.js';
 import { presenceRouter } from './routes/presence.js';
 import { extensionRouter } from './routes/extension.js';
 import { packingRouter } from './routes/packing.js';
+import { bugsRouter } from './routes/bugs.js';
 import { systemRouter } from './routes/system.js';
 import { webhooksRouter } from './routes/webhooks.js';
 
@@ -51,7 +52,8 @@ export const createApp = () => {
   app.use(compression());
   app.use(
     express.json({
-      limit: '2mb',
+      // les signalements de bug transportent une capture d'écran
+      limit: '20mb',
       // keep the raw body so the Shopify HMAC can be verified
       verify: (req, _res, buf) => {
         req.rawBody = buf;
@@ -89,6 +91,7 @@ export const createApp = () => {
   app.use('/api/system', systemRouter);
   app.use('/api/presence', presenceRouter);
   app.use('/api/packing', packingRouter);
+  app.use('/api/bugs', bugsRouter);
   app.use('/api', extensionRouter);
 
   app.use(express.static(config.publicDir, { extensions: ['html'], maxAge: '1h' }));

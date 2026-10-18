@@ -55,5 +55,10 @@ export const api = {
   updateStatus: () => request('/api/system/update'),
   requestUpdate: (action) => request('/api/system/update', { method: 'POST', body: { action } }),
   importOrderToChitChats: (id) => request(`/api/orders/${id}/chitchats-import`, { method: 'POST' }),
+  createBug: (body) => request('/api/bugs', { method: 'POST', body }),
+  bugs: () => request('/api/bugs'),
+  bug: (id) => request(`/api/bugs/${id}`),
+  setBugStatus: (id, status) => request(`/api/bugs/${id}`, { method: 'PATCH', body: { status } }),
+  deleteBug: (id) => request(`/api/bugs/${id}`, { method: 'DELETE' }),
   shipOrder: (id, body = {}) => request(`/api/orders/${id}/ship`, { method: 'POST', body }),
 };

@@ -1,4 +1,6 @@
+import './bug-logs.js';
 import { api } from './api.js';
+import { mountBugButton } from './bug-report.js';
 import { clear, el, icon, modal, swatch, toast } from './ui.js';
 import {
   commentOptions,
@@ -882,6 +884,7 @@ const consumeOAuthRedirect = () => {
 
 const boot = async () => {
   applyMode();
+  mountBugButton();
   if (isKiosk) {
     document.documentElement.classList.add('kiosk');
     location.hash = 'board';

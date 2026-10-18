@@ -169,3 +169,18 @@ CREATE TABLE IF NOT EXISTS packs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_packs_order ON packs (order_id, id DESC);
+
+-- Bugs signalés par l'équipe (bouton coccinelle) : description, capture, journaux, contexte.
+CREATE TABLE IF NOT EXISTS bug_reports (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  reporter     TEXT,
+  description  TEXT NOT NULL,
+  page         TEXT,
+  screenshot   TEXT,                      -- image en data URL (JPEG)
+  client_logs  TEXT NOT NULL DEFAULT '[]',
+  server_logs  TEXT NOT NULL DEFAULT '[]',
+  context      TEXT NOT NULL DEFAULT '{}',
+  status       TEXT NOT NULL DEFAULT 'open',   -- open | resolved
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  resolved_at  TEXT
+);

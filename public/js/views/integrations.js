@@ -482,7 +482,119 @@ const tabMaj = (draft, touch) => {
           : null,
       ],
     ),
+    bugsSection(),
   ];
+};
+
+/* ------------------------------------------------------- bugs signalés --- */
+
+/** Liste des bugs signalés (coccinelle), chargée à l'ouverture de l'onglet. */
+const bugsSection = () => {
+  const list = el('div', { class: 'bug-list' }, el('p', { class: 'field-hint' }, 'Chargement…'));
+  const detail = el('div', { class: 'bug-detail' });
+
+  const load = async () => {
+    try {
+      const { items } = await api.bugs();
+      const open = items.filter((bug) => bug.status === 'open').length;
+      list.replaceChildren(
+        items.length
+          ? el(
+              'div',
+              { class: 'table-wrap' },
+              el('table', { class: 'grid' }, [
+                el('thead', {}, el('tr', {}, [el('th', {}, 'N°'), el('th', {}, 'Quand'), el('th', {}, 'Qui'), el('th', {}, 'Ce qui se passe'), el('th', {}, 'Statut')])),
+                el(
+                  'tbody',
+                  {},
+                  items.map((bug) =>
+                    el('tr', { class: bug.status === 'resolved' ? 'is-resolved' : '', onclick: () => showBug(bug.id) }, [
+                      el('td', {}, `#${bug.id}`),
+                      el('td', {}, [el('div', {}, fromNow(bug.created_at)), el('div', { class: 'cell-sub' }, formatDate(bug.created_at))]),
+                      el('td', {}, bug.reporter ?? '—'),
+                      el('td', { class: 'bug-desc' }, [bug.has_screenshot ? icon('image') : null, bug.description]),
+                      el('td', {}, el('span', { class: 'status-pill', style: { '--pill': bug.status === 'open' ? 'var(--danger)' : 'var(--ok)' } }, [el('span', { class: 'dot' }), bug.status === 'open' ? 'À corriger' : 'Résolu'])),
+                    ]),
+                  ),
+                ),
+              ]),
+            )
+          : el('p', { class: 'field-hint' }, "Aucun bug signalé. Le bouton rouge (coccinelle) en bas à gauche permet d'en signaler un."),
+      );
+      title.textContent = open ? `Bugs signalés (${open} à corriger)` : 'Bugs signalés';
+    } catch (error) {
+      list.replaceChildren(el('p', { class: 'bug-error' }, error.message));
+    }
+  };
+
+  const showBug = async (id) => {
+    const bug = await api.bug(id);
+    const copy = el('button', { class: 'primary-btn' }, [icon('note'), 'Copier pour Claude']);
+    copy.addEventListener('click', async () => {
+      const text = await (await fetch(`/api/bugs/${id}/claude.md`)).text();
+      try {
+        await navigator.clipboard.writeText(text);
+        toast('Rapport copié : colle-le dans la conversation avec Claude (joins la capture)');
+      } catch {
+        window.open(`/api/bugs/${id}/claude.md`, '_blank');
+      }
+    });
+    detail.replaceChildren(
+      el('div', { class: 'bug-detail-head' }, [
+        el('h4', {}, `Bug #${bug.id} — ${bug.reporter ?? 'inconnu'} · ${formatDate(bug.created_at)}`),
+        el('button', { class: 'mini-btn', onclick: () => detail.replaceChildren() }, icon('close')),
+      ]),
+      el('p', { class: 'bug-text' }, bug.description),
+      el('p', { class: 'field-hint mono' }, `${bug.page ?? ''} · vue ${bug.context.view ?? '?'} · mode ${bug.context.mode ?? '?'} · ${bug.context.screen ?? ''} · version ${bug.context.build ?? '?'}`),
+      bug.screenshot
+        ? el('a', { href: `/api/bugs/${id}/screenshot`, target: '_blank', rel: 'noopener' }, el('img', { class: 'bug-detail-shot', src: bug.screenshot, alt: 'Capture' }))
+        : el('p', { class: 'field-hint' }, 'Pas de capture.'),
+      el('details', {}, [
+        el('summary', {}, `Journal du navigateur (${bug.client_logs.length})`),
+        el('pre', { class: 'bug-log' }, bug.client_logs.map((line) => `${line.ts} ${line.level.toUpperCase()} ${line.msg}`).join('\n') || '(vide)'),
+      ]),
+      el('details', {}, [
+        el('summary', {}, `Journal du serveur (${bug.server_logs.length})`),
+        el('pre', { class: 'bug-log' }, bug.server_logs.map((line) => `${line.ts} ${line.level.toUpperCase()} [${line.scope}] ${line.msg}${line.meta ? ` ${JSON.stringify(line.meta)}` : ''}`).join('\n') || '(vide)'),
+      ]),
+      el('div', { class: 'panel-foot left' }, [
+        copy,
+        el('a', { class: 'ghost-btn', href: `/api/bugs/${id}/claude.md`, download: `bug-${id}.md` }, [icon('save'), 'Télécharger (.md)']),
+        bug.screenshot ? el('a', { class: 'ghost-btn', href: `/api/bugs/${id}/screenshot`, download: `bug-${id}.jpg` }, [icon('image'), 'Capture']) : null,
+        el(
+          'button',
+          {
+            class: 'ghost-btn',
+            onclick: async () => {
+              await api.setBugStatus(id, bug.status === 'open' ? 'resolved' : 'open');
+              await load();
+              showBug(id);
+            },
+          },
+          [icon('check'), bug.status === 'open' ? 'Marquer résolu' : 'Rouvrir'],
+        ),
+        el(
+          'button',
+          {
+            class: 'ghost-btn danger',
+            onclick: async () => {
+              if (!window.confirm(`Supprimer le bug #${id} ?`)) return;
+              await api.deleteBug(id);
+              detail.replaceChildren();
+              load();
+            },
+          },
+          [icon('trash'), 'Supprimer'],
+        ),
+      ]),
+    );
+    detail.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+
+  const card = section('Bugs signalés', "Envoyés par l'équipe avec le bouton coccinelle : explication, capture d'écran, journaux. « Copier pour Claude » prépare un rapport complet à coller dans une conversation.", [list, detail]);
+  const title = card.querySelector('h3');
+  load();
+  return card;
 };
 
 /**
