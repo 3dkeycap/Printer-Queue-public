@@ -175,8 +175,8 @@ export const openDrawer = async (partId, actions) => {
         el('dl', { class: 'kv' }, [
           el('dt', {}, 'Commande'),
           el('dd', {}, `${part.order_number ?? part.order_id} · ${SOURCE_LABEL[part.source] ?? part.source}`),
-          el('dt', {}, 'Client'),
-          el('dd', {}, part.customer_name ?? '—'),
+          el('dt', { class: 'adv' }, 'Client'),
+          el('dd', { class: 'adv' }, part.customer_name ?? '—'),
           el('dt', {}, 'Reçue'),
           el('dd', {}, formatDate(part.placed_at)),
           el('dt', {}, 'SKU'),

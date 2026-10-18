@@ -731,3 +731,6 @@ html.mode-simple .card.is-rush { border-color: var(--line); }
 html.kiosk .mode-toggle button { height: 36px; padding: 0 14px; }
 .simple-only { display: none; }
 html.mode-simple .simple-only { display: block; }
+/* mode simple : pas de barre latérale (ni « Tout » ni Réglages), toute la largeur pour la file */
+html.mode-simple .app { grid-template-columns: 1fr; }
+html.mode-simple .sidebar { display: none; }

@@ -503,6 +503,7 @@ const renderToolbar = () => {
     state.view === 'board' && !isKiosk
       ? chip('Couleurs masquées', hiddenKeys.length > 0, () => actions.editHiddenColors(), [icon('close')], hiddenKeys.length || null)
       : null;
+  hiddenChip?.classList.add('adv');
 
   const resetChip = hasActiveFilters()
     ? chip('Réinitialiser', false, () => {
@@ -807,7 +808,8 @@ const bindEvents = () => {
     }
     savePrefs();
     applyMode();
-    refresh();
+    if (isSimple() && state.view !== 'board') setView('board');
+    else refresh();
   });
 
   dom.themeBtn.addEventListener('click', () => {
@@ -828,6 +830,11 @@ const bindEvents = () => {
 
   window.addEventListener('hashchange', () => {
     const view = location.hash.replace('#', '');
+    // mode simple : seulement « À imprimer » (pas de « Tout » ni de Réglages)
+    if (isSimple() && view !== 'board') {
+      location.hash = 'board';
+      return;
+    }
     if (!isKiosk && VIEW_META[view] && view !== state.view) setView(view);
   });
 
@@ -889,7 +896,7 @@ const boot = async () => {
   updateConnectorBadge();
 
   const initial = location.hash.replace('#', '');
-  state.view = !isKiosk && VIEW_META[initial] ? initial : 'board';
+  state.view = !isKiosk && !isSimple() && VIEW_META[initial] ? initial : 'board';
 
   await refresh();
 };

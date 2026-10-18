@@ -631,4 +631,5 @@ reçoivent une automatiquement à la mise à jour.
 **simple** retire de la vue principale : l'âge de la commande (sauf si elle est en retard), tout ce
 qui concerne Chit Chats, la provenance (Shopify / Etsy), le numéro de commande, le Rush et tout ce
 qui touche à l'UV (cartes, barre de filtres, « Tout », fiche, ajout de pièce, sélection multiple).
-Le mode **avancé** est l'affichage complet.
+Le mode simple retire aussi la barre latérale (on reste sur « À imprimer », sans « Tout » ni
+Réglages), le nom du client et le bouton « Couleurs masquées ». Le mode **avancé** est l'affichage complet.

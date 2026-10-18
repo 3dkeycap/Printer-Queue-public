@@ -87,7 +87,7 @@ const buildCard = (stack, actions) => {
       part.comment &&
         el('div', { class: 'card-comments' }, commentList(part).map((comment) => el('span', { class: 'comment-tag' }, [icon('note'), comment]))),
       el('div', { class: 'card-foot' }, [
-        el('span', { class: 'who' }, count > 1 ? '—' : (part.customer_name ?? '—')),
+        el('span', { class: 'who adv' }, count > 1 ? '—' : (part.customer_name ?? '—')),
         el('div', { class: 'card-actions' }, [
           part.status !== 'FAILED' &&
             part.status !== 'TO_PRINT' &&
