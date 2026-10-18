@@ -23,7 +23,10 @@ const parse = (text, fallback) => {
 
 const recentRuns = () =>
   getDb()
-    .prepare('SELECT source, trigger, status, started_at, message FROM sync_runs ORDER BY id DESC LIMIT 15')
+    .prepare(
+      `SELECT source, trigger, status, started_at, duration_ms, orders_seen, orders_created, parts_created, message
+         FROM sync_runs ORDER BY id DESC LIMIT 15`,
+    )
     .all();
 
 export const createBugReport = ({ reporter, description, page, screenshot, clientLogs, context } = {}) => {

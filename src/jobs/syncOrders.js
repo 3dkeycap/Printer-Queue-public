@@ -20,6 +20,25 @@ const startRun = (source, trigger) => {
   return Number(info.lastInsertRowid);
 };
 
+/**
+ * Résumé lisible d'une synchro, affiché dans le journal (Réglages →
+ * Synchronisation) et joint aux signalements de bug.
+ * Ex. « 12 commandes vues · 2 nouvelles · 5 pièces créées · 3 traitées dans Shopify → expédiées · 4 photos ajoutées »
+ */
+export const syncMessage = (source, summary = {}, fulfillment = {}, images = {}) => {
+  const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+  const shop = source === 'shopify' ? 'Shopify' : 'Etsy';
+  const parts = [
+    plural(summary.ordersSeen ?? 0, 'commande vue', 'commandes vues'),
+    plural(summary.ordersCreated ?? 0, 'nouvelle', 'nouvelles'),
+    plural(summary.partsCreated ?? 0, 'pièce créée', 'pièces créées'),
+  ];
+  if (fulfillment.shipped) parts.push(`${plural(fulfillment.shipped, 'traitée', 'traitées')} dans ${shop} → expédiée${fulfillment.shipped > 1 ? 's' : ''}`);
+  if (fulfillment.error) parts.push(`suivi des expéditions ${shop} en échec : ${fulfillment.error}`);
+  if (images.updated) parts.push(plural(images.updated, 'photo ajoutée', 'photos ajoutées'));
+  return parts.join(' · ');
+};
+
 const finishRun = (runId, status, summary = {}, message = null) => {
   const db = getDb();
   const run = db.prepare('SELECT started_at FROM sync_runs WHERE id = ?').get(runId);
@@ -77,13 +96,24 @@ export const syncSource = async (source, { trigger = 'cron' } = {}) => {
       if (!since || nextCursor > since) setSetting(cursorKey, nextCursor);
     }
 
-    finishRun(runId, 'success', summary);
-    log.info('sync done', { source, ...summary });
-    // photos des commandes Shopify déjà importées sans photo (best-effort)
     // commandes traitées dans la boutique -> expédiées ici aussi (best-effort)
-    await syncMarketplaceFulfillment(source).catch((error) => log.warn('fulfillment sync failed', { source, error: error.message }));
-    if (source === 'shopify') await backfillShopifyImages().catch((error) => log.warn('image backfill failed', { error: error.message }));
-    return { source, status: 'success', ...summary };
+    const fulfillment = await syncMarketplaceFulfillment(source).catch((error) => {
+      log.warn('fulfillment sync failed', { source, error: error.message });
+      return { shipped: 0, error: error.message };
+    });
+    // photos des commandes Shopify déjà importées sans photo (best-effort)
+    const images =
+      source === 'shopify'
+        ? await backfillShopifyImages().catch((error) => {
+            log.warn('image backfill failed', { error: error.message });
+            return { updated: 0 };
+          })
+        : { updated: 0 };
+
+    const message = syncMessage(source, summary, fulfillment, images);
+    finishRun(runId, 'success', summary, message);
+    log.info('sync done', { source, ...summary, shippedInShop: fulfillment.shipped, photos: images.updated });
+    return { source, status: 'success', ...summary, message };
   } catch (error) {
     finishRun(runId, 'error', {}, error.message);
     log.error('sync failed', { source, error: error.message });
