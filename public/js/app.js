@@ -21,7 +21,7 @@ import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { closeDrawer, openDrawer } from './drawer.js';
-import { startTutorial } from './tutorial.js';
+import { startTutorial, tutorialSeen } from './tutorial.js';
 import { mountFullscreen } from './fullscreen.js';
 
 const NEXT_STATUS = {
@@ -891,6 +891,9 @@ const boot = async () => {
   state.view = !isKiosk && VIEW_META[initial] ? initial : 'board';
 
   await refresh();
+
+  // première visite sur cet appareil : la visite guidée démarre toute seule (une seule fois)
+  if (state.view === 'board' && !tutorialSeen()) setTimeout(startTutorial, 900);
 };
 
 boot();

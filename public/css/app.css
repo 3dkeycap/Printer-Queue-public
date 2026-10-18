@@ -551,6 +551,8 @@ html.kiosk .view.is-board { padding-right: 0; }
   html.kiosk .column { flex-basis: 88vw; }
 }
 @media (hover: none) { .card-actions { opacity: 1; } }
+/* simple : les boutons d'une carte sont toujours visibles (pas besoin de survoler pour les découvrir) */
+html.mode-simple .card-actions { opacity: 1; }
 html.kiosk .card-actions { opacity: 1; }
 
 /* ------------------------------------------------------------- tutoriel -- */

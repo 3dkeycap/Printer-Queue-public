@@ -1,89 +1,78 @@
 import { el } from './ui.js';
-import { isKiosk, state } from './store.js';
+import { state } from './store.js';
 
 /**
- * Visite guidée de la page « À imprimer » : un projecteur sur chaque élément
- * et une bulle d'explication. Les étapes dont l'élément n'est pas à l'écran
- * (kiosque, tableau vide...) sont simplement sautées.
+ * Visite guidée de la page « À imprimer », pensée pour quelqu'un qui n'a
+ * jamais vu l'outil : peu d'étapes, des phrases courtes, aucun jargon.
+ * Un projecteur sur chaque élément et une bulle d'explication ; les étapes
+ * dont l'élément n'est pas à l'écran (kiosque, tableau vide...) sont sautées.
  */
 const STEPS = [
   {
     title: 'Bienvenue 👋',
-    text: "Cette visite de 2 minutes explique la page « À imprimer ». Chaque carte = une pièce physique à imprimer. Utilise les flèches du clavier ou les boutons pour avancer.",
-  },
-  {
-    selector: '#sync-btn',
-    title: 'Synchroniser',
-    text: "Va chercher tout de suite les nouvelles commandes Shopify et Etsy. Ça se fait aussi tout seul toutes les 5 minutes : ce bouton sert quand tu es pressé.",
-  },
-  {
-    selector: '#add-part-btn',
-    title: 'Ajouter une pièce à la main',
-    text: "Pour une réimpression, un échantillon ou une pièce pour le stock : elle entre dans la file comme une commande normale.",
-  },
-  {
-    selector: '.search',
-    title: 'Rechercher',
-    text: "Cherche par nom de pièce, SKU, numéro de commande, client, couleur… Astuce : appuie sur « / » n'importe où pour y aller.",
-  },
-  {
-    selector: '.toolbar-group',
-    title: 'Filtrer par résine',
-    text: "Clique une ou plusieurs couleurs pour ne voir que ces pièces — pratique pour remplir un plateau avec la même résine. Le chiffre est le nombre de pièces.",
-  },
-  {
-    selector: '.toolbar .chip',
-    match: (node) => node.textContent.includes('Couleurs masquées'),
-    title: 'Couleurs masquées',
-    text: "Une résine qu'on n'imprime pas ici (ex. Nylon, fait dans une autre usine) ? Coche-la ici : elle disparaît de la file. La vue « Tout » la montre toujours.",
-  },
-  {
-    selector: '.toolbar-group:last-child .select',
-    title: 'Grouper et trier',
-    text: "Les cartes peuvent être groupées par couleur, par commande ou rester en vrac, et triées par priorité, ancienneté, etc.",
+    text: "Ici, tu vois tout ce qu'il y a à imprimer. Une carte = une pièce à fabriquer. Les commandes arrivent toutes seules, il n'y a rien à configurer. Visite de 1 minute : utilise « Suivant ».",
   },
   {
     selector: '.column',
-    title: 'Les colonnes = les étapes',
-    text: "À imprimer → En impression → Terminé… (les colonnes sont les statuts). Une pièce avance de gauche à droite. Tu peux aussi glisser-déposer une carte d'une colonne à l'autre.",
+    title: 'Les colonnes',
+    text: "Une pièce avance de gauche à droite : À imprimer → En impression → Imprimé. Si l'impression rate, elle va dans « Échec » pour être refaite.",
+  },
+  {
+    selector: '.card',
+    title: 'Faire avancer une pièce',
+    text: "Le bouton avec la flèche (ex. « En impression ›) passe la pièce à l'étape suivante. « Expédié » sert quand la pièce est déjà en stock : inutile de l'imprimer. Tu peux aussi glisser la carte dans une autre colonne. Touche la carte pour voir ses détails.",
+  },
+  {
+    selector: '.toolbar-group',
+    title: 'Choisir une couleur',
+    text: "Touche une couleur pour ne voir que ces pièces : pratique pour remplir un plateau avec la même résine. Le chiffre, c'est le nombre de pièces. Retouche pour enlever le filtre.",
+  },
+  {
+    selector: '.toolbar .chip',
+    match: (node) => node.textContent.includes('En retard'),
+    title: 'En retard',
+    text: "Montre seulement les commandes qui attendent depuis trop longtemps. Un badge rouge sur une carte veut dire : à faire en premier.",
+  },
+  {
+    selector: '.search',
+    title: 'Chercher',
+    text: "Tape un nom de pièce, un numéro de commande ou un client. Astuce : la touche « / » du clavier va directement ici.",
   },
   {
     selector: '.column-stack-btn',
     title: 'Regrouper',
-    text: "Fusionne les pièces identiques en une seule carte « ×3 » (ex. 3× MX Tilters Adapters). Les boutons de la carte agissent alors sur toute la pile. Re-clique pour dégrouper.",
+    text: "Si tu as 3 pièces identiques, ce bouton les met dans une seule carte « ×3 ». Un clic de plus pour les séparer.",
   },
   {
-    selector: '.column-focus-btn',
-    title: 'Agrandir une colonne',
-    text: "Affiche une seule colonne en grille pour tout voir d'un coup. Re-clique pour revenir à la vue complète.",
+    selector: '#fullscreen-btn',
+    title: 'Plein écran',
+    text: "Pour que l'écran serve seulement à la file d'impression. Touche « Quitter » pour revenir.",
   },
   {
-    selector: '.card',
-    title: 'Une carte = une pièce',
-    text: "Nom, résine, UV, commande, rush ⚡… Clique la carte pour ouvrir sa fiche (tags, notes, historique). Le bouton en bas à droite la fait passer à l'étape suivante ; le triangle rouge la marque en échec.",
-  },
-  {
-    selector: '.card',
-    title: 'Sélection multiple',
-    text: "Ctrl/Cmd/Maj + clic sur plusieurs cartes : une barre apparaît en bas pour changer leur statut, leurs tags ou leur UV en une fois. Échap pour désélectionner.",
-  },
-  {
-    selector: '#theme-toggle',
-    title: 'Thème',
-    text: "5 thèmes au choix (nuit, beige, blanc & bleu, forêt, lavande) : clique pour passer au suivant. Le choix est mémorisé sur cet appareil.",
-  },
-  {
-    selector: '.nav-item[data-view="integrations"]',
+    selector: '#settings-btn',
     title: 'Réglages',
-    text: "Postes UV, résines, boutiques connectées, synchronisation et mises à jour. Tout y est rangé par onglet.",
+    text: "Plus tard seulement : connecter les boutiques, changer les couleurs ou installer les mises à jour. Pour travailler, tu n'en as pas besoin.",
   },
   {
-    title: 'Mode kiosque 📱',
-    text: "Sur l'iPad de l'atelier, ouvre l'adresse /kiosk de ce serveur : la même file, sans menu, avec de gros boutons. Tu peux relancer ce tutoriel avec le bouton « Tutoriel » en haut.",
+    selector: '#bug-button',
+    title: 'Un problème ?',
+    text: "Touche ce bouton rouge, écris ce qui ne va pas en une phrase, et envoie. La capture de l'écran part avec : pas besoin d'expliquer plus.",
+  },
+  {
+    title: "C'est tout ! 🎉",
+    text: "Tu sais l'essentiel : regarder la file, avancer les pièces, filtrer par couleur. Le bouton « Tutoriel » en haut permet de refaire cette visite quand tu veux.",
   },
 ];
 
 let active = null;
+
+export const tutorialSeen = () => {
+  try {
+    return localStorage.getItem('rpq.tutorialSeen') === '1';
+  } catch {
+    return true; // sans stockage on ne peut pas retenir : mieux vaut ne pas l'imposer
+  }
+};
 
 export const startTutorial = () => {
   if (active) active.stop();
@@ -104,9 +93,7 @@ export const startTutorial = () => {
     return nodes[0] ?? null;
   };
 
-  const steps = STEPS.filter((step) => !step.selector || visible(step)).filter(
-    (step) => !(isKiosk && step.selector === '.nav-item[data-view="integrations"]'),
-  );
+  const steps = STEPS.filter((step) => !step.selector || visible(step));
 
   let index = 0;
   const blocker = el('div', { class: 'tour-blocker' });
