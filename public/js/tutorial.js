@@ -49,7 +49,7 @@ const STEPS = [
     text: "Pour que l'écran serve seulement à la file d'impression. Touche « Quitter » pour revenir.",
   },
   {
-    selector: '#settings-btn',
+    selector: '.nav-item[data-view="integrations"]',
     title: 'Réglages',
     text: "Plus tard seulement : connecter les boutiques, changer les couleurs ou installer les mises à jour. Pour travailler, tu n'en as pas besoin.",
   },

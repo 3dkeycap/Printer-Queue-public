@@ -20,13 +20,17 @@ export const THEMES = [
 ];
 export const themeMeta = (key) => THEMES.find((theme) => theme.key === key) ?? THEMES[0];
 
+/** Mode kiosque (iPad d'atelier) : /kiosk, rien que le tableau « À imprimer ». */
+export const isKiosk = location.pathname.replace(/\/+$/, '') === '/kiosk';
+
 export const state = {
   view: 'board',              // board | all | integrations
   groupBy: prefs.groupBy ?? 'color',
   sort: prefs.sort ?? 'smart',
   theme: THEMES.some((theme) => theme.key === prefs.theme) ? prefs.theme : 'dark',
   // simple : vue épurée (pas d'UV, de Rush, de provenance, de n° de commande, de Chit Chats…)
-  mode: 'simple', // toujours simple : plus de bascule simple / avancé
+  // le kiosque est toujours en simple (et ne touche pas au choix mémorisé du bureau)
+  mode: isKiosk || prefs.mode === 'simple' ? 'simple' : 'advanced',
   stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
   filters: {
     q: '',
@@ -53,11 +57,9 @@ export const state = {
 
 export const savePrefs = () => {
   const { groupBy, sort, theme } = state;
-  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, mode: state.mode, stacked: [...state.stacked] }));
+  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, mode: isKiosk ? prefs.mode : state.mode, stacked: [...state.stacked] }));
 };
 
-/** Mode kiosque (iPad d'atelier) : /kiosk, rien que le tableau « À imprimer ». */
-export const isKiosk = location.pathname.replace(/\/+$/, '') === '/kiosk';
 
 /**
  * Le tableau « À imprimer » ne montre que la production en cours : le filtre

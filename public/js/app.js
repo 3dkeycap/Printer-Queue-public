@@ -621,11 +621,6 @@ const render = () => {
     item.classList.toggle('is-active', item.dataset.view === state.view);
   });
 
-  const settingsBtn = document.getElementById('settings-btn');
-  const inSettings = state.view === 'integrations';
-  clear(settingsBtn).append(icon(inSettings ? 'close' : 'cog'), el('span', {}, inSettings ? 'Retour' : 'Réglages'));
-  settingsBtn.title = inSettings ? 'Retour au tableau' : 'Réglages';
-
   updateConnectorBadge();
   renderToolbar();
   renderBulkbar();
@@ -756,6 +751,9 @@ const setView = (view) => {
 /** Mode simple / avancé : classe sur <html>, les éléments « adv » sont cachés en simple. */
 const applyMode = () => {
   document.documentElement.classList.toggle('mode-simple', isSimple());
+  for (const button of document.querySelectorAll('#mode-toggle button')) {
+    button.classList.toggle('is-on', button.dataset.mode === state.mode);
+  }
 };
 
 const applyTheme = () => {
@@ -802,9 +800,19 @@ const bindEvents = () => {
   dom.syncBtn.addEventListener('click', () => actions.sync('all'));
   document.getElementById('add-part-btn').addEventListener('click', () => actions.addPart());
 
-  // pas de barre latérale en mode simple : « Réglages » ouvre la page, et ramène au tableau
-  document.getElementById('settings-btn').addEventListener('click', () => {
-    setView(state.view === 'integrations' ? 'board' : 'integrations');
+  document.getElementById('mode-toggle').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-mode]');
+    if (!button || button.dataset.mode === state.mode) return;
+    state.mode = button.dataset.mode;
+    // en simple, le filtre Rush et la provenance (cachés) ne doivent plus filtrer en douce
+    if (isSimple()) {
+      state.filters.priority = false;
+      state.filters.source = '';
+    }
+    savePrefs();
+    applyMode();
+    if (isSimple() && state.view !== 'board') setView('board');
+    else refresh();
   });
 
   dom.themeBtn.addEventListener('click', () => {
@@ -825,6 +833,11 @@ const bindEvents = () => {
 
   window.addEventListener('hashchange', () => {
     const view = location.hash.replace('#', '');
+    // mode simple : seulement « À imprimer » (pas de « Tout » ni de Réglages)
+    if (isSimple() && view !== 'board') {
+      location.hash = 'board';
+      return;
+    }
     if (!isKiosk && VIEW_META[view] && view !== state.view) setView(view);
   });
 
@@ -888,7 +901,7 @@ const boot = async () => {
   updateConnectorBadge();
 
   const initial = location.hash.replace('#', '');
-  state.view = !isKiosk && VIEW_META[initial] ? initial : 'board';
+  state.view = !isKiosk && !isSimple() && VIEW_META[initial] ? initial : 'board';
 
   await refresh();
 
