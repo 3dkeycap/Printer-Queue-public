@@ -626,3 +626,9 @@ reçoivent une automatiquement à la mise à jour.
   l'app, jamais envoyées à Shopify, visibles dans la fiche et dans « Tout »). Une pièce qui n'est
   **pas dans le bac retourne dans « À imprimer »** (même un article en stock, et une pièce déjà
   imprimée repasse à « À imprimer »).
+
+**Mode simple / avancé** (interrupteur en haut à droite, mémorisé par appareil). Le mode
+**simple** retire de la vue principale : l'âge de la commande (sauf si elle est en retard), tout ce
+qui concerne Chit Chats, la provenance (Shopify / Etsy), le numéro de commande, le Rush et tout ce
+qui touche à l'UV (cartes, barre de filtres, « Tout », fiche, ajout de pièce, sélection multiple).
+Le mode **avancé** est l'affichage complet.

@@ -1,6 +1,6 @@
 import { attachImagePreview, el, icon, swatch } from '../ui.js';
 import { commentList } from '../comment-select.js';
-import { groupParts, openChitChats, orderAge, presenceFor, state, statusMeta } from '../store.js';
+import { effectiveGroupBy, groupParts, openChitChats, orderAge, presenceFor, state, statusMeta } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -49,12 +49,12 @@ const buildCard = (stack, actions) => {
       ]),
       el('div', { class: 'card-meta' }, [
         part.status !== 'SHIPPED' &&
-          el('span', { class: `tag age age-${age.level}`, title: `Commande reçue il y a ${age.days} jour(s)` }, [icon('inbox'), `${age.days} j`]),
+          el('span', { class: `tag age age-${age.level}${age.level === 'late' ? '' : ' adv'}`, title: `Commande reçue il y a ${age.days} jour(s)` }, [icon('inbox'), `${age.days} j`]),
         el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name]),
-        part.uv && el('span', { class: 'tag uv' }, [icon('uv'), `UV ${part.uv}`]),
-        el('span', { class: `tag src-${part.source}` }, SOURCE_LABEL[part.source] ?? part.source),
-        el('span', { class: 'tag' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
-        (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
+        part.uv && el('span', { class: 'tag uv adv' }, [icon('uv'), `UV ${part.uv}`]),
+        el('span', { class: `tag src-${part.source} adv` }, SOURCE_LABEL[part.source] ?? part.source),
+        el('span', { class: 'tag adv' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
+        (part.priority || part.order_priority) && el('span', { class: 'tag rush adv' }, [icon('bolt'), 'Rush']),
         part.printer && el('span', { class: 'tag' }, [icon('printer'), part.printer]),
         // l'état de l'import Chit Chats n'encombre pas les cartes : il est dans la fiche et dans « Tout »
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
@@ -67,7 +67,7 @@ const buildCard = (stack, actions) => {
             el(
               'button',
               {
-                class: 'mini-btn open-cc',
+                class: 'mini-btn open-cc adv',
                 title: 'Ouvre Chit Chats et copie le numéro de commande',
                 onclick: (event) => {
                   event.stopPropagation();
@@ -162,7 +162,7 @@ const buildColumn = (status, parts, actions, { focused }) => {
   if (!parts.length) {
     body.append(el('div', { class: 'column-empty' }, 'Rien ici'));
   } else {
-    for (const group of groupParts(parts, state.groupBy)) {
+    for (const group of groupParts(parts, effectiveGroupBy())) {
       if (group.label) {
         body.append(
           el('div', { class: 'group-head' }, [

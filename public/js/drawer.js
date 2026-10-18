@@ -119,7 +119,7 @@ export const openDrawer = async (partId, actions) => {
         : null,
 
       part.chitchats_import_status === 'error'
-        ? el('div', { class: 'cc-error-box' }, [
+        ? el('div', { class: 'cc-error-box adv' }, [
             el('div', { class: 'cc-error-title' }, [icon('alert'), "Import Chit Chats impossible"]),
             el('p', {}, part.chitchats_import_error ?? 'Raison inconnue'),
             el('div', { class: 'cc-error-foot' }, [
@@ -152,7 +152,7 @@ export const openDrawer = async (partId, actions) => {
             el('span', { class: 'open-dot' }),
             el('span', {}, `Cette commande est ouverte sur Shopify${presenceFor(part.order_id).users.length ? ` par ${presenceFor(part.order_id).users.join(', ')}` : ''}`),
             presenceFor(part.order_id).chitchatsUrl
-              ? el('button', { class: 'primary-btn', onclick: () => openChitChats(presenceFor(part.order_id)) }, [icon('truck'), 'Ouvrir sur Chit Chats'])
+              ? el('button', { class: 'primary-btn adv', onclick: () => openChitChats(presenceFor(part.order_id)) }, [icon('truck'), 'Ouvrir sur Chit Chats'])
               : null,
           ])
         : null,
@@ -161,8 +161,8 @@ export const openDrawer = async (partId, actions) => {
         ? el(
             'div',
             { class: 'drawer-links' },
-            Object.values(part.links).map((link) =>
-              el('a', { class: 'ghost-btn', href: link.url, target: '_blank', rel: 'noopener noreferrer' }, [
+            Object.entries(part.links).map(([kind, link]) =>
+              el('a', { class: `ghost-btn${kind === 'chitchats' ? ' adv' : ''}`, href: link.url, target: '_blank', rel: 'noopener noreferrer' }, [
                 icon('link'),
                 link.label,
               ]),
@@ -185,16 +185,16 @@ export const openDrawer = async (partId, actions) => {
           el('dd', {}, part.variant_title ?? '—'),
           el('dt', {}, 'Résine'),
           el('dd', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
-          el('dt', {}, 'UV'),
-          el('dd', {}, part.uv ?? '—'),
+          el('dt', { class: 'adv' }, 'UV'),
+          el('dd', { class: 'adv' }, part.uv ?? '—'),
           el('dt', {}, 'Imprimante'),
           el('dd', {}, part.printer ?? '—'),
           el('dt', {}, 'Échecs'),
           el('dd', {}, String(part.fail_count)),
           el('dt', {}, 'Suivi'),
           el('dd', {}, part.tracking_number ?? '—'),
-          el('dt', {}, 'Chit Chats'),
-          el('dd', {}, {
+          el('dt', { class: 'adv' }, 'Chit Chats'),
+          el('dd', { class: 'adv' }, {
             imported: 'Envoi créé (en attente d\'achat)',
             linked: 'Envoi déjà présent, relié',
             error: 'Erreur — voir ci-dessus',
@@ -203,7 +203,7 @@ export const openDrawer = async (partId, actions) => {
       ]),
 
       el('div', { class: 'field' }, [el('label', {}, 'Couleur de résine'), colorSelect]),
-      el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uvSelect]),
+      el('div', { class: 'field adv' }, [el('label', {}, 'Poste UV'), uvSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Tags'), commentSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Imprimante'), printerSelect]),
       el('div', { class: 'field' }, [el('label', {}, 'Notes libres'), notesInput]),
@@ -226,7 +226,7 @@ export const openDrawer = async (partId, actions) => {
         ),
       ]),
 
-      el('div', {}, [
+      el('div', { class: 'adv' }, [
         el('div', { class: 'section-title' }, 'Priorité'),
         el(
           'button',

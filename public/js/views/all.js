@@ -1,5 +1,5 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
-import { groupParts, openChitChats, orderAge, presenceFor, printerOptions, state, statusMeta, uvOptions } from '../store.js';
+import { effectiveGroupBy, groupParts, openChitChats, orderAge, presenceFor, printerOptions, state, statusMeta, uvOptions } from '../store.js';
 import { buildCommentTags } from '../comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -76,7 +76,7 @@ const openBadge = (open) =>
       el(
         'button',
         {
-          class: 'mini-btn',
+          class: 'mini-btn adv',
           title: 'Ouvre Chit Chats et copie le numéro de commande',
           onclick: (event) => {
             event.stopPropagation();
@@ -107,31 +107,36 @@ const row = (part, actions) => {
       el('td', {}, statusSelect(part, actions)),
       el('td', {}, [
         el('div', { class: 'cell-name' }, part.name),
+        // mode simple : la colonne Commande est cachée, le badge « Ouvert sur Shopify » vient ici
+        open ? el('div', { class: 'simple-only' }, openBadge(open)) : null,
         part.not_printed || (state.meta?.hiddenColors ?? []).includes(part.color_key)
           ? el('span', { class: 'tag not-printed', title: "Expédié d'ici mais pas imprimé ici (article en stock, supplément, autre usine) : absent de « À imprimer »" }, 'Pas imprimé ici')
           : null,
         el('div', { class: 'cell-sub' }, [part.sku, part.variant_title].filter(Boolean).join(' · ') || '—'),
       ]),
       el('td', {}, el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name])),
-      el('td', {}, select(uvOptions(), part.uv, (value) => actions.patchPart(part.id, { uv: value }, { silent: true }), 'UV…')),
+      el('td', { class: 'adv' }, select(uvOptions(), part.uv, (value) => actions.patchPart(part.id, { uv: value }, { silent: true }), 'UV…')),
       el('td', {}, buildCommentTags(part, actions, { compact: true })),
       el('td', {}, select(printerOptions(), part.printer, (value) => actions.patchPart(part.id, { printer: value }, { silent: true }), 'Imprimante…')),
-      el('td', {}, [
+      el('td', { class: 'adv' }, [
         el('div', {}, part.order_number ?? `#${part.order_id}`),
         el('div', { class: 'cell-sub' }, SOURCE_LABEL[part.source] ?? part.source),
         open && openBadge(open),
       ]),
       el('td', {}, [
         el('div', {}, part.customer_name ?? '—'),
-        el('div', { class: `cell-sub age-text age-${part.status === 'SHIPPED' ? 'ok' : orderAge(part).level}` }, fromNow(part.placed_at)),
+        (() => {
+          const level = part.status === 'SHIPPED' ? 'ok' : orderAge(part).level;
+          return el('div', { class: `cell-sub age-text age-${level}${level === 'late' ? '' : ' adv'}` }, fromNow(part.placed_at));
+        })(),
         part.order_note ? el('div', { class: 'cell-note', title: part.order_note }, ['💬 ', part.order_note]) : null,
       ]),
       el('td', {}, packCell(part)),
-      el('td', {}, chitchatsCell(part)),
+      el('td', { class: 'adv' }, chitchatsCell(part)),
       el('td', {}, `#${part.unit_index}`),
       el('td', {}, [
         el('div', { class: 'row-actions' }, [
-          (part.priority || part.order_priority) && el('span', { class: 'tag rush' }, [icon('bolt'), 'Rush']),
+          (part.priority || part.order_priority) && el('span', { class: 'tag rush adv' }, [icon('bolt'), 'Rush']),
           part.tracking_number && el('span', { class: 'tag' }, [icon('truck'), part.tracking_number]),
         ].filter(Boolean)),
       ]),
@@ -152,7 +157,7 @@ export const renderAll = (root, actions) => {
   }
 
   const body = el('tbody');
-  for (const group of groupParts(state.parts, state.groupBy)) {
+  for (const group of groupParts(state.parts, effectiveGroupBy())) {
     if (group.label) {
       body.append(
         el('tr', { class: 'group-row' }, [
@@ -182,13 +187,13 @@ export const renderAll = (root, actions) => {
             el('th', {}, 'Statut'),
             el('th', {}, 'Pièce'),
             el('th', {}, 'Résine'),
-            el('th', {}, 'UV'),
+            el('th', { class: 'adv' }, 'UV'),
             el('th', {}, 'Tags'),
             el('th', {}, 'Imprimante'),
-            el('th', {}, 'Commande'),
+            el('th', { class: 'adv' }, 'Commande'),
             el('th', {}, 'Pour qui'),
             el('th', {}, 'Bac'),
-            el('th', {}, 'Chit Chats'),
+            el('th', { class: 'adv' }, 'Chit Chats'),
             el('th', {}, 'Unité'),
             el('th', {}, ''),
           ]),

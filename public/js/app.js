@@ -2,7 +2,9 @@ import { api } from './api.js';
 import { clear, el, icon, modal, swatch, toast } from './ui.js';
 import {
   commentOptions,
+  effectiveGroupBy,
   hasActiveFilters,
+  isSimple,
   isKiosk,
   queryParams,
   savePrefs,
@@ -350,7 +352,7 @@ const actions = {
         el('div', { class: 'field' }, [el('label', {}, 'Quantité'), quantity]),
         el('div', { class: 'field' }, [el('label', {}, 'Pour qui'), customer]),
         el('div', { class: 'field' }, [el('label', {}, 'Résine'), color]),
-        el('div', { class: 'field' }, [el('label', {}, 'Poste UV'), uv]),
+        el('div', { class: 'field adv' }, [el('label', {}, 'Poste UV'), uv]),
         el('div', { class: 'field' }, [el('label', {}, 'Tag'), comment]),
       ]),
       confirmLabel: 'Créer',
@@ -437,10 +439,10 @@ const renderToolbar = () => {
     },
     [
       ['color', 'Grouper par couleur'],
-      ['uv', 'Grouper par UV'],
+      ...(isSimple() ? [] : [['uv', 'Grouper par UV']]),
       ['order', 'Grouper par commande'],
       ['none', 'Aucun regroupement'],
-    ].map(([value, label]) => el('option', { value, selected: state.groupBy === value }, label)),
+    ].map(([value, label]) => el('option', { value, selected: effectiveGroupBy() === value }, label)),
   );
 
   const sortSelect = el(
@@ -465,7 +467,7 @@ const renderToolbar = () => {
   const sourceSelect = el(
     'select',
     {
-      class: 'select',
+      class: 'select adv',
       onchange: (event) => {
         state.filters.source = event.target.value;
         refresh();
@@ -494,6 +496,7 @@ const renderToolbar = () => {
     state.filters.priority = !state.filters.priority;
     refresh();
   }, [icon('bolt')], facets.rush ?? 0);
+  rushChip.classList.add('adv');
 
   const hiddenKeys = state.meta?.hiddenColors ?? [];
   const hiddenChip =
@@ -573,7 +576,7 @@ const renderBulkbar = () => {
     el(
       'button',
       {
-        class: 'chip',
+        class: 'chip adv',
         onclick: async () => {
           const value = await pickFromList('Poste UV', uvOptions());
           if (value !== null) {
@@ -741,6 +744,14 @@ const setView = (view) => {
 
 /* ------------------------------------------------------------- bootstrap - */
 
+/** Mode simple / avancé : classe sur <html>, les éléments « adv » sont cachés en simple. */
+const applyMode = () => {
+  document.documentElement.classList.toggle('mode-simple', isSimple());
+  for (const button of document.querySelectorAll('#mode-toggle button')) {
+    button.classList.toggle('is-on', button.dataset.mode === state.mode);
+  }
+};
+
 const applyTheme = () => {
   document.documentElement.dataset.theme = state.theme;
   const next = THEMES[(THEMES.findIndex((theme) => theme.key === state.theme) + 1) % THEMES.length];
@@ -784,6 +795,20 @@ const bindEvents = () => {
 
   dom.syncBtn.addEventListener('click', () => actions.sync('all'));
   document.getElementById('add-part-btn').addEventListener('click', () => actions.addPart());
+
+  document.getElementById('mode-toggle').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-mode]');
+    if (!button || button.dataset.mode === state.mode) return;
+    state.mode = button.dataset.mode;
+    // en simple, le filtre Rush et la provenance (cachés) ne doivent plus filtrer en douce
+    if (isSimple()) {
+      state.filters.priority = false;
+      state.filters.source = '';
+    }
+    savePrefs();
+    applyMode();
+    refresh();
+  });
 
   dom.themeBtn.addEventListener('click', () => {
     setTheme(THEMES[(THEMES.findIndex((theme) => theme.key === state.theme) + 1) % THEMES.length].key);
@@ -849,6 +874,7 @@ const consumeOAuthRedirect = () => {
 };
 
 const boot = async () => {
+  applyMode();
   if (isKiosk) {
     document.documentElement.classList.add('kiosk');
     location.hash = 'board';

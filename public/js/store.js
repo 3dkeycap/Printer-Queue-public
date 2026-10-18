@@ -25,6 +25,8 @@ export const state = {
   groupBy: prefs.groupBy ?? 'color',
   sort: prefs.sort ?? 'smart',
   theme: THEMES.some((theme) => theme.key === prefs.theme) ? prefs.theme : 'dark',
+  // simple : vue épurée (pas d'UV, de Rush, de provenance, de n° de commande, de Chit Chats…)
+  mode: prefs.mode === 'simple' ? 'simple' : 'advanced',
   stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
   filters: {
     q: '',
@@ -51,7 +53,7 @@ export const state = {
 
 export const savePrefs = () => {
   const { groupBy, sort, theme } = state;
-  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, stacked: [...state.stacked] }));
+  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, mode: state.mode, stacked: [...state.stacked] }));
 };
 
 /** Mode kiosque (iPad d'atelier) : /kiosk, rien que le tableau « À imprimer ». */
@@ -85,6 +87,11 @@ export const queryParams = () => ({
   sort: state.sort,
   limit: 1500,
 });
+
+export const isSimple = () => state.mode === 'simple';
+
+/** Regroupement réellement appliqué : pas de groupe UV en mode simple. */
+export const effectiveGroupBy = () => (isSimple() && state.groupBy === 'uv' ? 'color' : state.groupBy);
 
 export const groupParts = (parts, groupBy) => {
   if (groupBy === 'none') return [{ key: 'all', label: null, items: parts }];
