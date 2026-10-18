@@ -90,3 +90,25 @@ describe('le nylon est toujours séparé de la résine, jamais mélangé à la c
     assert.equal(second, 'nylon-grey');
   });
 });
+
+describe('règles « nom => couleur »', async () => {
+  const { parseColorRules, resolveItemColorKey } = await import('../src/domain/colors.js');
+  const rules = parseColorRules(['Ore Keycap => Nylon Grey', 'Artisan Keycap => Nylon Grey', 'ligne sans flèche', ' => rien']);
+
+  it('ignore les lignes mal formées', () => {
+    assert.equal(rules.length, 2);
+  });
+
+  it('« Ore Keycap » en variante Gold est un nylon gris, pas de l\'or', () => {
+    const colors = listColors();
+    assert.equal(resolveItemColorKey({ title: 'Ore Keycap', variantTitle: 'Gold' }, colors, []), 'gold'); // sans règle : le défaut qu'on corrige
+    assert.equal(resolveItemColorKey({ title: 'Ore Keycap', variantTitle: 'Gold' }, colors, rules), 'nylon-grey');
+    assert.equal(resolveItemColorKey({ title: 'Ore Keycap', variantTitle: 'Diamond' }, listColors(), rules), 'nylon-grey');
+    assert.equal(resolveItemColorKey({ title: 'Artisan Keycap', variantTitle: 'Redstone' }, listColors(), rules), 'nylon-grey');
+  });
+
+  it('ne touche pas un autre article ni un mot qui contient le mot-clé', () => {
+    assert.equal(resolveItemColorKey({ title: 'Custom Keycap', variantTitle: 'Gold' }, listColors(), rules), 'gold');
+    assert.equal(resolveItemColorKey({ title: 'Core Keycap', variantTitle: 'Gold' }, listColors(), rules), 'gold');
+  });
+});

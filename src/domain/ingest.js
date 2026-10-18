@@ -1,6 +1,6 @@
 import { getDb, nowIso } from '../db/index.js';
 import { createLogger } from '../lib/logger.js';
-import { listColors, resolveColorKey } from './colors.js';
+import { applyColorRules, listColors, parseColorRules, resolveItemColorKey } from './colors.js';
 import { matchesAnyKeyword, purgeNonPrintableParts } from './addons.js';
 import { getSettings } from './settings.service.js';
 
@@ -48,6 +48,7 @@ export const ingestOrder = (order) => {
   const colors = listColors();
   const settings = getSettings();
   const ts = nowIso();
+  const colorRules = parseColorRules(settings['production.colorRules']);
 
   // Un supplément Etsy/Shopify comme « Custom UV Printed Legends » n'est pas
   // un objet à imprimer : sa seule présence dans la commande indique que la
@@ -128,10 +129,7 @@ export const ingestOrder = (order) => {
 
     for (const item of order.items ?? []) {
       const quantity = Math.max(Number.parseInt(item.quantity, 10) || 1, 1);
-      const colorKey = resolveColorKey(
-        [item.variantTitle, item.sku, item.title, ...(item.colorHints ?? [])],
-        colors,
-      );
+      const colorKey = resolveItemColorKey(item, colors, colorRules);
       // Supplément / article toujours en stock (ex. « Color Variety Pack ») :
       // pas imprimé ici, mais expédié d'ici -> pièce marquée « pas imprimé ici »,
       // absente de « À imprimer », visible dans « Tout ».
@@ -250,6 +248,7 @@ export const ingestOrder = (order) => {
   const result = run();
   // rattrape les pièces de supplément créées avant que le mot-clé existe
   purgeNonPrintableParts();
+  applyColorRules(colorRules);
   return result;
 };
 

@@ -83,6 +83,80 @@ export const resolveColorKey = (hints = [], colors = listColors()) => {
   return created?.key ?? nylonKey;
 };
 
+/**
+ * Règles « nom d'article => couleur » (réglage production.colorRules).
+ * Utile quand le nom de la variante désigne autre chose que la résine :
+ * « Ore Keycap » en variante « Gold » est un nylon gris, pas de la résine or.
+ * Une règle s'applique si le titre, la variante ou le SKU CONTIENT le mot-clé
+ * (mots entiers, sans accents ni casse) ; la première qui correspond gagne.
+ * La couleur visée est résolue comme n'importe quel texte de commande :
+ * « Nylon Grey » mène à `nylon-grey`, « Noir » à `black`.
+ */
+export const parseColorRules = (lines = []) =>
+  [].concat(lines ?? [])
+    .map((line) => {
+      const index = String(line).indexOf('=>');
+      if (index < 0) return null;
+      const keyword = normalise(String(line).slice(0, index));
+      const target = String(line).slice(index + 2).trim();
+      return keyword && target ? { keyword, target } : null;
+    })
+    .filter(Boolean);
+
+const ruleMatches = (keyword, texts) => {
+  const pattern = new RegExp(`(^|[^a-z0-9])${keyword.replace(/ /g, '[ -]?')}([^a-z0-9]|$)`);
+  return texts.some((text) => pattern.test(normalise(text)));
+};
+
+export const findColorRule = (texts, rules) =>
+  rules.find((rule) => ruleMatches(rule.keyword, texts.filter(Boolean))) ?? null;
+
+/** Couleur d'une ligne de commande : règles d'abord, détection par indices ensuite. */
+export const resolveItemColorKey = (item, colors = listColors(), rules = []) => {
+  const rule = findColorRule([item.title, item.variantTitle, item.sku], rules);
+  if (rule) return resolveColorKey([rule.target], colors);
+  return resolveColorKey([item.variantTitle, item.sku, item.title, ...(item.colorHints ?? [])], colors);
+};
+
+/**
+ * Rattrape les pièces déjà importées avec la mauvaise couleur quand une règle
+ * est ajoutée. Même prudence que pour les suppléments : une pièce dont un
+ * humain s'est occupé (statut, couleur ou tags modifiés...) n'est jamais touchée.
+ */
+export const applyColorRules = (rules) => {
+  if (!rules.length) return { recolored: 0 };
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT p.id, p.order_item_id, p.color_key, i.title, i.variant_title, i.sku
+         FROM parts p
+         JOIN order_items i ON i.id = p.order_item_id
+         JOIN orders o ON o.id = p.order_id
+        WHERE o.source <> 'manual'
+          AND p.status = 'TO_PRINT'
+          AND p.updated_at = p.created_at
+          AND NOT EXISTS (SELECT 1 FROM part_events e WHERE e.part_id = p.id AND e.actor <> 'worker')`,
+    )
+    .all();
+
+  const colors = listColors();
+  const setPart = db.prepare('UPDATE parts SET color_key = ? WHERE id = ?');
+  const setItem = db.prepare('UPDATE order_items SET color_key = ? WHERE id = ?');
+  let recolored = 0;
+  db.transaction(() => {
+    for (const row of rows) {
+      const rule = findColorRule([row.title, row.variant_title, row.sku], rules);
+      if (!rule) continue;
+      const key = resolveColorKey([rule.target], colors);
+      if (key === row.color_key || key === 'unassigned') continue;
+      setPart.run(key, row.id);
+      setItem.run(key, row.order_item_id);
+      recolored += 1;
+    }
+  })();
+  return { recolored };
+};
+
 export const updateColor = (key, patch) => {
   const db = getDb();
   const existing = getColor(key);

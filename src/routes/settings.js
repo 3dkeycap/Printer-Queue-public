@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncRoute, badRequest } from '../lib/errors.js';
 import { connectorStatus, describeSettings, updateSettings } from '../domain/settings.service.js';
 import { purgeNonPrintableParts } from '../domain/addons.js';
+import { applyColorRules, parseColorRules } from '../domain/colors.js';
 import { writeUpdaterConfig } from '../domain/updater.service.js';
 
 export const settingsRouter = Router();
@@ -18,6 +19,9 @@ settingsRouter.put(
     const result = updateSettings(patch);
     if (result.applied.some((key) => key.startsWith('update.'))) writeUpdaterConfig();
     if (result.applied.includes('production.nonPrintableKeywords')) purgeNonPrintableParts();
+    if (result.applied.includes('production.colorRules')) {
+      applyColorRules(parseColorRules(result.settings.find((item) => item.key === 'production.colorRules')?.value));
+    }
     res.json({ ...result, connectors: connectorStatus() });
   }),
 );

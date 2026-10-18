@@ -131,6 +131,14 @@ export const DEFINITIONS = [
     fallback: () => ['Custom UV Printed Legends', 'Color Variety Pack'],
   },
   {
+    key: 'production.colorRules',
+    group: 'production',
+    label: 'Couleur forcée selon le nom',
+    type: 'list',
+    hint: "Une règle par ligne : « mot à repérer => couleur ». Si le titre, la variante ou le SKU contient le mot, cette couleur est utilisée, quoi que dise la variante (ex. « Ore Keycap » en variante Gold = Nylon Grey).",
+    fallback: () => ['Ore Keycap => Nylon Grey', 'Artisan Keycap => Nylon Grey'],
+  },
+  {
     key: 'production.hiddenColors',
     group: 'production',
     label: 'Couleurs retirées de la file',

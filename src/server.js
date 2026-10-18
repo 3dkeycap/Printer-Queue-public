@@ -5,6 +5,8 @@ import { migrate } from './db/migrate.js';
 import { createLogger } from './lib/logger.js';
 import { createApp } from './app.js';
 import { purgeNonPrintableParts } from './domain/addons.js';
+import { applyColorRules, parseColorRules } from './domain/colors.js';
+import { getSetting as getAppSetting } from './domain/settings.service.js';
 import { writeUpdaterConfig } from './domain/updater.service.js';
 import { startScheduler } from './jobs/scheduler.js';
 
@@ -15,6 +17,7 @@ backupBeforeUpgrade();
 migrate();
 recordBuild();
 purgeNonPrintableParts();
+applyColorRules(parseColorRules(getAppSetting('production.colorRules')));
 writeUpdaterConfig();
 
 const app = createApp();

@@ -252,6 +252,17 @@ const tabAtelier = (draft, touch, actions) => {
         }),
       ],
     ),
+    section(
+      'Couleur forcée selon le nom',
+      "Quand le nom d'une variante désigne autre chose que la résine (ex. « Gold » sur un Ore Keycap, qui est un nylon gris), on impose la couleur selon le nom de l'article.",
+      [
+        f('production.colorRules', {
+          label: 'Règles (mot à repérer => couleur)',
+          placeholder: 'Ex. Ore Keycap => Nylon Grey — puis Entrée',
+          hint: "Il suffit que le titre, la variante ou le SKU contienne le mot. La couleur après « => » s'écrit comme dans une commande (Nylon Grey, Noir…). S'applique aux nouvelles commandes et aux pièces pas encore touchées.",
+        }),
+      ],
+    ),
     section("Bac (« J'ai packé » dans l'extension Chrome)", "Sur une commande Shopify, l'extension permet de dire ce qui a été mis dans le bac, ce qui manque et pourquoi, et qui l'a fait.", [
       f('production.packers', { label: 'Personnes', placeholder: 'Ex. Alex — puis Entrée', hint: "Aussi ajoutables directement depuis l'extension." }),
       f('production.missingReasons', { label: 'Raisons « pièce manquante »', hint: 'Un texte libre reste possible (« Autre… »).' }),
