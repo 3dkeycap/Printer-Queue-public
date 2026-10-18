@@ -66,3 +66,24 @@ commande (et après un rechargement) ; fermée (bouton ▴ ou ×), elle reste fe
 Quand le bac d'une commande est **déjà commencé**, une petite bulle apparaît sous la barre :
 « 📦 Bac commencé · Alex · 2/3 » (orange, le survol liste ce qui manque et pourquoi) ou
 « ✓ Bac complet · Alex » (vert). Un clic dessus ouvre la boîte du bac.
+
+## Mode démo (pour tester sans toucher aux vraies boutiques)
+
+Réglages de l'extension (clic droit sur l'icône → Options) → **Mode démo (tests)** : deux fausses
+pages servies par l'extension elle-même, signalées par un bandeau « DÉMO ».
+
+- **Fausse admin Shopify** (`demo/shopify/orders/…`) : liste de commandes (#1001, #1002, #1003) et
+  navigation « une seule page » comme Shopify : l'URL change d'abord, le numéro affiché suit
+  600 ms plus tard. On peut aussi saisir l'**ID et le numéro d'une vraie commande de l'app** pour
+  essayer « Ouvert sur Shopify » et la boîte « J'ai packé » avec ses vraies pièces (ne pas
+  recharger la page ensuite : cette commande n'existe que dans l'onglet).
+- **Faux Chit Chats** (`demo/chitchats/`) : recherche d'expédition (`?q=` = numéro de commande).
+
+Le vrai code de l'extension (`background.js`, `content.js`, `pack-panel.js`,
+`content-chitchats.js`) y tourne tel quel : bouton « Chit Chats #…» (ouvre le faux Chit Chats,
+sans Client ID nécessaire), « J'ai packé », et **lien live** — ouvrir les deux pages, « 🔗 Link »
+sur Shopify puis sur Chit Chats, puis « Commande suivante » : le faux Chit Chats suit.
+
+Détail technique : les pages d'extension cachent leur adresse aux requêtes d'onglets (pas de
+permission « tabs », qu'on ne veut pas demander), donc le service worker repère les pages de démo
+grâce à l'adresse que leur script lui envoie.

@@ -17,7 +17,23 @@ const ORDER_URL = [
   /^https:\/\/[^/]+\.myshopify\.com\/admin\/orders\/(\d+)/,
 ];
 
+/*
+ * Pages de démonstration de l'extension (demo/…) : une fausse admin Shopify et un
+ * faux Chit Chats servis par l'extension elle-même, pour tester sans toucher aux
+ * vraies boutiques. Le vrai code de l'extension s'y exécute tel quel ; seuls les
+ * motifs d'adresse ci-dessous sont élargis.
+ */
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const DEMO_BASE = chrome.runtime.getURL('demo/');
+const DEMO_ORDER_URL = new RegExp(`^${escapeRegex(chrome.runtime.getURL('demo/shopify/orders/'))}(\\d+)(?:[/?#]|$)`);
+const isDemoUrl = (url) => String(url ?? '').startsWith(DEMO_BASE);
+const isDemoChitChatsUrl = (url) => String(url ?? '').startsWith(`${DEMO_BASE}chitchats/`);
+const demoChitChatsUrl = (orderNumber) =>
+  `${DEMO_BASE}chitchats/index.html?q=${encodeURIComponent(String(orderNumber ?? '').replace(/^#/, '').trim())}`;
+
 const orderIdFromUrl = (url) => {
+  const demo = DEMO_ORDER_URL.exec(url ?? '');
+  if (demo) return demo[1];
   for (const pattern of ORDER_URL) {
     const match = pattern.exec(url ?? '');
     if (match) return match[1];
@@ -115,7 +131,7 @@ const report = async (tabId, orderExternalId, state) => {
 
 const tellPage = (tabId, message) => chrome.tabs.sendMessage(tabId, message).catch(() => {});
 
-const open = async (tabId, orderExternalId) => {
+const open = async (tabId, orderExternalId, { demo = false } = {}) => {
   const expired = await loadExpired();
   if (expired[tabId] === orderExternalId) return;
   const tabs = await loadTabs();
@@ -124,7 +140,7 @@ const open = async (tabId, orderExternalId) => {
   if (current?.orderExternalId === orderExternalId && current.app && !current.app.error) return;
   const sameOrder = current?.orderExternalId === orderExternalId;
   if (current && !sameOrder) await report(tabId, current.orderExternalId, 'close');
-  tabs[tabId] = { orderExternalId, openedAt: sameOrder ? current.openedAt : Date.now() };
+  tabs[tabId] = { orderExternalId, openedAt: sameOrder ? current.openedAt : Date.now(), ...(demo ? { demo: true } : {}) };
   await saveTabs(tabs);
   const result = await report(tabId, orderExternalId, 'open');
   await remember(tabId, result);
@@ -166,7 +182,7 @@ const handleUrl = (tabId, url) =>
         delete expired[tabId];
         await saveExpired(expired);
       }
-      await open(tabId, orderExternalId);
+      await open(tabId, orderExternalId, { demo: isDemoUrl(url) });
     } else {
       await close(tabId);
     }
@@ -175,8 +191,11 @@ const handleUrl = (tabId, url) =>
 /* ------------------------------------------------------------- événements */
 
 // l'admin Shopify est une appli « une seule page » : l'URL change sans recharger
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url !== undefined || changeInfo.status === 'complete') handleUrl(tabId, tab.url);
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.url === undefined && changeInfo.status !== 'complete') return;
+  // pages de démo : l'adresse n'est pas visible d'ici (pas de permission « tabs »), leur script la signale lui-même
+  if (tab.url === undefined && (await loadTabs())[tabId]?.demo) return;
+  handleUrl(tabId, tab.url);
 });
 chrome.tabs.onRemoved.addListener((tabId) => {
   serial(() => close(tabId));
@@ -193,7 +212,27 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 const getLink = async () => (await chrome.storage.session.get('link')).link ?? null;
 const setLink = (link) => chrome.storage.session.set({ link });
 
-const chitchatsTabs = () => chrome.tabs.query({ url: 'https://chitchats.com/*' }).catch(() => []);
+/*
+ * Onglets Chit Chats. Les pages de démo (pages de l'extension) cachent leur
+ * adresse aux requêtes d'onglets (pas de permission « tabs ») : elles se
+ * déclarent elles-mêmes quand leur script demande le statut du lien.
+ */
+const registerDemoChitChatsTab = async (tabId) => {
+  const ids = new Set((await chrome.storage.session.get('demoCc')).demoCc ?? []);
+  if (!ids.has(tabId)) await chrome.storage.session.set({ demoCc: [...ids, tabId] });
+};
+
+const chitchatsTabs = async () => {
+  const real = await chrome.tabs.query({ url: 'https://chitchats.com/*' }).catch(() => []);
+  const ids = (await chrome.storage.session.get('demoCc')).demoCc ?? [];
+  const demo = [];
+  for (const id of ids) {
+    const tab = await chrome.tabs.get(id).catch(() => null);
+    if (tab) demo.push(tab);
+  }
+  if (demo.length !== ids.length) await chrome.storage.session.set({ demoCc: demo.map((tab) => tab.id) });
+  return [...real, ...demo];
+};
 
 /** Prévient tous les onglets concernés pour qu'ils redessinent leurs boutons. */
 const broadcastLink = async () => {
@@ -215,7 +254,8 @@ const unlinkIfInvolved = async (tabId) => {
 const followOrder = async (orderNumber) => {
   const link = await getLink();
   if (link?.state !== 'live' || !orderNumber) return;
-  const url = await buildChitChatsUrl(orderNumber);
+  // onglet Chit Chats de démonstration : on le fait suivre vers la fausse page
+  const url = link.demo ? demoChitChatsUrl(orderNumber) : await buildChitChatsUrl(orderNumber);
   if (!url || link.lastOrder === orderNumber) return;
   try {
     await chrome.tabs.update(link.chitchatsTabId, { url });
@@ -232,6 +272,7 @@ const handleLinkMessage = async (message, sender) => {
   const link = await getLink();
   switch (message.type) {
     case 'link-status':
+      if (tabId !== undefined && isDemoChitChatsUrl(sender.url)) await registerDemoChitChatsTab(tabId);
       return {
         link,
         tabId,
@@ -245,7 +286,7 @@ const handleLinkMessage = async (message, sender) => {
       return { ok: true };
     case 'link-accept': // depuis l'onglet Chit Chats choisi
       if (link?.state !== 'pending') return { error: 'Clique d\'abord « Link » sur la page Shopify.' };
-      await setLink({ ...link, state: 'live', chitchatsTabId: tabId, lastOrder: null });
+      await setLink({ ...link, state: 'live', chitchatsTabId: tabId, lastOrder: null, demo: isDemoChitChatsUrl(sender.url ?? sender.tab?.url) });
       await broadcastLink();
       // la commande ouverte en ce moment s'affiche tout de suite
       tellPage(link.shopifyTabId, { type: 'link-sync' });
@@ -289,7 +330,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const entry = (await loadTabs())[tabId] ?? null;
       const app = entry?.app ?? null;
       const orderNumber = message.pageOrderNumber || app?.orderNumber || null;
-      const chitchatsUrl = (await buildChitChatsUrl(orderNumber)) || app?.chitchatsUrl || null;
+      // fausse admin Shopify : le bouton ouvre le faux Chit Chats (sans Client ID nécessaire)
+      const tabUrl = sender.url ?? sender.tab?.url ?? (await chrome.tabs.get(tabId).catch(() => null))?.url;
+      const chitchatsUrl = isDemoUrl(tabUrl) && orderNumber
+        ? demoChitChatsUrl(orderNumber)
+        : (await buildChitChatsUrl(orderNumber)) || app?.chitchatsUrl || null;
       sendResponse({
         orderNumber,
         chitchatsUrl,
@@ -338,7 +383,7 @@ async function heartbeat() {
     }
     // l'onglet a pu disparaître pendant que le service worker dormait
     const tab = await chrome.tabs.get(id).catch(() => null);
-    if (!tab || orderIdFromUrl(tab.url) !== entry.orderExternalId) {
+    if (!tab || (!entry.demo && orderIdFromUrl(tab.url) !== entry.orderExternalId)) {
       await close(id);
       continue;
     }

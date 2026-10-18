@@ -208,6 +208,19 @@ $('update').addEventListener('click', async () => {
   }
 });
 
+/* ---------------------------------------------------------- mode démo (tests) */
+
+const DEMO_PAGES = {
+  shopify: 'demo/shopify/orders/index.html',
+  chitchats: 'demo/chitchats/index.html',
+};
+const openDemo = (...names) => {
+  for (const name of names) chrome.tabs.create({ url: chrome.runtime.getURL(DEMO_PAGES[name]), active: name === names[0] });
+};
+$('demo-shopify').addEventListener('click', () => openDemo('shopify'));
+$('demo-chitchats').addEventListener('click', () => openDemo('chitchats'));
+$('demo-both').addEventListener('click', () => openDemo('shopify', 'chitchats'));
+
 initSettings();
 refreshVersions();
 if (location.hash === '#update') {

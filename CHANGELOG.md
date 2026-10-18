@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- Extension Chrome 1.4.0 : **mode démo** dans ses réglages — une fausse admin Shopify et un faux
+  Chit Chats pour tester le bouton Chit Chats, le bac « J'ai packé » et le lien live sans toucher
+  aux vraies boutiques.
 - Mode **Simple par défaut** sur un appareil neuf (le kiosque est toujours en simple).
 - Au pied du menu : « Dernière synchro il y a 3 min ✓ » à la place des expressions cron.
 - `CLAUDE.md` (règles du projet), `docs/guide-atelier.md`, `docs/technique.md`.
