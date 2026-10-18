@@ -28,9 +28,9 @@ export const state = {
   groupBy: prefs.groupBy ?? 'color',
   sort: prefs.sort ?? 'smart',
   theme: THEMES.some((theme) => theme.key === prefs.theme) ? prefs.theme : 'dark',
-  // simple : vue épurée (pas d'UV, de Rush, de provenance, de n° de commande, de Chit Chats…)
+  // simple : vue épurée (pas d'UV, de Rush, de provenance, de n° de commande…) — c'est le mode par défaut
   // le kiosque est toujours en simple (et ne touche pas au choix mémorisé du bureau)
-  mode: isKiosk || prefs.mode === 'simple' ? 'simple' : 'advanced',
+  mode: isKiosk || prefs.mode !== 'advanced' ? 'simple' : 'advanced',
   stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
   filters: {
     q: '',
@@ -143,19 +143,6 @@ export const orderAge = (part) => {
 
 /** Commande ouverte sur Shopify en ce moment (extension Chrome), ou null. */
 export const presenceFor = (orderId) => state.presence.find((entry) => entry.orderId === orderId) ?? null;
-
-/**
- * Ouvre la page d'expédition Chit Chats et copie le numéro de commande :
- * si la page ne le pré-remplit pas, il n'y a plus qu'à le coller.
- */
-export const openChitChats = async (entry) => {
-  try {
-    await navigator.clipboard.writeText(String(entry.orderNumber ?? '').replace(/^#/, ''));
-  } catch {
-    /* presse-papiers indisponible (http) : on ouvre quand même */
-  }
-  window.open(entry.chitchatsUrl, '_blank', 'noopener');
-};
 
 export const uvOptions = () => state.meta?.uvOptions ?? [];
 export const commentOptions = () => state.meta?.commentOptions ?? [];

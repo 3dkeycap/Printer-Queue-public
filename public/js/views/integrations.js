@@ -275,7 +275,7 @@ const tabAtelier = (draft, touch, actions) => {
       f('production.uvOptions', { label: 'Options UV', hint: null }),
       f('production.defaultUv', { label: 'Valeur UV par défaut', hint: 'Laisser vide pour ne rien pré-remplir.' }),
     ]),
-    section('Tags prédéfinis', 'Proposés en suggestion quand on ajoute un tag à une pièce (plusieurs tags par pièce). Un tag tapé à la main sur une pièce est ajouté ici automatiquement.', [
+    section('Tags prédéfinis', 'Proposés en suggestion quand on ajoute un tag à une pièce (plusieurs tags par pièce). Un tag tapé à la main reste sur sa pièce seulement : pour qu’il soit proposé partout, ajoute-le ici.', [
       f('production.commentOptions', { label: 'Tags', hint: null }),
     ]),
     section(
@@ -444,7 +444,7 @@ const tabApparence = (actions) => [
   ]),
   section(
     'Extension Chrome (Shopify → Chit Chats)',
-    "Quand quelqu'un ouvre une commande dans l'admin Shopify, ses cartes affichent « Ouvert sur Shopify » et un bouton « Ouvrir sur Chit Chats ». Le marquage disparaît en changeant de page, en fermant l'onglet ou après 30 min.",
+    "Quand quelqu'un ouvre une commande dans l'admin Shopify, ses cartes affichent « Ouvert sur Shopify ». Le marquage disparaît en changeant de page, en fermant l'onglet ou après 30 min.",
     [
       el('ol', { class: 'install-steps' }, [
         el('li', {}, ["Clique ", el('strong', {}, "Télécharger l'extension"), ' puis décompresse le fichier .zip.']),

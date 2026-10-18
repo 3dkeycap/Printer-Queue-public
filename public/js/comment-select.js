@@ -35,8 +35,8 @@ export const buildCommentTags = (part, actions, { compact = false } = {}) => {
   const add = async (raw) => {
     const value = String(raw ?? '').replace(/,$/, '').trim();
     if (!value || current.includes(value)) return;
+    // un tag tapé reste sur cette pièce : il n'entre plus dans la liste globale des suggestions
     await save([...current, value]);
-    if (!commentOptions().includes(value)) await actions.addCommentOption(value);
     root.querySelector('input')?.focus();
   };
 

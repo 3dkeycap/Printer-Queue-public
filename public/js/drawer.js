@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { clear, el, formatDate, fromNow, icon, toast } from './ui.js';
-import { openChitChats, presenceFor, state, statusMeta, uvOptions } from './store.js';
+import { presenceFor, state, statusMeta, uvOptions } from './store.js';
 import { buildCommentTags } from './comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -136,51 +136,19 @@ export const openDrawer = async (partId, actions) => {
           ])
         : null,
 
-      part.chitchats_import_status === 'error'
-        ? el('div', { class: 'cc-error-box adv' }, [
-            el('div', { class: 'cc-error-title' }, [icon('alert'), "Import Chit Chats impossible"]),
-            el('p', {}, part.chitchats_import_error ?? 'Raison inconnue'),
-            el('div', { class: 'cc-error-foot' }, [
-              el('span', { class: 'cell-sub' }, part.chitchats_import_at ? `Dernier essai ${fromNow(part.chitchats_import_at)}` : ''),
-              el(
-                'button',
-                {
-                  class: 'ghost-btn',
-                  onclick: async (event) => {
-                    const button = event.currentTarget;
-                    button.disabled = true;
-                    try {
-                      await api.importOrderToChitChats(part.order_id);
-                      await openDrawer(part.id, actions);
-                      toast('Import Chit Chats relancé');
-                    } catch (error) {
-                      toast(error.message, 'err');
-                      button.disabled = false;
-                    }
-                  },
-                },
-                [icon('refresh'), 'Réessayer maintenant'],
-              ),
-            ]),
-          ])
-        : null,
-
       presenceFor(part.order_id)
         ? el('div', { class: 'card-open-shop drawer-open-shop' }, [
             el('span', { class: 'open-dot' }),
             el('span', {}, `Cette commande est ouverte sur Shopify${presenceFor(part.order_id).users.length ? ` par ${presenceFor(part.order_id).users.join(', ')}` : ''}`),
-            presenceFor(part.order_id).chitchatsUrl
-              ? el('button', { class: 'primary-btn adv', onclick: () => openChitChats(presenceFor(part.order_id)) }, [icon('truck'), 'Ouvrir sur Chit Chats'])
-              : null,
           ])
         : null,
 
-      Object.keys(part.links ?? {}).length
+      Object.keys(part.links ?? {}).filter((kind) => kind !== 'chitchats').length
         ? el(
             'div',
             { class: 'drawer-links' },
-            Object.entries(part.links).map(([kind, link]) =>
-              el('a', { class: `ghost-btn${kind === 'chitchats' ? ' adv' : ''}`, href: link.url, target: '_blank', rel: 'noopener noreferrer' }, [
+            Object.entries(part.links).filter(([kind]) => kind !== 'chitchats').map(([kind, link]) =>
+              el('a', { class: 'ghost-btn', href: link.url, target: '_blank', rel: 'noopener noreferrer' }, [
                 icon('link'),
                 link.label,
               ]),
@@ -205,12 +173,6 @@ export const openDrawer = async (partId, actions) => {
           el('dd', {}, String(part.fail_count)),
           el('dt', {}, 'Suivi'),
           el('dd', {}, part.tracking_number ?? '—'),
-          el('dt', { class: 'adv' }, 'Chit Chats'),
-          el('dd', { class: 'adv' }, {
-            imported: 'Envoi créé (en attente d\'achat)',
-            linked: 'Envoi déjà présent, relié',
-            error: 'Erreur — voir ci-dessus',
-          }[part.chitchats_import_status] ?? (part.source === 'manual' ? '—' : 'Pas encore importé')),
         ]),
       ]),
 

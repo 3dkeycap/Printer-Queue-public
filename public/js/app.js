@@ -202,17 +202,7 @@ const actions = {
     }
   },
 
-  /** Un tag tapé à la main rejoint la liste prédéfinie (suggestions sur les autres pièces). */
-  async addCommentOption(value) {
-    try {
-      await api.saveSettings({ 'production.commentOptions': [...commentOptions(), value] });
-      state.meta = await api.meta();
-    } catch (error) {
-      toast(error.message, 'err');
-    }
-  },
-
-  /** Nouveau commentaire libre : ajouté à la liste prédéfinie et à la pièce. Renvoie la nouvelle liste. */
+  /** Nouveau commentaire libre : ajouté à la pièce seulement (pas à la liste prédéfinie). Renvoie la nouvelle liste. */
   async addCustomComment(partId, current = []) {
     const input = el('input', { placeholder: 'Attente client, pièce cassée…' });
 
@@ -224,11 +214,6 @@ const actions = {
         const value = input.value.trim();
         if (!value) return toast('Le commentaire est obligatoire', 'err');
         try {
-          const options = commentOptions();
-          if (!options.includes(value)) {
-            await api.saveSettings({ 'production.commentOptions': [...options, value] });
-            state.meta = await api.meta();
-          }
           const list = [...current.filter((item) => item !== value), value];
           await actions.patchPart(partId, { comment: list }, { silent: true });
           toast('Commentaire ajouté');
@@ -804,6 +789,26 @@ const setTheme = (key) => {
   applyTheme();
 };
 
+/** « il y a 3 min » : court, lisible d'un coup d'œil au pied du menu. */
+const ago = (iso) => {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  return `il y a ${Math.round(hours / 24)} j`;
+};
+
+/** Dernière synchro terminée (toutes sources) : « Dernière synchro il y a 3 min ✓ ». */
+const syncLine = () => {
+  const last = (state.summary?.lastSyncs ?? [])
+    .filter((run) => run.status !== 'running')
+    .sort((a, b) => String(b.finished_at ?? b.started_at).localeCompare(String(a.finished_at ?? a.started_at)))[0];
+  if (!last) return 'Pas encore de synchro';
+  const when = ago(last.finished_at ?? last.started_at);
+  return last.status === 'error' ? `Dernière synchro ${when} ⚠ erreur` : `Dernière synchro ${when} ✓`;
+};
+
 const updateConnectorBadge = () => {
   const connectors = state.meta?.connectors ?? {};
   const ready = Object.values(connectors).filter((connector) => connector.configured).length;
@@ -812,9 +817,9 @@ const updateConnectorBadge = () => {
   badge.classList.toggle('is-live', ready === total && total > 0);
   document.getElementById('mode-label').textContent =
     total === 0 ? '—' : ready === total ? 'Connecteurs actifs' : `${ready}/${total} connecteur(s)`;
-  document.getElementById('cron-line').textContent =
-    `sync ${state.meta?.syncCron ?? '—'} · envois ${state.meta?.shipmentCron ?? '—'}` +
-    (state.meta?.build ? ` · version ${state.meta.build}` : '');
+  const line = document.getElementById('cron-line');
+  line.textContent = syncLine();
+  line.title = `Synchro automatique : ${state.meta?.syncCron ?? '—'}${state.meta?.build ? ` · version ${state.meta.build}` : ''}`;
 };
 
 const bindEvents = () => {

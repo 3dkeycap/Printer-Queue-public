@@ -1,5 +1,5 @@
 import { el, fromNow, icon, swatch } from '../ui.js';
-import { effectiveGroupBy, groupParts, openChitChats, orderAge, presenceFor, state, statusMeta, uvOptions } from '../store.js';
+import { effectiveGroupBy, groupParts, orderAge, presenceFor, state, statusMeta, uvOptions } from '../store.js';
 import { buildCommentTags } from '../comment-select.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
@@ -31,21 +31,6 @@ const statusSelect = (part, actions) => {
   return node;
 };
 
-/**
- * Import dans Chit Chats : true (envoi créé ou relié), false (pas encore
- * importée), Échec (avec la raison en infobulle). Rien pour les pièces internes.
- */
-const chitchatsCell = (part) => {
-  const state = part.chitchats_state ?? 'false';
-  const reason = part.chitchats_reason ?? '';
-  if (state === 'na') return el('span', { class: 'cell-sub', title: reason }, '—');
-  if (state === 'failed') {
-    return el('span', { class: 'cc-state is-failed', title: reason }, [el('strong', {}, 'failed'), el('span', { class: 'cc-reason' }, reason)]);
-  }
-  const label = { true: 'true', shipped: 'expédiée', false: 'false' }[state] ?? state;
-  return el('span', { class: `cc-state is-${state}`, title: reason }, label);
-};
-
 /** Bac : pièce mise dans le bac (par qui), ou manquante (et pourquoi). */
 const packCell = (part) => {
   const note = part.pack_note ? el('div', { class: 'cell-note', title: part.pack_note }, ['📦 ', part.pack_note]) : null;
@@ -72,19 +57,6 @@ const openBadge = (open) =>
       el('span', { class: 'open-dot' }),
       open.users.length ? `Shopify · ${open.users.join(', ')}` : 'Ouvert sur Shopify',
     ]),
-    open.chitchatsUrl &&
-      el(
-        'button',
-        {
-          class: 'mini-btn adv',
-          title: 'Ouvre Chit Chats et copie le numéro de commande',
-          onclick: (event) => {
-            event.stopPropagation();
-            openChitChats(open);
-          },
-        },
-        [icon('truck'), 'Chit Chats'],
-      ),
   ]);
 
 const row = (part, actions) => {
@@ -131,7 +103,6 @@ const row = (part, actions) => {
         part.order_note ? el('div', { class: 'cell-note', title: part.order_note }, ['💬 ', part.order_note]) : null,
       ]),
       el('td', {}, packCell(part)),
-      el('td', { class: 'adv' }, chitchatsCell(part)),
       el('td', {}, `#${part.unit_index}`),
       el('td', {}, [
         el('div', { class: 'row-actions' }, [
@@ -191,7 +162,6 @@ export const renderAll = (root, actions) => {
             el('th', { class: 'adv' }, 'Commande'),
             el('th', {}, 'Pour qui'),
             el('th', {}, 'Bac'),
-            el('th', { class: 'adv' }, 'Chit Chats'),
             el('th', {}, 'Unité'),
             el('th', {}, ''),
           ]),

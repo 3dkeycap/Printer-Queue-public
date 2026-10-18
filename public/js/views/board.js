@@ -1,6 +1,6 @@
 import { attachImagePreview, el, icon, swatch } from '../ui.js';
 import { commentList } from '../comment-select.js';
-import { effectiveGroupBy, groupParts, openChitChats, orderAge, presenceFor, state, statusMeta } from '../store.js';
+import { effectiveGroupBy, groupParts, orderAge, presenceFor, state, statusMeta } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -55,26 +55,12 @@ const buildCard = (stack, actions) => {
         el('span', { class: `tag src-${part.source} adv` }, SOURCE_LABEL[part.source] ?? part.source),
         el('span', { class: 'tag adv' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush adv' }, [icon('bolt'), 'Rush']),
-        // l'état de l'import Chit Chats n'encombre pas les cartes : il est dans la fiche et dans « Tout »
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),
       open &&
         el('div', { class: 'card-open-shop' }, [
           el('span', { class: 'open-dot' }),
           el('span', {}, `Ouvert sur Shopify${open.users.length ? ` · ${open.users.join(', ')}` : ''}`),
-          open.chitchatsUrl &&
-            el(
-              'button',
-              {
-                class: 'mini-btn open-cc adv',
-                title: 'Ouvre Chit Chats et copie le numéro de commande',
-                onclick: (event) => {
-                  event.stopPropagation();
-                  openChitChats(open);
-                },
-              },
-              [icon('truck'), 'Ouvrir sur Chit Chats'],
-            ),
         ]),
       part.order_note &&
         el('div', { class: 'card-note', title: part.order_note }, [icon('note'), part.order_note]),

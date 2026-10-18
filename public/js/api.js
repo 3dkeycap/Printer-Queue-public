@@ -56,7 +56,6 @@ export const api = {
   hideFailureFile: (name, hidden) => request('/api/failures/hidden', { method: 'PUT', body: { name, hidden } }),
   updateStatus: () => request('/api/system/update'),
   requestUpdate: (action) => request('/api/system/update', { method: 'POST', body: { action } }),
-  importOrderToChitChats: (id) => request(`/api/orders/${id}/chitchats-import`, { method: 'POST' }),
   blockImage: (url) => request('/api/parts/blocked-images', { method: 'POST', body: { url } }),
   createBug: (body) => request('/api/bugs', { method: 'POST', body }),
   bugs: () => request('/api/bugs'),
