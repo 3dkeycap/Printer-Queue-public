@@ -49,6 +49,7 @@ export const state = {
   settings: [],
   connectors: {},
   failures: null, // historique des échecs (page « Échecs »)
+  showHiddenFailures: false, // montrer aussi les fichiers masqués de la page « Échecs »
   failureFile: '', // fichier dont on regarde les échecs ('' = tous)
   updateStatus: null, // service de mise à jour (Intégrations > Mises à jour)
   selection: new Set(),

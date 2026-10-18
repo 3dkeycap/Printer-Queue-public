@@ -112,6 +112,22 @@ const actions = {
     render();
   },
 
+  async hideFailureFile(name, hidden) {
+    try {
+      await api.hideFailureFile(name, hidden);
+      if (hidden && state.failureFile === name) state.failureFile = '';
+      toast(hidden ? `« ${name} » masqué de la liste (ses échecs restent gardés)` : `« ${name} » de nouveau affiché`);
+      await refresh({ silent: true });
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
+  toggleHiddenFailures() {
+    state.showHiddenFailures = !state.showHiddenFailures;
+    render();
+  },
+
   selectFailureFile(name) {
     state.failureFile = state.failureFile === name ? '' : name;
     render();

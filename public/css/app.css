@@ -358,6 +358,8 @@ table.grid td { padding: 9px 12px; border-bottom: 1px solid color-mix(in srgb, v
 .rate-mid .rate-bar span { background: var(--warn); }
 .rate-high .rate-bar span { background: var(--danger); }
 .rate-high strong { color: var(--danger); }
+tr.is-muted { opacity: 0.55; }
+.failures-summary .chip { margin-left: 8px; }
 .rate-colors { display: flex; flex-wrap: wrap; gap: 4px; }
 table.grid tbody tr:hover { background: var(--surface-2); }
 table.grid tr.is-selected { background: color-mix(in srgb, var(--accent) 10%, transparent); }

@@ -1,4 +1,4 @@
-import { getDb, nowIso } from '../db/index.js';
+import { getDb, getSetting, nowIso, setSetting } from '../db/index.js';
 
 /**
  * Historique des impressions et taux d'échec par fichier.
@@ -76,6 +76,45 @@ export const backfillPrintResults = (db) => {
   return count;
 };
 
+/* ------------------------------------------------------- tag « A échoué » -- */
+
+const FAIL_TAG_RE = /^A échoué( ×\d+)?$/;
+
+/** « A échoué » la 1re fois, « A échoué ×3 » ensuite. */
+export const failTag = (count) => (count > 1 ? `A échoué ×${count}` : 'A échoué');
+
+/** Tags d'une pièce (un par ligne) avec le tag d'échec mis à jour, les autres intacts. */
+export const withFailTag = (comment, count) => {
+  const lines = String(comment ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !FAIL_TAG_RE.test(line));
+  lines.push(failTag(count));
+  return lines.join('\n');
+};
+
+/* ------------------------------------------------- fichiers masqués ------- */
+
+const HIDDEN_KEY = 'failures.hiddenFiles';
+
+export const getHiddenFiles = () => {
+  try {
+    const value = JSON.parse(getSetting(HIDDEN_KEY) ?? '[]');
+    return Array.isArray(value) ? value.map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+/** Masque (ou ré-affiche) un fichier de la page « Échecs » ; ses échecs restent gardés. */
+export const setFileHidden = (name, hidden) => {
+  const list = new Set(getHiddenFiles());
+  if (hidden) list.add(String(name));
+  else list.delete(String(name));
+  setSetting(HIDDEN_KEY, JSON.stringify([...list]));
+  return [...list];
+};
+
 const rate = (failures, attempts) => (attempts ? failures / attempts : 0);
 
 /** Fichiers (nom de pièce) avec leurs échecs, tentatives et détail par couleur. */
@@ -113,8 +152,10 @@ export const getFailureReport = ({ limit = 300 } = {}) => {
     files.set(row.name, file);
   }
 
+  const hidden = new Set(getHiddenFiles());
   const list = [...files.values()]
     .map((file) => ({
+      hidden: hidden.has(file.name),
       ...file,
       attempts: file.failures + file.successes,
       rate: rate(file.failures, file.failures + file.successes),
@@ -143,7 +184,10 @@ export const getFailureReport = ({ limit = 300 } = {}) => {
     )
     .get();
 
+  for (const item of history) item.hidden = hidden.has(item.name);
+
   return {
+    hiddenFiles: [...hidden],
     totals: {
       failures: totals.failures,
       attempts: totals.failures + totals.successes,

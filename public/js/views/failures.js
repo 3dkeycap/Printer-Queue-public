@@ -24,7 +24,8 @@ const colorTags = (file) =>
   el(
     'div',
     { class: 'rate-colors' },
-    file.colors.map((color) =>
+    // une résine sans aucun échec (100 % de réussite) n'a rien à faire ici
+    file.colors.filter((color) => color.failures > 0).map((color) =>
       el(
         'span',
         { class: 'tag', title: `${color.name} : ${color.failures} échec(s) sur ${color.attempts} impression(s)` },
@@ -37,7 +38,11 @@ export const renderFailures = (root, actions) => {
   const report = state.failures;
   if (!report) return;
 
-  const { totals, files, history } = report;
+  const { totals } = report;
+  const showHidden = state.showHiddenFailures;
+  const hiddenCount = report.files.filter((file) => file.hidden).length;
+  const files = report.files.filter((file) => showHidden || !file.hidden);
+  const history = report.history.filter((item) => showHidden || !item.hidden);
   const selected = state.failureFile;
   const rows = selected ? history.filter((item) => item.name === selected) : history;
 
@@ -56,7 +61,14 @@ export const renderFailures = (root, actions) => {
     el('p', { class: 'failures-summary' }, [
       el('strong', {}, `${totals.failures} échec(s)`),
       ` sur ${totals.attempts} impression(s) terminées — ${percent(totals.rate)} au total. `,
-      "Une impression compte quand elle est « Imprimé » ou en échec ; celles en cours ne comptent pas encore.",
+      "Une impression compte quand elle est « Imprimé » ou en échec ; celles en cours ne comptent pas encore. Un fichier sans aucun échec n'apparaît pas ici. ",
+      hiddenCount
+        ? el(
+            'button',
+            { class: `chip${showHidden ? ' is-on' : ''}`, onclick: () => actions.toggleHiddenFailures() },
+            showHidden ? `Cacher les ${hiddenCount} fichier(s) masqué(s)` : `Afficher les ${hiddenCount} fichier(s) masqué(s)`,
+          )
+        : null,
     ]),
 
     el('div', { class: 'section-title' }, 'Taux d’échec par fichier'),
@@ -68,12 +80,13 @@ export const renderFailures = (root, actions) => {
           el('th', { style: { width: '90px' } }, 'Échecs'),
           el('th', {}, 'Par résine (échecs / impressions)'),
           el('th', { style: { width: '120px' } }, 'Dernier échec'),
+          el('th', { style: { width: '100px' } }, ''),
         ])),
         el('tbody', {}, files.map((file) =>
           el(
             'tr',
             {
-              class: selected === file.name ? 'is-selected' : '',
+              class: [selected === file.name ? 'is-selected' : '', file.hidden ? 'is-muted' : ''].filter(Boolean).join(' '),
               title: 'Voir seulement les échecs de ce fichier',
               onclick: () => actions.selectFailureFile(file.name),
             },
@@ -83,6 +96,20 @@ export const renderFailures = (root, actions) => {
               el('td', {}, String(file.failures)),
               el('td', {}, colorTags(file)),
               el('td', {}, [el('div', {}, fromNow(file.lastFailure)), el('div', { class: 'cell-sub' }, formatDate(file.lastFailure))]),
+              el('td', {}, el(
+                'button',
+                {
+                  class: 'mini-btn',
+                  title: file.hidden
+                    ? 'Remettre ce fichier dans la liste'
+                    : "Masquer ce fichier de la liste (fichier corrigé, cas réglé…). Ses échecs restent gardés.",
+                  onclick: (event) => {
+                    event.stopPropagation();
+                    actions.hideFailureFile(file.name, !file.hidden);
+                  },
+                },
+                file.hidden ? 'Réafficher' : 'Masquer',
+              )),
             ],
           ),
         )),

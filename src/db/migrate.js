@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { getDb, getSetting, nowIso, setSetting } from './index.js';
 import { createLogger } from '../lib/logger.js';
 import { LEGACY_STATUS_MAP } from '../domain/statuses.js';
-import { backfillPrintResults } from '../domain/failures.service.js';
+import { backfillPrintResults, withFailTag } from '../domain/failures.service.js';
 
 const require = createRequire(import.meta.url);
 const log = createLogger('migrate');
@@ -150,6 +150,18 @@ const migrateFailedColumn = (db) => {
   setSetting(FAILED_COLUMN_KEY, '1');
 };
 
+const FAILED_TAG_KEY = 'internal.failedTagBackfilled';
+
+/** Une seule fois : les pièces qui ont déjà échoué reçoivent le tag « A échoué » (sans changer leur date de modification). */
+const tagFailedParts = (db) => {
+  if (getSetting(FAILED_TAG_KEY)) return;
+  const rows = db.prepare(`SELECT id, comment, fail_count FROM parts WHERE fail_count > 0 AND status <> 'SHIPPED'`).all();
+  const set = db.prepare('UPDATE parts SET comment = ? WHERE id = ?');
+  db.transaction(() => rows.forEach((row) => set.run(withFailTag(row.comment, row.fail_count), row.id)))();
+  if (rows.length) log.info('parts that already failed tagged', { parts: rows.length });
+  setSetting(FAILED_TAG_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -191,6 +203,7 @@ export const migrate = () => {
   purgeLegacyMockData(db);
   resetCorruptedSyncCursors(db);
   migrateFailedColumn(db);
+  tagFailedParts(db);
 
   const insertColor = db.prepare(
     `INSERT INTO resin_colors (key, name, hex, aliases, sort_order, updated_at)

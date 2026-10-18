@@ -91,3 +91,50 @@ describe('Échec = retour direct dans « À imprimer » + historique', () => {
     assert.equal(failure.created_at, '2026-01-01T11:00:00.000Z');
   });
 });
+
+describe('tag « A échoué », fichiers masqués', async () => {
+  const { setFileHidden, withFailTag, failTag } = await import('../src/domain/failures.service.js');
+  const { getFailureReport } = await import('../src/domain/failures.service.js');
+
+  it('construit le tag sans toucher aux autres tags', () => {
+    assert.equal(failTag(1), 'A échoué');
+    assert.equal(failTag(3), 'A échoué ×3');
+    assert.equal(withFailTag(null, 1), 'A échoué');
+    assert.equal(withFailTag('Réimpression\nA échoué', 2), 'Réimpression\nA échoué ×2');
+    assert.equal(withFailTag('Réimpression\nA échoué ×2', 3), 'Réimpression\nA échoué ×3');
+  });
+
+  it('une pièce qui échoue reçoit le tag, avec le nombre d\'échecs', async () => {
+    migrate();
+    const { orderId } = ingestOrder(
+      makeOrder({ externalId: '9200', orderNumber: '#9200', items: [{ externalId: 'li-t', title: 'Tag Keycap', quantity: 1 }] }),
+    );
+    const { id } = getDb().prepare('SELECT id FROM parts WHERE order_id = ?').get(orderId);
+    await updatePartComment(id, 'Réimpression');
+    setStatus(id, 'PRINTING');
+    assert.equal(setStatus(id, 'FAILED').comment, 'Réimpression\nA échoué');
+    setStatus(id, 'PRINTING');
+    assert.equal(setStatus(id, 'FAILED').comment, 'Réimpression\nA échoué ×2');
+  });
+
+  it('masquer un fichier le marque masqué dans le rapport (ses échecs restent comptés)', () => {
+    const before = getFailureReport();
+    assert.equal(before.files.find((f) => f.name === 'Tag Keycap').hidden, false);
+    setFileHidden('Tag Keycap', true);
+    const hidden = getFailureReport();
+    assert.equal(hidden.files.find((f) => f.name === 'Tag Keycap').hidden, true);
+    assert.ok(hidden.history.filter((h) => h.name === 'Tag Keycap').every((h) => h.hidden));
+    assert.equal(hidden.totals.failures, before.totals.failures);
+    setFileHidden('Tag Keycap', false);
+    assert.equal(getFailureReport().files.find((f) => f.name === 'Tag Keycap').hidden, false);
+  });
+
+  it('un fichier sans aucun échec (100 % de réussite) n\'est jamais listé', () => {
+    assert.ok(getFailureReport().files.every((f) => f.failures > 0));
+  });
+});
+
+const updatePartComment = async (id, comment) => {
+  const { updatePart } = await import('../src/domain/parts.service.js');
+  return updatePart(id, { comment });
+};

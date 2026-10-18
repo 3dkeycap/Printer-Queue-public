@@ -7,7 +7,7 @@ import { placeholderImages, realImage } from './images.js';
 import { chitchatsShipUrl } from './presence.js';
 import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
-import { recordTransition } from './failures.service.js';
+import { recordTransition, withFailTag } from './failures.service.js';
 
 const SORTS = {
   smart: 'p.priority DESC, o.is_priority DESC, COALESCE(o.placed_at, o.created_at) ASC, p.id ASC',
@@ -346,9 +346,10 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
     if (status === 'FAILED') {
       db.prepare(
         `UPDATE parts SET status = 'TO_PRINT', status_changed_at = @ts, updated_at = @ts,
-                          fail_count = fail_count + 1, printed_at = NULL, shipped_at = NULL
+                          fail_count = fail_count + 1, printed_at = NULL, shipped_at = NULL,
+                          comment = @comment
          WHERE id = @id`,
-      ).run({ id: part.id, ts });
+      ).run({ id: part.id, ts, comment: withFailTag(part.comment, (part.fail_count ?? 0) + 1) });
       recordEvent(db, { partId: part.id, from: part.status, to: 'FAILED', actor, note });
       recordEvent(db, { partId: part.id, from: 'FAILED', to: 'TO_PRINT', actor, note: 'Échec enregistré : remise dans « À imprimer »' });
       return;
