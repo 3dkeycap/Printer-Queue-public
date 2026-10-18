@@ -22,6 +22,7 @@ import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { closeDrawer, openDrawer } from './drawer.js';
 import { startTutorial } from './tutorial.js';
+import { mountFullscreen } from './fullscreen.js';
 
 const NEXT_STATUS = {
   TO_PRINT: 'PRINTING',
@@ -888,6 +889,7 @@ const boot = async () => {
   if (isKiosk) {
     document.documentElement.classList.add('kiosk');
     location.hash = 'board';
+    mountFullscreen(document.getElementById('fullscreen-btn'));
   }
   applyTheme();
   bindEvents();
