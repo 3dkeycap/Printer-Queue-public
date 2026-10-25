@@ -9,7 +9,9 @@ import {
   flagItem,
   getItem,
   itemByToken,
+  itemImage,
   listItems,
+  listItemsForCards,
   markOrdered,
   scanByToken,
   undoScan,
@@ -54,6 +56,13 @@ inventoryRouter.post(
 
 inventoryRouter.post('/:id/ordered', (req, res) => {
   res.json(markOrdered(req.params.id));
+});
+
+/** La photo d'un objet (celle de l'étiquette grand format). */
+inventoryRouter.get('/:id/image', (req, res) => {
+  const image = itemImage(req.params.id);
+  if (!image) return res.status(404).json({ error: "Cet objet n'a pas de photo" });
+  res.type(image.mime).set('Cache-Control', 'no-cache').send(image.buffer);
 });
 
 /** Le code QR d'un objet, en SVG. */
@@ -108,6 +117,66 @@ const cardHtml = (item) => `
     ${qrSvg(item.scan_url, { cellSize: 8, margin: 1 })}
   </article>`;
 
+/*
+ * Étiquette grand format : 4 par feuille Lettre (8,5 × 11 po, marges de 0,25 po, 2 × 2 cases de 4 × 5,25 po) ;
+ * nom, minimum, quantité à commander et fournisseur (facultatifs), photo et code QR.
+ */
+const LARGE_CSS = `
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px system-ui, -apple-system, sans-serif; color: #1c2230; background: #eef0f4; }
+  .bar { position: sticky; top: 0; display: flex; gap: 12px; align-items: center; padding: 10px 18px; background: #1c2230; color: #fff; z-index: 2; }
+  .bar button { padding: 8px 14px; border: 0; border-radius: 8px; background: #d9c7a3; color: #1c2230; font: 700 14px system-ui; cursor: pointer; }
+  .bar span { opacity: .8; font-size: 13px; }
+  .page { width: 8in; display: grid; grid-template-columns: 4in 4in; grid-auto-rows: 5.25in; margin: 12px auto; background: #fff; box-shadow: 0 6px 24px -12px rgba(20,30,60,.4); }
+  .big { position: relative; padding: 0.22in 0.25in; display: flex; flex-direction: column; gap: 0.12in; outline: 0.01in dashed #b6bdcc; outline-offset: -0.01in; overflow: hidden; }
+  .big .band { height: 0.14in; border-radius: 0.07in; background: #2f9e5b; flex: none; }
+  .big h2 { margin: 0.02in 0 0; text-align: center; font-weight: 800; line-height: 1.12; overflow-wrap: anywhere; flex: none; }
+  .facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.1in 0.45in; text-align: center; flex: none; }
+  .facts .wide { flex-basis: 100%; }
+  .facts .k { display: block; color: #2f9e5b; font-weight: 700; font-size: 0.15in; }
+  .facts .v { display: block; font-size: 0.24in; font-weight: 600; overflow-wrap: anywhere; }
+  .media { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; gap: 0.2in; }
+  .media svg { width: 1.75in; height: 1.75in; flex: none; }
+  .media img { flex: 1; min-width: 0; max-height: 100%; max-width: 1.7in; aspect-ratio: 1; object-fit: cover; border-radius: 0.12in; }
+  .media.solo svg { width: 2.3in; height: 2.3in; }
+  @media print {
+    @page { size: letter; margin: 0.25in; }
+    body { background: #fff; }
+    .bar { display: none; }
+    .page { margin: 0; box-shadow: none; width: 8in; break-after: page; page-break-after: always; }
+    .page:last-child { break-after: auto; page-break-after: auto; }
+  }
+`;
+
+const largeNameSize = (name) => {
+  const length = String(name).length;
+  if (length <= 14) return 0.36;
+  if (length <= 26) return 0.3;
+  if (length <= 44) return 0.24;
+  return 0.2;
+};
+
+const largeCardHtml = (item) => `
+  <article class="big">
+    <div class="band"></div>
+    <h2 style="font-size:${largeNameSize(item.name)}in">${esc(item.name)}</h2>
+    <div class="facts">
+      <div><span class="k">Minimum</span><span class="v">${esc(item.reorder_at)}</span></div>
+      ${item.order_qty !== null && item.order_qty !== undefined ? `<div><span class="k">À commander</span><span class="v">${esc(item.order_qty)}</span></div>` : ''}
+      ${item.supplier ? `<div class="wide"><span class="k">Commander chez</span><span class="v">${esc(item.supplier)}</span></div>` : ''}
+    </div>
+    <div class="media${item.image ? '' : ' solo'}">
+      ${qrSvg(item.scan_url, { cellSize: 8, margin: 1 })}
+      ${item.image ? `<img src="${esc(item.image)}" alt="">` : ''}
+    </div>
+  </article>`;
+
+const largePages = (items) => {
+  const pages = [];
+  for (let i = 0; i < items.length; i += 4) pages.push(`<section class="page">${items.slice(i, i + 4).map(largeCardHtml).join('')}</section>`);
+  return pages.join('');
+};
+
 export const inventoryPagesRouter = Router();
 
 /** Cartes imprimables : /inventory/cards?ids=1,2 (toutes si pas d'ids). */
@@ -116,15 +185,20 @@ inventoryPagesRouter.get('/cards', (req, res) => {
     .split(',')
     .map((value) => Number.parseInt(value, 10))
     .filter(Number.isFinite);
-  const items = listItems().filter((item) => !wanted.length || wanted.includes(item.id));
+  const items = listItemsForCards(wanted);
   if (!items.length) throw badRequest('Aucune carte à imprimer');
+  const large = req.query.style === 'large';
   // le script d'impression est un fichier à part : la politique de sécurité interdit les scripts en ligne
   res.type('html').send(`<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Étiquettes d’inventaire</title><style>${PAGE_CSS}</style></head>
+<title>Étiquettes d’inventaire</title><style>${large ? LARGE_CSS : PAGE_CSS}</style></head>
 <body>
-  <div class="bar"><button id="print">🖨 Imprimer</button><span>${items.length} étiquette(s) de 2 po × 1 po · choisis ce format de papier dans la fenêtre d’impression, sans marges, échelle 100 %</span></div>
-  <main class="sheet">${items.map(cardHtml).join('')}</main>
+  <div class="bar"><button id="print">🖨 Imprimer</button><span>${
+    large
+      ? `${items.length} étiquette(s) grand format · 4 par feuille Lettre (${Math.ceil(items.length / 4)} feuille(s)) · imprime à l’échelle 100 %, marges par défaut`
+      : `${items.length} étiquette(s) de 2 po × 1 po · choisis ce format de papier dans la fenêtre d’impression, sans marges, échelle 100 %`
+  }</span></div>
+  ${large ? `<main>${largePages(items)}</main>` : `<main class="sheet">${items.map(cardHtml).join('')}</main>`}
   <script src="/js/print-cards.js"></script>
 </body></html>`);
 });

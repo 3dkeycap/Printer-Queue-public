@@ -243,4 +243,47 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
       assert.equal(inventory.getItem(item.id).flag_details[0].answers[0].value, 'Résine noire');
     });
   });
+
+  describe('grande étiquette (4 par feuille Lettre)', () => {
+    const PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+    it('quantité à commander, fournisseur et photo : facultatifs et validés', async () => {
+      const item = inventory.createItem({ name: 'Ruban adhésif', reorder_at: 900, order_qty: '4200', supplier: '  Sticker   Mule ', image: PIXEL });
+      assert.equal(item.order_qty, 4200);
+      assert.equal(item.supplier, 'Sticker Mule');
+      assert.equal(item.has_image, true);
+      assert.ok(!('image' in item), 'la liste ne transporte pas les photos');
+      const bare = inventory.createItem({ name: 'Sans options', reorder_at: 1 });
+      assert.deepEqual([bare.order_qty, bare.supplier, bare.has_image], [null, null, false]);
+      assert.throws(() => inventory.createItem({ name: 'X', order_qty: 'beaucoup' }), /quantité à commander/);
+      assert.throws(() => inventory.createItem({ name: 'X', image: 'http://exemple.com/a.png' }), /JPEG, PNG ou WebP/);
+      assert.throws(() => inventory.createItem({ name: 'X', image: 'data:image/png;base64,' + 'A'.repeat(2_600_000) }), /trop lourde/);
+
+      // une modification sans ces champs ne les efface pas ; null retire la photo
+      assert.equal(inventory.updateItem(item.id, { name: 'Ruban adhésif 2' }).supplier, 'Sticker Mule');
+      assert.equal(inventory.updateItem(item.id, { image: null }).has_image, false);
+      assert.equal(inventory.updateItem(item.id, { order_qty: '' }).order_qty, null);
+
+      const withPhoto = inventory.createItem({ name: 'Photo servie', reorder_at: 1, image: PIXEL });
+      const served = await call(`/api/inventory/${withPhoto.id}/image`);
+      assert.equal(served.headers.get('content-type').split(';')[0], 'image/png');
+      assert.equal((await call(`/api/inventory/${bare.id}/image`)).status, 404);
+    });
+
+    it('la page d’impression « large » : 4 par feuille Lettre, champs facultatifs absents si vides', async () => {
+      const full = inventory.createItem({ name: 'Étiquette pleine', reorder_at: 900, order_qty: 4200, supplier: 'Sticker Mule', image: PIXEL });
+      const bare = inventory.createItem({ name: 'Étiquette nue', reorder_at: 5 });
+      const html = await (await call(`/inventory/cards?ids=${full.id},${bare.id}&style=large`)).text();
+      assert.ok(html.includes('size: letter'), 'page Lettre');
+      assert.equal((html.match(/class="page"/g) ?? []).length, 1, 'deux étiquettes = une feuille');
+      assert.ok(html.includes('Commander chez') && html.includes('Sticker Mule') && html.includes('À commander') && html.includes('4200'));
+      assert.ok(html.includes(PIXEL), 'la photo est dans la page');
+      const many = [full, bare, full, bare, full].map((item) => item.id).join(',');
+      const five = await (await call(`/inventory/cards?ids=${many}&style=large`)).text();
+      // les identifiants en double ne multiplient pas les étiquettes : 2 objets distincts = 1 feuille
+      assert.equal((five.match(/class="page"/g) ?? []).length, 1);
+      const small = await (await call(`/inventory/cards?ids=${full.id}`)).text();
+      assert.ok(small.includes('size: 2in 1in'), 'le style par défaut reste 2 po × 1 po');
+    });
+  });
 });

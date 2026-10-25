@@ -853,3 +853,8 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .inv-opts { display: flex; flex-wrap: wrap; gap: 6px; }
 .inv-opt { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 .inv-opt:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Inventaire : photo, fournisseur, quantité à commander */
+.inv-extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+.photo-field { display: flex; gap: 10px; align-items: center; }
+.photo-preview { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }

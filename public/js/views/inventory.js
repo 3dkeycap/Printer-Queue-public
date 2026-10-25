@@ -2,6 +2,7 @@ import { el, fromNow, icon } from '../ui.js';
 import { state } from '../store.js';
 import { downloadCardPng } from '../card-png.js';
 import { toast } from '../ui.js';
+import { photoField } from '../photo.js';
 
 const statusPill = (item) =>
   item.status === 'reorder'
@@ -28,8 +29,9 @@ const pngButton = (item) =>
     [icon('save'), 'PNG'],
   );
 
-const printLink = (ids, label) =>
-  el('a', { class: 'ghost-btn', href: `/inventory/cards?ids=${ids.join(',')}`, target: '_blank', rel: 'noopener' }, [icon('receipt'), label]);
+// deux styles d'étiquette : petite (2 po × 1 po, imprimante d'étiquettes) ou grande (4 par feuille Lettre)
+const printLink = (ids, label, style = 'small', title = '') =>
+  el('a', { class: 'ghost-btn', title, href: `/inventory/cards?ids=${ids.join(',')}&style=${style}`, target: '_blank', rel: 'noopener' }, [icon('receipt'), label]);
 
 
 /** Libellé court d'une question, pour la liste. */
@@ -137,26 +139,32 @@ export const questionsForm = (questions) => {
 
 /** Formulaire de création : nom + quantité à laquelle il faut scanner. */
 // ce qui est tapé dans le formulaire survit à tout redessin de la page (rafraîchissement, autre action)
-const createDraft = { name: '', threshold: '2', questions: [], open: false };
+const createDraft = { name: '', threshold: '2', supplier: '', orderQty: '', image: undefined, questions: [], open: false };
 
 const createForm = (actions) => {
   const name = el('input', { id: 'inv-name', placeholder: 'Ex. Gants nitrile M, IPA 99 %, Filtres résine…', required: true, maxlength: '80', value: createDraft.name, oninput: (event) => { createDraft.name = event.target.value; } });
   const threshold = el('input', { id: 'inv-threshold', type: 'number', min: '0', value: createDraft.threshold, inputmode: 'numeric', oninput: (event) => { createDraft.threshold = event.target.value; } });
   const questions = questionsEditor(createDraft.questions, () => { createDraft.questions = questions.value(); });
+  const supplier = el('input', { id: 'inv-supplier', placeholder: 'Ex. Sticker Mule', maxlength: '80', value: createDraft.supplier, oninput: (event) => { createDraft.supplier = event.target.value; } });
+  const orderQty = el('input', { id: 'inv-orderqty', type: 'number', min: '0', inputmode: 'numeric', placeholder: 'Ex. 4200', value: createDraft.orderQty, oninput: (event) => { createDraft.orderQty = event.target.value; } });
+  const photo = photoField({ initial: createDraft.image, onChange: (value) => { createDraft.image = value; } });
   const form = el(
     'form',
     {
       class: 'inv-form',
       onsubmit: async (event) => {
         event.preventDefault();
-        const button = form.querySelector('button');
+        const button = form.querySelector('button[type=submit]');
         button.disabled = true;
-        const item = await actions.createInventoryItem({ name: name.value, reorder_at: threshold.value, questions: questions.value() });
+        const item = await actions.createInventoryItem({ name: name.value, reorder_at: threshold.value, order_qty: orderQty.value, supplier: supplier.value, image: photo.value() ?? undefined, questions: questions.value() });
         button.disabled = false;
         if (item) {
           name.value = '';
           createDraft.name = '';
-          createDraft.questions = [];
+          Object.assign(createDraft, { supplier: '', orderQty: '', image: undefined, questions: [] });
+          supplier.value = '';
+          orderQty.value = '';
+          photo.node.replaceWith(photoField({ onChange: (value) => { createDraft.image = value; } }).node);
           questions.reset();
           name.focus();
         }
@@ -166,8 +174,14 @@ const createForm = (actions) => {
       el('div', { class: 'field inv-grow' }, [el('label', { for: 'inv-name' }, "Nom de l'objet"), name]),
       el('div', { class: 'field' }, [el('label', { for: 'inv-threshold' }, 'Scanner quand il en reste'), threshold]),
       el('details', { class: 'inv-grow inv-questions-box', open: createDraft.open, ontoggle: (event) => { createDraft.open = event.currentTarget.open; } }, [
-        el('summary', {}, 'Poser des questions au scan (couleur de résine, quantité…)'),
-        el('p', { class: 'field-hint' }, 'Une seule étiquette, mais la personne qui scanne choisit ce qui manque : une ou plusieurs couleurs, un nombre ou un texte.'),
+        el('summary', {}, 'Plus d’options : photo, fournisseur, quantité à commander, questions au scan'),
+        el('p', { class: 'field-hint' }, 'La photo, le fournisseur et la quantité à commander servent à la grande étiquette (facultatifs). Les questions : une seule étiquette, mais la personne qui scanne choisit ce qui manque (couleur de résine, nombre, texte).'),
+        el('div', { class: 'inv-extra' }, [
+          el('div', { class: 'field' }, [el('label', { for: 'inv-supplier' }, 'Commander chez'), supplier]),
+          el('div', { class: 'field' }, [el('label', { for: 'inv-orderqty' }, 'Quantité à commander'), orderQty]),
+          el('div', { class: 'field' }, [el('label', {}, 'Photo'), photo.node]),
+        ]),
+        el('div', { class: 'section-title' }, 'Questions au scan'),
         questions.node,
       ]),
       el('button', { class: 'primary-btn', type: 'submit' }, [icon('plus'), 'Créer la carte']),
@@ -206,7 +220,8 @@ const itemCard = (item, actions) =>
     item.questions?.length ? el('p', { class: 'cell-sub' }, `Questions au scan : ${item.questions.map((q) => q.label).join(' · ')}`) : null,
     el('img', { class: 'inv-qr', src: `/api/inventory/${item.id}/qr.svg`, alt: `Code QR : ${item.name}`, width: '110', height: '110', loading: 'lazy' }),
     el('div', { class: 'inv-actions' }, [
-      printLink([item.id], 'Imprimer la carte'),
+      printLink([item.id], 'Étiquette 2×1 po', 'small', 'Petite étiquette : nom, minimum et QR'),
+      printLink([item.id], 'Grande étiquette', 'large', 'Grande étiquette (4 par feuille Lettre) : photo, QR, minimum, quantité à commander, fournisseur'),
       pngButton(item),
       item.status === 'reorder'
         ? el('button', { class: 'ghost-btn', onclick: () => actions.inventoryAction(item.id, () => actions.api.orderedInventoryItem(item.id), `« ${item.name} » : commande notée`) }, 'Commandé')
@@ -233,7 +248,8 @@ export const renderInventory = (root, actions) => {
 
     el('div', { class: 'section-title inv-title' }, [
       `Tous les objets (${items.length})`,
-      items.length ? printLink(items.map((item) => item.id), 'Imprimer toutes les cartes') : null,
+      items.length ? printLink(items.map((item) => item.id), 'Toutes en 2×1 po', 'small') : null,
+      items.length ? printLink(items.map((item) => item.id), 'Toutes en grand (4/feuille)', 'large') : null,
     ]),
     items.length
       ? el('div', { class: 'inv-grid' }, items.map((item) => itemCard(item, actions)))

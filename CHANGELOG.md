@@ -6,6 +6,13 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Deuxième style d'étiquette : grande, 4 par feuille Lettre.** Nom de l'article, **photo**, code QR, **minimum**,
+  **quantité à commander** et **commander chez** (les trois derniers facultatifs : absents de l'étiquette s'ils sont vides).
+  Chaque objet a maintenant deux boutons d'impression (« Étiquette 2×1 po » et « Grande étiquette »), et « Toutes en
+  grand (4/feuille) » imprime tout l'inventaire (une feuille = 4 étiquettes, marges de 0,25 po). Les champs se
+  remplissent dans « Plus d'options » du formulaire et dans « Modifier » ; la photo est réduite (700 px) dans le
+  navigateur avant l'envoi. API : `order_qty`, `supplier`, `image` (data URL) sur `/api/inventory`, `GET /api/inventory/:id/image`,
+  `/inventory/cards?style=large`.
 - **`scripts/publish.sh`** : publie le commit courant sur `main` des deux dépôts (privé et public) après les tests et vérifie que les deux pointent sur le même commit (`--dry-run` pour simuler).
 - **Extension 1.7.0 : tags par commande (Shopify et Etsy).** La fenêtre « J'ai packé » a une section « Tags de la
   commande » : To pack, Pre packed, Started, Hold, Address, Nylon restock (liste modifiable dans Réglages → Atelier

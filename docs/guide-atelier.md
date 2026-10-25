@@ -122,6 +122,12 @@ Quand tu enregistres le bac, la commande Shopify reçoit « Packé par <ton nom>
 bac, « Pre packed ». Première fois seulement : Réglages → Boutiques → reconnecter Shopify (autorisation
 d'écriture).
 
+## Inventaire : deux styles d'étiquette
+
+Chaque objet s'imprime en **petite étiquette 2 × 1 po** (imprimante d'étiquettes) ou en **grande étiquette** :
+4 par feuille Lettre, avec la photo, le code QR, le minimum, la quantité à commander et le fournisseur
+(facultatifs, à remplir dans « Plus d'options » ou « Modifier »).
+
 ## Inventaire : une étiquette, plusieurs variantes
 
 Dans Inventaire, « Poser des questions au scan » : par exemple une carte « Résine » qui demande

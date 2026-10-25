@@ -109,7 +109,32 @@ const cleanAnswers = (row, answers) => {
   });
 };
 
-const present = (row) => ({
+const cleanSupplier = (value) => {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (text.length > 80) throw badRequest('« Commander chez » est trop long (80 caractères maximum)');
+  return text || null;
+};
+
+const cleanOrderQty = (value) => {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const number = Number.parseInt(value, 10);
+  if (!Number.isFinite(number) || number < 0 || number > 1000000) throw badRequest('La quantité à commander doit être un nombre entier (0 ou plus)');
+  return number;
+};
+
+const IMAGE_URL = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+const MAX_IMAGE_CHARS = 2_500_000; // ~1,8 Mo : le navigateur réduit la photo avant l'envoi
+
+/** Photo de l'objet : data URL (déjà réduite par le navigateur), null / '' pour la retirer. */
+const cleanImage = (value) => {
+  if (value === null || value === '') return null;
+  const text = String(value);
+  if (!IMAGE_URL.test(text)) throw badRequest('La photo doit être une image JPEG, PNG ou WebP');
+  if (text.length > MAX_IMAGE_CHARS) throw badRequest('La photo est trop lourde (2 Mo maximum)');
+  return text;
+};
+
+const present = (row, { withImage = false } = {}) => ({
   id: row.id,
   name: row.name,
   reorder_at: row.reorder_at,
@@ -119,6 +144,10 @@ const present = (row) => ({
   scan_count: row.scan_count,
   ordered_at: row.ordered_at,
   created_at: row.created_at,
+  order_qty: row.order_qty ?? null,
+  supplier: row.supplier ?? null,
+  has_image: Boolean(row.image),
+  ...(withImage ? { image: row.image ?? null } : {}),
   questions: presentQuestions(row),
   flag_details: parseJson(row.flag_details, []),
   scan_url: scanUrl(row.token),
@@ -155,20 +184,37 @@ export const listItems = () =>
 
 export const getItem = (id) => present(find(id));
 
-export const createItem = ({ name, reorder_at, notes = null, questions } = {}) => {
+/** Objets avec leur photo, pour les étiquettes imprimables (la liste normale ne transporte pas les photos). */
+export const listItemsForCards = (ids = []) =>
+  getDb()
+    .prepare(`SELECT * FROM inventory_items ORDER BY name COLLATE NOCASE ASC`)
+    .all()
+    .filter((row) => !ids.length || ids.includes(row.id))
+    .map((row) => present(row, { withImage: true }));
+
+/** Photo d'un objet : { mime, buffer } ou null. */
+export const itemImage = (id) => {
+  const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(find(id).image ?? '');
+  return match ? { mime: match[1], buffer: Buffer.from(match[2], 'base64') } : null;
+};
+
+export const createItem = ({ name, reorder_at, notes = null, questions, order_qty, supplier, image } = {}) => {
   const db = getDb();
   const row = {
     name: cleanName(name),
     reorder_at: cleanThreshold(reorder_at ?? 1),
     notes: String(notes ?? '').trim() || null,
     questions: JSON.stringify(cleanQuestions(questions)),
+    order_qty: cleanOrderQty(order_qty),
+    supplier: cleanSupplier(supplier),
+    image: image ? cleanImage(image) : null,
     token: crypto.randomBytes(9).toString('base64url'),
     ts: nowIso(),
   };
   const info = db
     .prepare(
-      `INSERT INTO inventory_items (name, reorder_at, notes, questions, token, created_at, updated_at)
-       VALUES (@name, @reorder_at, @notes, @questions, @token, @ts, @ts)`,
+      `INSERT INTO inventory_items (name, reorder_at, notes, questions, order_qty, supplier, image, token, created_at, updated_at)
+       VALUES (@name, @reorder_at, @notes, @questions, @order_qty, @supplier, @image, @token, @ts, @ts)`,
     )
     .run(row);
   event(db, Number(info.lastInsertRowid), 'created');
@@ -178,12 +224,15 @@ export const createItem = ({ name, reorder_at, notes = null, questions } = {}) =
 export const updateItem = (id, patch = {}) => {
   const db = getDb();
   const current = find(id);
-  db.prepare('UPDATE inventory_items SET name = @name, reorder_at = @reorder_at, notes = @notes, questions = @questions, updated_at = @ts WHERE id = @id').run({
+  db.prepare('UPDATE inventory_items SET name = @name, reorder_at = @reorder_at, notes = @notes, questions = @questions, order_qty = @order_qty, supplier = @supplier, image = @image, updated_at = @ts WHERE id = @id').run({
     id: current.id,
     name: patch.name === undefined ? current.name : cleanName(patch.name),
     reorder_at: patch.reorder_at === undefined ? current.reorder_at : cleanThreshold(patch.reorder_at),
     notes: patch.notes === undefined ? current.notes : String(patch.notes ?? '').trim() || null,
     questions: patch.questions === undefined ? current.questions : JSON.stringify(cleanQuestions(patch.questions)),
+    order_qty: patch.order_qty === undefined ? current.order_qty : cleanOrderQty(patch.order_qty),
+    supplier: patch.supplier === undefined ? current.supplier : cleanSupplier(patch.supplier),
+    image: patch.image === undefined ? current.image : cleanImage(patch.image),
     ts: nowIso(),
   });
   return getItem(current.id);
