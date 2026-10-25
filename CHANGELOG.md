@@ -20,6 +20,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Modifié
+- Extension Chrome 1.4.1, boîte « J'ai packé » : plus de **rouge** pour ce qui n'est qu'une étape à
+  compléter (nom pas choisi, raison d'une pièce manquante, bac commencé) — rappel aimable en ambre,
+  champ entouré, qui disparaît dès que la personne agit. Les vraies pannes restent en rouge mais
+  disent que rien n'est perdu et que ce n'est pas de la faute de l'employé.
 - La couleur de la résine **entoure toute la carte** (et la ligne du tableau « Tout ») au lieu
   d'un simple trait sur le côté.
 - Plus aucun affichage **Chit Chats** dans l'app (cartes, fiche, tableau « Tout »). Les réglages

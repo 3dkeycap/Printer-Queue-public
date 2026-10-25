@@ -62,6 +62,10 @@
     .btn[disabled] { opacity: .55; cursor: default; }
     .msg { font-size: 12.5px; }
     .msg.ok { color: #1c7c45; } .msg.err { color: #b42828; }
+    /* rappel aimable (pas une erreur) : fond ambré, jamais de rouge pour une étape à compléter */
+    .msg.hint, .msg.warn { color: #7a4b00; background: #fff7e6; border: 1px solid #f0d49a; border-radius: 8px; padding: 8px 10px; }
+    .msg:empty { display: none; }
+    .need { border-color: #e0a030 !important; box-shadow: 0 0 0 3px #ffe9b8; }
     .empty { color: #5b6a86; padding: 20px 0; text-align: center; }
   `;
 
@@ -148,7 +152,14 @@
     if (view?.error) {
       panel.append(
         h('header', {}, [h('div', {}, [h('h2', {}, "J'ai packé la commande")]), h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×')]),
-        h('div', { class: 'body' }, [h('div', { class: 'box bad' }, view.error)]),
+        // pas de rouge : la personne n'a rien fait de mal, le bac est simplement indisponible
+        h('div', { class: 'body' }, [
+          h('div', { class: 'box note' }, [
+            h('strong', {}, "Le bac n'est pas disponible pour cette commande pour l'instant."),
+            h('div', { class: 'l' }, view.error),
+            h('div', { class: 'l' }, "Tu n'as rien fait de mal. Réessaie dans un instant ; si ça continue, préviens la personne qui gère l'app."),
+          ]),
+        ]),
       );
       return;
     }
@@ -159,11 +170,25 @@
     const { lastPacker = '' } = await chrome.storage.local.get('lastPacker');
 
     const msg = h('div', { class: `msg ${flash?.ok ? 'ok' : 'err'}` }, flash?.text ?? '');
+    // dès que la personne agit, le rappel disparaît (elle est en train de le corriger)
+    const clearHint = () => {
+      msg.className = 'msg';
+      msg.textContent = '';
+      for (const node of panel.querySelectorAll('.need')) node.classList.remove('need');
+    };
+    // rappel aimable : champ entouré en ambre, jamais en rouge
+    const hint = (text, field) => {
+      msg.className = 'msg hint';
+      msg.textContent = text;
+      field?.classList.add('need');
+      field?.focus?.();
+      field?.scrollIntoView?.({ block: 'nearest' });
+    };
 
     const itemRow = (item) => {
       const state = draft.get(item.id);
       const count = h('span', {});
-      const reasonBox = h('div', { class: 'reason' });
+      const reasonBox = h('div', { class: 'reason', 'data-item': String(item.id) });
       const paint = () => {
         count.textContent = `${state.packed} / ${item.total}`;
         count.className = state.packed >= item.total ? 'full' : 'partial';
@@ -176,6 +201,7 @@
               onchange: (event) => {
                 state.reason = event.target.value === '__other__' ? '' : event.target.value;
                 state.other = event.target.value === '__other__' ? state.other || ' ' : '';
+                clearHint();
                 paint();
               },
             },
@@ -198,6 +224,7 @@
       };
       const step = (delta) => {
         state.packed = Math.min(item.total, Math.max(0, state.packed + delta));
+        clearHint();
         paint();
       };
       paint();
@@ -228,6 +255,7 @@
       h('option', { value: '__new__' }, '+ Ajouter une personne…'),
     ]);
     who.addEventListener('change', async () => {
+      clearHint();
       if (who.value !== '__new__') return;
       const name = (prompt('Nom de la personne') ?? '').trim();
       if (!name) {
@@ -251,14 +279,15 @@
     const save = h('button', { class: 'btn primary' }, "Enregistrer le bac");
     save.addEventListener('click', async () => {
       if (!who.value || who.value === '__new__') {
-        msg.className = 'msg err';
-        msg.textContent = 'Choisis qui a packé la commande.';
+        hint('👆 Il manque juste ton nom : choisis-le dans « Qui es-tu ? », puis appuie encore sur « Enregistrer le bac ».', who);
         return;
       }
       const missingReason = view.items.find((item) => draft.get(item.id).packed < item.total && !draft.get(item.id).reason.trim());
       if (missingReason) {
-        msg.className = 'msg err';
-        msg.textContent = `Indique pourquoi il manque « ${missingReason.title} ».`;
+        hint(
+          `👆 Il manque des pièces pour « ${missingReason.title} » : dis-nous pourquoi (menu sous la quantité), puis appuie encore sur « Enregistrer le bac ».`,
+          panel.querySelector(`.reason[data-item="${missingReason.id}"] select`),
+        );
         return;
       }
       save.disabled = true;
@@ -273,9 +302,10 @@
         },
       });
       if (result?.error) {
+        // vraie panne (app injoignable…) : en rouge, mais on rassure — rien n'est perdu, la personne n'y est pour rien
         save.disabled = false;
         msg.className = 'msg err';
-        msg.textContent = result.error;
+        msg.textContent = `Le bac n'a pas pu être enregistré (${result.error}). Ce n'est pas de ta faute et rien n'a été modifié : réessaie dans un instant.`;
         return;
       }
       const complete = result.history?.[0]?.complete;
@@ -285,6 +315,7 @@
 
     const allIn = h('button', { class: 'btn ghost' }, 'Tout est dans le bac');
     allIn.addEventListener('click', () => {
+      clearHint();
       for (const item of view.items) draft.get(item.id).packed = item.total;
       const body = panel.querySelector('.items');
       body.replaceChildren(...view.items.flatMap(itemRow));
@@ -299,7 +330,7 @@
         h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×'),
       ]),
       h('div', { class: 'body' }, [
-        order.shippedAt ? h('div', { class: 'box bad' }, `Attention : commande déjà marquée expédiée le ${fmt(order.shippedAt)}.`) : null,
+        order.shippedAt ? h('div', { class: 'box note' }, `À savoir : cette commande est déjà marquée expédiée (${fmt(order.shippedAt)}).`) : null,
         h('div', { class: 'box' }, [
           h('h3', {}, 'Mis dans le bac'),
           view.items.length ? h('div', { class: 'items' }, view.items.flatMap(itemRow)) : h('div', { class: 'empty' }, 'Aucun article'),
@@ -307,7 +338,7 @@
         h('div', { class: 'box' }, [h('h3', {}, 'Notes (internes, pas envoyées à Shopify)'), noteInput]),
       ]),
       h('footer', {}, [
-        last ? h('div', { class: `msg ${last.complete ? 'ok' : 'err'}` }, last.complete ? `Déjà packée par ${last.packer} (${fmt(last.created_at)}).` : `Dernier passage incomplet (${last.packer}) : complète les quantités.`) : null,
+        last ? h('div', { class: `msg ${last.complete ? 'ok' : 'warn'}` }, last.complete ? `Déjà packée par ${last.packer} (${fmt(last.created_at)}).` : `Bac commencé par ${last.packer} : il manque encore des pièces. Tu peux compléter quand tu veux.`) : null,
         h('div', { class: 'who' }, [who]),
         h('div', { class: 'row' }, [allIn, save]),
         msg,

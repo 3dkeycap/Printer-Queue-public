@@ -55,4 +55,14 @@ describe('extension : pages de démo (fausse admin Shopify + faux Chit Chats)', 
     const [major, minor] = JSON.parse(read('manifest.json')).version.split('.').map(Number);
     assert.ok(major > 1 || minor >= 4);
   });
+
+  it('boîte « J\'ai packé » : une étape à compléter n\'est jamais une erreur rouge', () => {
+    const source = read('pack-panel.js');
+    // les rappels (nom, raison, bac incomplet) passent par hint()/warn, jamais par « msg err »
+    assert.match(source, /Il manque juste ton nom/);
+    assert.match(source, /dis-nous pourquoi/);
+    assert.doesNotMatch(source, /Choisis qui a packé la commande\.'/);
+    assert.doesNotMatch(source, /\$\{last\.complete \? 'ok' : 'err'\}/);
+    assert.match(source, /\.msg\.hint/);
+  });
 });
