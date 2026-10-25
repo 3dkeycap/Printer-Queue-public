@@ -59,7 +59,7 @@ describe('Shopify OAuth 2.0', () => {
     assert.equal(url.origin, 'https://atelier.myshopify.com');
     assert.equal(url.pathname, '/admin/oauth/authorize');
     assert.equal(url.searchParams.get('client_id'), 'client_id_123');
-    assert.equal(url.searchParams.get('scope'), 'read_orders');
+    assert.equal(url.searchParams.get('scope'), 'read_orders,write_orders');
     assert.equal(url.searchParams.get('state'), 'state123');
     assert.equal(
       url.searchParams.get('redirect_uri'),

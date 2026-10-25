@@ -110,6 +110,12 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 - **Résines** : couleurs, alias de détection, stock.
 - **Mises à jour** : bouton pour installer la dernière version (la base est sauvegardée avant).
 
+## Tags Shopify depuis le bac
+
+Quand tu enregistres le bac, la commande Shopify reçoit « Packé par <ton nom> » et, si tout est dans le
+bac, « Pre packed ». Première fois seulement : Réglages → Boutiques → reconnecter Shopify (autorisation
+d'écriture).
+
 ## Piloter l'app depuis un script ou n8n
 
 Réglages → **API** : des exemples à copier (curl, Windows, n8n). Pas de jeton à créer, l'API répond

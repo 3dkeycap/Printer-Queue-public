@@ -309,7 +309,10 @@
         return;
       }
       const complete = result.history?.[0]?.complete;
-      render(orderExternalId, result, { ok: true, text: complete ? '✓ Bac complet enregistré.' : '✓ Enregistré — bac incomplet (raisons notées).' });
+      const base = complete ? '✓ Bac complet enregistré.' : '✓ Enregistré — bac incomplet (raisons notées).';
+      // l'enregistrement a réussi même si Shopify refuse les tags : simple remarque, pas une erreur
+      const tagNote = result.shopifyTags?.error ? ` Tags Shopify non mis à jour : ${result.shopifyTags.error}.` : result.shopifyTags?.ok ? ' Tags ajoutés dans Shopify.' : '';
+      render(orderExternalId, result, { ok: true, text: base + tagNote });
       globalThis.dispatchEvent(new CustomEvent('resin-queue-pack', { detail: { open: true, saved: true } }));
     });
 

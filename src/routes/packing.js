@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncRoute } from '../lib/errors.js';
-import { addPacker, getPackingView, savePack } from '../domain/packing.js';
+import { addPacker, getPackingView, savePack, syncShopifyTags } from '../domain/packing.js';
 
 export const packingRouter = Router();
 
@@ -10,8 +10,9 @@ packingRouter.get('/shopify/:shopifyId', (req, res) => {
 });
 packingRouter.post(
   '/shopify/:shopifyId',
-  asyncRoute((req, res) => {
-    res.json(savePack({ shopifyId: req.params.shopifyId }, req.body ?? {}));
+  asyncRoute(async (req, res) => {
+    const view = savePack({ shopifyId: req.params.shopifyId }, req.body ?? {});
+    res.json({ ...view, shopifyTags: await syncShopifyTags(view) });
   }),
 );
 
@@ -32,8 +33,9 @@ packingRouter.get('/orders/:orderId', (req, res) => {
 });
 packingRouter.post(
   '/orders/:orderId',
-  asyncRoute((req, res) => {
-    res.json(savePack({ orderId: req.params.orderId }, req.body ?? {}));
+  asyncRoute(async (req, res) => {
+    const view = savePack({ orderId: req.params.orderId }, req.body ?? {});
+    res.json({ ...view, shopifyTags: await syncShopifyTags(view) });
   }),
 );
 

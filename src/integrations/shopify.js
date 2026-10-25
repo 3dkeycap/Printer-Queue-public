@@ -201,3 +201,31 @@ export const fetchOrders = async ({ since } = {}) => {
   await attachProductImages(normalized, settings);
   return normalized;
 };
+
+/**
+ * Tags posés sur la commande Shopify par l'extension (« J'ai packé »).
+ * `add` / `remove` : listes de tags ; les autres tags de la commande ne sont pas touchés.
+ * Demande le scope write_orders : sans lui, Shopify répond « Access denied » (voir le message).
+ */
+export const updateOrderTags = async (externalId, { add = [], remove = [] }, settings = getSettings()) => {
+  if (!isConfigured(settings)) throw new Error('Shopify n’est pas connecté');
+  if (!/^\d+$/.test(String(externalId))) throw new Error('Commande Shopify inconnue');
+  const run = async (mutation, tags) => {
+    if (!tags.length) return;
+    const payload = await requestJson(graphqlUrl(settings), {
+      method: 'POST',
+      headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'], 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `mutation ($id: ID!, $tags: [String!]!) { ${mutation}(id: $id, tags: $tags) { userErrors { message } } }`,
+        variables: { id: `gid://shopify/Order/${externalId}`, tags },
+      }),
+      retries: 1,
+    });
+    const error = payload?.errors?.[0]?.message ?? payload?.data?.[mutation]?.userErrors?.[0]?.message;
+    if (error) {
+      throw new Error(/access denied|scope/i.test(error) ? 'Shopify refuse d’écrire : reconnecte la boutique (Réglages → Boutiques) pour accorder write_orders' : error);
+    }
+  };
+  await run('tagsAdd', add);
+  await run('tagsRemove', remove);
+};

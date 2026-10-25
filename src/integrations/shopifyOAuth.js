@@ -39,7 +39,10 @@ export const buildAuthorizeUrl = (state) => {
 
   const url = new URL(`https://${shop}/admin/oauth/authorize`);
   url.searchParams.set('client_id', apiKey);
-  url.searchParams.set('scope', settings['shopify.scopes'] || 'read_orders');
+  // write_orders : l'extension ajoute les tags « Packé par X » / « Pre packed » à la commande
+  const scopes = new Set(String(settings['shopify.scopes'] || 'read_orders').split(',').map((scope) => scope.trim()).filter(Boolean));
+  scopes.add('write_orders');
+  url.searchParams.set('scope', [...scopes].join(','));
   url.searchParams.set('redirect_uri', redirectUri(settings));
   url.searchParams.set('state', state);
   return url.toString();

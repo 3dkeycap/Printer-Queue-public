@@ -7,7 +7,7 @@ const { migrate } = await import('../src/db/migrate.js');
 const { closeDb, getDb } = await import('../src/db/index.js');
 const { getSettings, updateSettings } = await import('../src/domain/settings.service.js');
 const { ingestOrder } = await import('../src/domain/ingest.js');
-const { getPackingView, savePack } = await import('../src/domain/packing.js');
+const { getPackingView, savePack, syncShopifyTags } = await import('../src/domain/packing.js');
 const { syncMarketplaceFulfillment } = await import('../src/domain/fulfillment.js');
 const { listParts, getFacets } = await import('../src/domain/parts.service.js');
 
@@ -47,6 +47,40 @@ describe("« J'ai packé la commande »", () => {
     assert.equal(view.items[0].title, 'Etsy Keycap');
     // le même numéro côté Shopify ne tombe pas sur la commande Etsy
     assert.throws(() => getPackingView({ shopifyId: '3912345678' }));
+  });
+
+  it('répercute « Packé par X » (+ « Pre packed » si complet) sur la commande Shopify', async () => {
+    updateSettings({ 'shopify.shopDomain': 'test.myshopify.com', 'shopify.accessToken': 'shpat_test_tags' });
+    const calls = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+      calls.push(JSON.parse(options.body));
+      return new Response(JSON.stringify({ data: { tagsAdd: { userErrors: [] }, tagsRemove: { userErrors: [] } } }), { status: 200 });
+    };
+    ingestOrder(makeOrder({ externalId: '7770090', orderNumber: '#4290', items: [{ externalId: 'z', title: 'Tag Keycap', quantity: 2 }] }));
+    try {
+      const items = getPackingView({ shopifyId: '7770090' }).items.map((item) => ({ orderItemId: item.id, packed: item.total }));
+      const view = savePack({ shopifyId: '7770090' }, { packer: 'Sam', items });
+      assert.deepEqual(await syncShopifyTags(view), { ok: true });
+      assert.equal(calls.length, 1);
+      assert.match(calls[0].query, /tagsAdd/);
+      assert.equal(calls[0].variables.id, 'gid://shopify/Order/7770090');
+      assert.deepEqual(calls[0].variables.tags, ['Packé par Sam', 'Pre packed']);
+
+      // bac incomplet : « Pre packed » est retiré
+      calls.length = 0;
+      const partial = savePack({ shopifyId: '7770090' }, { packer: 'Sam', items: items.map((i, n) => ({ ...i, packed: n ? i.packed : 0, reason: 'Cassée' })) });
+      await syncShopifyTags(partial);
+      assert.match(calls[1].query, /tagsRemove/);
+      assert.deepEqual(calls[1].variables.tags, ['Pre packed']);
+    } finally {
+      globalThis.fetch = realFetch;
+      updateSettings({ 'shopify.accessToken': '' });
+    }
+  });
+
+  it('une commande Etsy ne touche pas Shopify', async () => {
+    assert.equal(await syncShopifyTags({ order: { source: 'etsy' }, history: [] }), null);
   });
 
   it('pack partiel : pièces mises -> Imprimé + tag, raison pour le reste, nom ajouté à la liste', () => {

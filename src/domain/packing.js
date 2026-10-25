@@ -4,6 +4,7 @@ import { createLogger } from '../lib/logger.js';
 import { normalizeComments } from './parts.service.js';
 import { getSettings, updateSettings } from './settings.service.js';
 import { placeholderImages, realImage } from './images.js';
+import { isConfigured as shopifyConfigured, updateOrderTags } from '../integrations/shopify.js';
 
 const log = createLogger('packing');
 
@@ -232,4 +233,30 @@ export const latestPacks = (orderIds) => {
     };
   }
   return result;
+};
+
+export const PACKED_TAG = 'Pre packed';
+
+/**
+ * Répercute le dernier passage sur la commande Shopify : « Packé par X » à chaque
+ * enregistrement, « Pre packed » seulement si le bac est complet (retiré sinon).
+ * Ne fait jamais échouer l'enregistrement du bac : renvoie { ok } ou { error }, ou
+ * null quand la commande ne vient pas de Shopify.
+ */
+export const syncShopifyTags = async (view) => {
+  if (view.order.source !== 'shopify') return null;
+  if (!shopifyConfigured()) return null;
+  const last = view.history[0];
+  if (!last) return null;
+  const order = getDb().prepare('SELECT external_id FROM orders WHERE id = ?').get(view.order.id);
+  try {
+    await updateOrderTags(order.external_id, {
+      add: [packTag(last.packer), ...(last.complete ? [PACKED_TAG] : [])],
+      remove: last.complete ? [] : [PACKED_TAG],
+    });
+    return { ok: true };
+  } catch (error) {
+    log.warn('shopify tags not updated', { orderId: view.order.id, error: error.message });
+    return { error: error.message };
+  }
 };

@@ -75,7 +75,7 @@ export const config = {
     apiKey: process.env.SHOPIFY_API_KEY || '',
     apiSecret: process.env.SHOPIFY_API_SECRET || '',
     // read_products : photo des produits dans la fiche de chaque pièce
-    scopes: process.env.SHOPIFY_SCOPES || 'read_orders,read_products',
+    scopes: process.env.SHOPIFY_SCOPES || 'read_orders,read_products,write_orders',
     // Rempli automatiquement par le flux OAuth ; peut aussi être collé à la
     // main pour une app privée existante qui n'utilise pas OAuth.
     accessToken: process.env.SHOPIFY_ACCESS_TOKEN || '',

@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Tags de l'extension → commande Shopify** : quand on enregistre le bac (« J'ai packé »), l'app ajoute à la
+  commande Shopify le tag « Packé par X » et, si le bac est complet, « Pre packed » (retiré si le bac redevient
+  incomplet). Les autres tags de la commande ne sont pas touchés. **À faire une fois** : Réglages → Boutiques →
+  reconnecter Shopify (le scope `write_orders` est maintenant demandé) ; sans lui, la fenêtre du bac le dit
+  mais l'enregistrement du bac réussit quand même. Extension 1.6.1.
 - **Extension 1.6.0 : Etsy.** Sur la liste des commandes d'Etsy Shop Manager, un bouton (le logo de
   l'extension) et un bouton 🔗 sont accrochés à chaque commande : ouvre la boîte « J'ai packé » et amène
   Chit Chats sur la bonne commande, comme sur Shopify. Côté app : `GET`/`POST /api/packing/etsy/:etsyId`.
