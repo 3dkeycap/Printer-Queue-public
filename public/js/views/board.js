@@ -83,7 +83,7 @@ const buildCard = (stack, actions) => {
         el('div', { class: 'card-title' }, multi ? `Commande · ${count} pièces` : part.name),
         count > 1
           ? el('span', { class: 'card-unit card-stack', title: `${count} pièces regroupées` }, `×${count}`)
-          : el('span', { class: 'card-unit' }, `#${part.unit_index}`),
+          : el('span', { class: 'card-unit adv' }, `#${part.unit_index}`),
       ]),
       // la variante (taille, finition…) compte pour imprimer : visible aussi en mode simple
       multi
@@ -102,7 +102,8 @@ const buildCard = (stack, actions) => {
       el('div', { class: 'card-meta' }, [
         part.status !== 'SHIPPED' &&
           el('span', { class: `tag age age-${age.level}${age.level === 'late' ? '' : ' adv'}`, title: `Commande reçue il y a ${age.days} jour(s)` }, [icon('inbox'), `${age.days} j`]),
-        el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name]),
+        // classées par couleur, la pastille répète l'en-tête du groupe : masquée en mode simple
+        el('span', { class: `tag${effectiveGroupBy() === 'color' ? ' adv' : ''}` }, [swatch(part.color_hex), part.color_name]),
         part.uv && el('span', { class: 'tag uv adv' }, [icon('uv'), `UV ${part.uv}`]),
         el('span', { class: `tag src-${part.source} adv` }, SOURCE_LABEL[part.source] ?? part.source),
         el('span', { class: 'tag adv' }, orderCount > 1 ? `${orderCount} commande(s)` : (part.order_number ?? `#${part.order_id}`)),

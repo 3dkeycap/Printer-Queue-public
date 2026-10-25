@@ -98,6 +98,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- **Mode simple, « Resin Queue »** : quand les cartes sont classées par couleur, la pastille de couleur de chaque carte
+  est masquée (l'en-tête du groupe la donne déjà), de même que le « #1 » en haut à droite (le « ×3 » d'une pile
+  reste). La fiche d'une pièce n'affiche plus « Reçue », « SKU » ni « Suivi » (toujours là en mode Avancé).
 - **Extension 1.8.0 : moins de bruit au quotidien.** Les tags de commande sont dans une **liste déroulante** (cases à
   cocher) et le message « Ajouté dans Shopify aussi » a disparu (seule une panne est signalée). Quand le lien live
   est actif, le bouton « Chit Chats » et le libellé « ● Live » laissent place à un **petit point vert devant le numéro
