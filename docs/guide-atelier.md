@@ -76,10 +76,12 @@ Onglet **Inventaire** (mode Avancé). Pour chaque chose qu'on rachète (gants, a
 3. Quand il n'en reste plus que cette quantité, **scanne le code QR avec ton téléphone** (appareil
    photo, sur le réseau de l'atelier). L'écran répond « C'est noté ! » : l'objet passe tout seul à
    **à racheter**. Une erreur ? Bouton « Je me suis trompé : annuler » sur ce même écran.
+   Besoin de l'image ? Le bouton **PNG** télécharge la carte (prête à imprimer ou à envoyer).
 4. Celui qui commande voit la liste **À racheter** dans l'onglet ; une fois commandé, il clique
    **Commandé** (l'objet repasse à OK).
 
-Le code QR ouvre `http://3dkeycap.local/…` : pas besoin de se connecter. Si quelqu'un scanne deux
+Le code QR ouvre `http://3dkeycap.local/…` (le nom d'hôte se change dans Réglages → Atelier →
+Inventaire) : pas besoin de se connecter. Si quelqu'un scanne deux
 fois, rien n'est doublé (c'est juste noté).
 
 ## L'écran d'atelier (kiosque)

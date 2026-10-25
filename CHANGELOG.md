@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- Inventaire : carte téléchargeable en **PNG** (bouton « PNG », 90 × 62 mm à 300 dpi, le nom
+  rétrécit s'il est long) ; le champ « nom d'hôte » des Réglages accepte `3dkeycap.local`,
+  `3dkeycap.local:8080` ou une IP sans écrire `http://`.
 - **Inventaire** (nouvel onglet) : « il faut en racheter ». On crée un objet (nom + quantité à
   laquelle scanner) et on obtient une **carte imprimable avec un code QR** vers
   `http://3dkeycap.local/r/…`. Scanner le code avec un téléphone passe l'objet à « à racheter »
@@ -38,6 +41,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   compléter (nom pas choisi, raison d'une pièce manquante, bac commencé) — rappel aimable en ambre,
   champ entouré, qui disparaît dès que la personne agit. Les vraies pannes restent en rouge mais
   disent que rien n'est perdu et que ce n'est pas de la faute de l'employé.
+- Le contour de couleur des cartes passe de 2 à **3 px**.
 - La couleur de la résine **entoure toute la carte** (et la ligne du tableau « Tout ») au lieu
   d'un simple trait sur le côté.
 - Plus aucun affichage **Chit Chats** dans l'app (cartes, fiche, tableau « Tout »). Les réglages

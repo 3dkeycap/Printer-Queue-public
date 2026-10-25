@@ -121,11 +121,11 @@ export const DEFINITIONS = [
   {
     key: 'inventory.scanUrl',
     group: 'inventory',
-    label: "Adresse de l'app dans les codes QR",
+    label: "Nom d'hôte de l'app (codes QR)",
     type: 'text',
-    placeholder: 'http://3dkeycap.local',
-    hint: "Les codes QR imprimés pointent vers cette adresse. La changer plus tard rend les anciennes cartes inutilisables.",
-    fallback: () => 'http://3dkeycap.local',
+    placeholder: '3dkeycap.local',
+    hint: "Le nom que les téléphones de l'atelier tapent pour ouvrir l'app (ex. 3dkeycap.local, ou 192.168.1.50:8080). Il est écrit dans les codes QR : le changer rend inutilisables les cartes déjà imprimées.",
+    fallback: () => '3dkeycap.local',
   },
 
   // --- Production ---------------------------------------------------------

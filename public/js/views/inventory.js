@@ -1,10 +1,32 @@
 import { el, fromNow, icon } from '../ui.js';
 import { state } from '../store.js';
+import { downloadCardPng } from '../card-png.js';
+import { toast } from '../ui.js';
 
 const statusPill = (item) =>
   item.status === 'reorder'
     ? el('span', { class: 'status-pill', style: { '--pill': 'var(--warn)' } }, [el('span', { class: 'dot' }), `À racheter · ${fromNow(item.flagged_at)}`])
     : el('span', { class: 'status-pill', style: { '--pill': 'var(--ok)' } }, [el('span', { class: 'dot' }), 'OK']);
+
+const pngButton = (item) =>
+  el(
+    'button',
+    {
+      class: 'ghost-btn',
+      title: 'Télécharger la carte en image PNG',
+      onclick: async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+          await downloadCardPng(item);
+        } catch (error) {
+          toast(error.message, 'err');
+        }
+        button.disabled = false;
+      },
+    },
+    [icon('save'), 'PNG'],
+  );
 
 const printLink = (ids, label) =>
   el('a', { class: 'ghost-btn', href: `/inventory/cards?ids=${ids.join(',')}`, target: '_blank', rel: 'noopener' }, [icon('receipt'), label]);
@@ -67,6 +89,7 @@ const itemCard = (item, actions) =>
     el('img', { class: 'inv-qr', src: `/api/inventory/${item.id}/qr.svg`, alt: `Code QR : ${item.name}`, width: '110', height: '110', loading: 'lazy' }),
     el('div', { class: 'inv-actions' }, [
       printLink([item.id], 'Imprimer la carte'),
+      pngButton(item),
       item.status === 'reorder'
         ? el('button', { class: 'ghost-btn', onclick: () => actions.inventoryAction(item.id, () => actions.api.orderedInventoryItem(item.id), `« ${item.name} » : commande notée`) }, 'Commandé')
         : el('button', { class: 'ghost-btn', title: 'Signaler sans scanner', onclick: () => actions.inventoryAction(item.id, () => actions.api.flagInventoryItem(item.id), `« ${item.name} » : à racheter`) }, 'À racheter'),
@@ -94,7 +117,7 @@ export const renderInventory = (root, actions) => {
       ? el('div', { class: 'inv-grid' }, items.map((item) => itemCard(item, actions)))
       : el('div', { class: 'empty' }, [icon('box'), el('strong', {}, 'Aucun objet pour l’instant'), 'Crée un premier objet ci-dessus : sa carte avec un code QR est prête à imprimer.']),
     origin
-      ? el('p', { class: 'table-foot' }, `Les codes QR ouvrent ${origin}/r/… (modifiable dans Réglages → Atelier → Inventaire : changer l’adresse rend les cartes déjà imprimées inutilisables).`)
+      ? el('p', { class: 'table-foot' }, `Les codes QR ouvrent ${origin}/r/… — le nom d’hôte se règle dans Réglages → Atelier → Inventaire (le changer rend les cartes déjà imprimées inutilisables).`)
       : null,
   );
 };

@@ -41,6 +41,18 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
     assert.match(item.scan_url, /^http:\/\/3dkeycap\.local\/r\/[A-Za-z0-9_-]{12}$/);
   });
 
+  it('le nom d\'hôte accepte « 3dkeycap.local », un port, une IP ou une adresse complète', () => {
+    assert.equal(inventory.normalizeBaseUrl('3dkeycap.local'), 'http://3dkeycap.local');
+    assert.equal(inventory.normalizeBaseUrl(' 3dkeycap.local:8080/ '), 'http://3dkeycap.local:8080');
+    assert.equal(inventory.normalizeBaseUrl('192.168.1.50:8080'), 'http://192.168.1.50:8080');
+    assert.equal(inventory.normalizeBaseUrl('https://queue.exemple.com//'), 'https://queue.exemple.com');
+    assert.equal(inventory.normalizeBaseUrl(''), 'http://3dkeycap.local');
+    updateSettings({ 'inventory.scanUrl': 'atelier.local' });
+    assert.match(inventory.createItem({ name: 'Hôte', reorder_at: 1 }).scan_url, /^http:\/\/atelier\.local\/r\//);
+    updateSettings({ 'inventory.scanUrl': '' });
+    assert.match(inventory.createItem({ name: 'Hôte 2', reorder_at: 1 }).scan_url, /^http:\/\/3dkeycap\.local\/r\//);
+  });
+
   it('refuse un nom vide ou une quantité absurde', () => {
     assert.throws(() => inventory.createItem({ name: ' ' }), /nom/);
     assert.throws(() => inventory.createItem({ name: 'X', reorder_at: 'beaucoup' }), /quantité/);

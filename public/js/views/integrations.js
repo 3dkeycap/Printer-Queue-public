@@ -272,7 +272,7 @@ const tabAtelier = (draft, touch, actions) => {
       f('production.lateDays', { label: 'Rouge / « En retard » après (jours)', hint: null }),
     ]),
     section('Inventaire (codes QR)', "Chaque objet de la page « Inventaire » a une carte avec un code QR : le scanner note qu'il faut en racheter.", [
-      f('inventory.scanUrl', { label: "Adresse de l'app dans les codes QR", placeholder: 'http://3dkeycap.local', hint: "Celle que les téléphones de l'atelier savent ouvrir. La changer rend inutilisables les cartes déjà imprimées." }),
+      f('inventory.scanUrl', { label: "Nom d'hôte de l'app", placeholder: '3dkeycap.local', hint: "Le nom que les téléphones de l'atelier tapent pour ouvrir l'app : 3dkeycap.local, ou une adresse comme 192.168.1.50:8080 (http:// est ajouté tout seul). Les codes QR l'utilisent ; le changer rend inutilisables les cartes déjà imprimées." }),
     ]),
     section('Postes UV', 'Les choix proposés pour le champ UV de chaque pièce.', [
       f('production.uvOptions', { label: 'Options UV', hint: null }),

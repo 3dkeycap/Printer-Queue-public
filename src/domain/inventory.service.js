@@ -10,7 +10,21 @@ import { getSettings } from './settings.service.js';
  * « à racheter » ; une fois commandé, on le remet à « ok ».
  */
 
-const baseUrl = () => String(getSettings()['inventory.scanUrl'] || 'http://3dkeycap.local').trim().replace(/\/+$/, '');
+export const DEFAULT_HOST = 'http://3dkeycap.local';
+
+/**
+ * Nom d'hôte saisi dans les réglages -> adresse de base des codes QR.
+ * « 3dkeycap.local », « 3dkeycap.local:8080 » ou « http://192.168.1.50:8080/ » sont acceptés :
+ * sans schéma on met http:// (l'atelier est en HTTP sur le réseau local).
+ */
+export const normalizeBaseUrl = (value) => {
+  let text = String(value ?? '').trim();
+  if (!text) return DEFAULT_HOST;
+  if (!/^https?:\/\//i.test(text)) text = `http://${text}`;
+  return text.replace(/\/+$/, '');
+};
+
+const baseUrl = () => normalizeBaseUrl(getSettings()['inventory.scanUrl']);
 
 /** Adresse encodée dans le code QR d'un objet. */
 export const scanUrl = (token) => `${baseUrl()}/r/${token}`;
