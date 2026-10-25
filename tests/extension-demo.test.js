@@ -39,7 +39,7 @@ describe('extension : pages de démo (fausse admin Shopify + faux Chit Chats)', 
   });
 
   it('les scripts de démo et du service worker se chargent', () => {
-    for (const file of ['demo/shopify/demo-shopify.js', 'demo/chitchats/demo-chitchats.js', 'background.js', 'options.js']) {
+    for (const file of ['demo/shopify/demo-shopify.js', 'demo/chitchats/demo-chitchats.js', 'demo/tour.js', 'background.js', 'options.js']) {
       const result = spawnSync(process.execPath, ['--check', '--input-type=module'], { input: read(file), encoding: 'utf8' });
       assert.equal(result.status, 0, `${file} : ${result.stderr}`);
     }
@@ -49,6 +49,15 @@ describe('extension : pages de démo (fausse admin Shopify + faux Chit Chats)', 
     const html = read('options.html');
     for (const id of ['demo-shopify', 'demo-chitchats', 'demo-both']) assert.ok(html.includes(`id="${id}"`), id);
     assert.match(read('options.js'), /demo\/shopify\/orders\/index\.html/);
+  });
+
+  it('tutoriel de l\'extension : lancé seulement depuis les réglages, jamais tout seul', () => {
+    assert.ok(read('options.html').includes('id="tour"'));
+    assert.match(read('options.js'), /\?tutoriel=1/);
+    // la visite ne démarre que si l'adresse contient ?tutoriel, et seules les pages de démo la chargent
+    assert.match(read('demo/tour.js'), /has\('tutoriel'\)/);
+    for (const page of DEMO_HTML.filter((file) => file.includes('shopify'))) assert.ok(read(page).includes('/demo/tour.js'), page);
+    assert.ok(!read('manifest.json').includes('tour.js'), 'jamais injectée sur le vrai Shopify');
   });
 
   it('version du manifeste augmentée (déclenche la mise à jour de l\'extension)', () => {

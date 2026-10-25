@@ -220,6 +220,8 @@ const openDemo = (...names) => {
 $('demo-shopify').addEventListener('click', () => openDemo('shopify'));
 $('demo-chitchats').addEventListener('click', () => openDemo('chitchats'));
 $('demo-both').addEventListener('click', () => openDemo('shopify', 'chitchats'));
+// tutoriel : la fausse commande #1001 avec la visite guidée (demo/tour.js, déclenchée par ?tutoriel)
+$('tour').addEventListener('click', () => chrome.tabs.create({ url: `${chrome.runtime.getURL('demo/shopify/orders/1001/index.html')}?tutoriel=1` }));
 
 initSettings();
 refreshVersions();

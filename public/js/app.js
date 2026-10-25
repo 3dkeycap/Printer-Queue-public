@@ -913,6 +913,8 @@ const applyMode = () => {
 
 const applyTheme = () => {
   document.documentElement.dataset.theme = state.theme;
+  const kioskTheme = document.getElementById('kiosk-theme');
+  if (kioskTheme) kioskTheme.value = state.theme;
   const next = THEMES[(THEMES.findIndex((theme) => theme.key === state.theme) + 1) % THEMES.length];
   clear(dom.themeBtn).append(icon('sun'), el('span', {}, `Thème : ${themeMeta(state.theme).label}`));
   dom.themeBtn.title = `Changer de thème (suivant : ${next.label})`;
@@ -1073,6 +1075,10 @@ const boot = async () => {
     document.documentElement.classList.add('kiosk');
     location.hash = 'board';
     mountFullscreen(document.getElementById('fullscreen-btn'));
+    // sélecteur de thème en haut du kiosque (le menu latéral, qui le porte ailleurs, y est caché)
+    const themeSelect = document.getElementById('kiosk-theme');
+    themeSelect.replaceChildren(...THEMES.map((theme) => el('option', { value: theme.key }, `Thème : ${theme.label}`)));
+    themeSelect.addEventListener('change', () => setTheme(themeSelect.value));
   }
   applyTheme();
   bindEvents();
