@@ -469,6 +469,7 @@ L'onglet **Réglages → API** (`public/js/views/api-docs.js`) affiche des recet
 | `PATCH` | `/api/parts/:id` | Couleur, UV, commentaire, imprimante, notes, priorité, statut |
 | `POST` | `/api/parts/:id/status` | Transition unitaire (`{ status, note, force }`) |
 | `POST` | `/api/parts/bulk/status` | Transition en lot (`{ ids, status }`) |
+| `GET` `POST` | `/api/packing/{shopify,etsy}/:id` · `/api/packing/orders/:orderId` | Bac « J'ai packé » d'une commande (id Shopify, n° de commande Etsy, ou id local) |
 | `GET` | `/api/orders` · `/api/orders/:id` | Commandes et leurs pièces |
 | `POST` | `/api/orders/:id/ship` | Expédition manuelle |
 | `GET` | `/api/colors` · `POST` · `PATCH /api/colors/:key` · `DELETE` | Catalogue de résines, alias, stock en grammes |

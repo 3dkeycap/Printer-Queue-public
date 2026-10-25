@@ -17,11 +17,14 @@ const log = createLogger('packing');
 
 const packTag = (packer) => `Packé par ${packer}`;
 
-const findOrder = ({ orderId, shopifyId }) => {
+// l'extension connaît la commande par son id côté boutique : Shopify (admin) ou Etsy (n° de commande = receipt_id)
+const findOrder = ({ orderId, shopifyId, etsyId }) => {
   const db = getDb();
   const order = orderId
     ? db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(orderId))
-    : db.prepare(`SELECT * FROM orders WHERE source = 'shopify' AND external_id = ?`).get(String(shopifyId));
+    : db
+        .prepare('SELECT * FROM orders WHERE source = ? AND external_id = ?')
+        .get(etsyId ? 'etsy' : 'shopify', String(etsyId ?? shopifyId));
   if (!order) throw notFound("Commande inconnue de l'app (pas encore synchronisée ?)");
   return order;
 };

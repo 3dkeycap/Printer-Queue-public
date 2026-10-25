@@ -15,6 +15,17 @@ packingRouter.post(
   }),
 );
 
+/** Extension Chrome : commande ouverte dans Etsy Shop Manager (n° de commande Etsy). */
+packingRouter.get('/etsy/:etsyId', (req, res) => {
+  res.json(getPackingView({ etsyId: req.params.etsyId }));
+});
+packingRouter.post(
+  '/etsy/:etsyId',
+  asyncRoute((req, res) => {
+    res.json(savePack({ etsyId: req.params.etsyId }, req.body ?? {}));
+  }),
+);
+
 /** Même chose depuis l'app (id local de la commande). */
 packingRouter.get('/orders/:orderId', (req, res) => {
   res.json(getPackingView({ orderId: req.params.orderId }));

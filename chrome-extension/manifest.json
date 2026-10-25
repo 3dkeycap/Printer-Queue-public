@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Resin Queue — Shopify → Chit Chats",
-  "version": "1.5.0",
-  "description": "Signale à Resin Queue la commande Shopify ouverte, et propose « Ouvrir sur Chit Chats » avec le bon numéro de commande.",
+  "name": "Resin Queue — Shopify / Etsy → Chit Chats",
+  "version": "1.6.0",
+  "description": "Signale à Resin Queue la commande ouverte (Shopify, Etsy), ouvre le bac « J’ai packé » et propose « Ouvrir sur Chit Chats » avec le bon numéro de commande.",
   "permissions": [
     "storage",
     "alarms",
@@ -11,6 +11,7 @@
   "host_permissions": [
     "https://admin.shopify.com/*",
     "https://*.myshopify.com/*",
+    "https://www.etsy.com/*",
     "https://chitchats.com/*",
     "https://api.github.com/*",
     "https://raw.githubusercontent.com/*"
@@ -52,6 +53,16 @@
         "content-chitchats.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.etsy.com/your/orders/*"
+      ],
+      "js": [
+        "pack-panel.js",
+        "content-etsy.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "icons": {
@@ -59,5 +70,15 @@
     "32": "icon32.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icon32.png"
+      ],
+      "matches": [
+        "https://www.etsy.com/*"
+      ]
+    }
+  ]
 }

@@ -10,7 +10,7 @@
  * Affichée dans un Shadow DOM pour que le style de Shopify ne la casse pas.
  */
 (() => {
-  const send = (message) => chrome.runtime.sendMessage(message).catch(() => ({ error: 'Extension rechargée : recharge la page' }));
+  const send = (message) => chrome.runtime.sendMessage({ ...message, source: globalThis.ResinQueuePackSource }).catch(() => ({ error: 'Extension rechargée : recharge la page' }));
 
   const STATUS_LABEL = { TO_PRINT: 'à imprimer', PRINTING: 'en impression', FAILED: 'échec', DONE: 'imprimée', SHIPPED: 'expédiée' };
 
@@ -336,7 +336,7 @@
           h('h3', {}, 'Mis dans le bac'),
           view.items.length ? h('div', { class: 'items' }, view.items.flatMap(itemRow)) : h('div', { class: 'empty' }, 'Aucun article'),
         ]),
-        h('div', { class: 'box' }, [h('h3', {}, 'Notes (internes, pas envoyées à Shopify)'), noteInput]),
+        h('div', { class: 'box' }, [h('h3', {}, 'Notes (internes, pas envoyées à la boutique)'), noteInput]),
       ]),
       h('footer', {}, [
         last ? h('div', { class: `msg ${last.complete ? 'ok' : 'warn'}` }, last.complete ? `Déjà packée par ${last.packer} (${fmt(last.created_at)}).` : `Bac commencé par ${last.packer} : il manque encore des pièces. Tu peux compléter quand tu veux.`) : null,

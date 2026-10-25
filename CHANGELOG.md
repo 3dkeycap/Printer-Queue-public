@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Extension 1.6.0 : Etsy.** Sur la liste des commandes d'Etsy Shop Manager, un bouton (le logo de
+  l'extension) et un bouton 🔗 sont accrochés à chaque commande : ouvre la boîte « J'ai packé » et amène
+  Chit Chats sur la bonne commande, comme sur Shopify. Côté app : `GET`/`POST /api/packing/etsy/:etsyId`.
 - **Réglages → API** : des exemples prêts à copier (liste des pièces, changement de statut, commandes,
   chiffres, synchro) en **curl**, **Windows (PowerShell)** et **n8n** (nœud « HTTP Request » à coller dans
   le canvas). Aucun jeton : l'API est ouverte sur le réseau local (mot de passe de l'app si elle en a un).

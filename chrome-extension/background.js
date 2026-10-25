@@ -303,16 +303,19 @@ const handleLinkMessage = async (message, sender) => {
   }
 };
 
+/** Le bac vient de Shopify (admin) ou d'Etsy (liste des commandes) : la route de l'app diffère. */
+const packSource = (message) => (message.source === 'etsy' ? 'etsy' : 'shopify');
+
 // le script de la page signale aussi ses changements d'URL (plus fiable dans une SPA)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === 'url' && sender.tab?.id !== undefined) handleUrl(sender.tab.id, message.url);
   // fenêtre « J'ai packé » : lecture / enregistrement / nouvelle personne
   if (message?.type === 'pack-get') {
-    appFetch(`/api/packing/shopify/${encodeURIComponent(message.orderExternalId)}`).then(sendResponse);
+    appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}`).then(sendResponse);
     return true;
   }
   if (message?.type === 'pack-save') {
-    appFetch(`/api/packing/shopify/${encodeURIComponent(message.orderExternalId)}`, { method: 'POST', body: message.body }).then(sendResponse);
+    appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}`, { method: 'POST', body: message.body }).then(sendResponse);
     return true;
   }
   if (message?.type === 'packer-add') {

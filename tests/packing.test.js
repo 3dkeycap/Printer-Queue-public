@@ -40,6 +40,15 @@ describe("« J'ai packé la commande »", () => {
     assert.deepEqual(view.buyerDetails.map((d) => d.value), ['Merci de mettre un mot pour mon fils', 'JS']);
   });
 
+  it('retrouve une commande Etsy par son numéro (extension sur Etsy Shop Manager)', () => {
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '3912345678', orderNumber: '3912345678', items: [{ externalId: 'e', title: 'Etsy Keycap', quantity: 1 }] }));
+    const view = getPackingView({ etsyId: '3912345678' });
+    assert.equal(view.order.source, 'etsy');
+    assert.equal(view.items[0].title, 'Etsy Keycap');
+    // le même numéro côté Shopify ne tombe pas sur la commande Etsy
+    assert.throws(() => getPackingView({ shopifyId: '3912345678' }));
+  });
+
   it('pack partiel : pièces mises -> Imprimé + tag, raison pour le reste, nom ajouté à la liste', () => {
     const [keycap, pack] = getPackingView({ shopifyId: '7770001' }).items;
     const view = savePack({ shopifyId: '7770001' }, {

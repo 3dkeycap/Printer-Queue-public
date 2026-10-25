@@ -43,6 +43,14 @@ Tes réglages et le fichier `defaults.json` sont conservés.
 Les versions 1.0.0 n'ont pas encore ce bouton : il faut les remplacer une dernière fois à la main
 (télécharger l'extension depuis l'app, remplacer le dossier, cliquer ↻ dans `chrome://extensions`).
 
+## Etsy (liste des commandes)
+
+Sur Etsy Shop Manager → Commandes (`etsy.com/your/orders/…`), il n'y a pas de page plein écran par
+commande : l'extension accroche à **chaque commande** un bouton avec son logo, plus un bouton 🔗.
+Le logo ouvre la boîte « J'ai packé » de la commande et amène Chit Chats sur la bonne commande
+(onglet lié si le lien live est actif, sinon un nouvel onglet, numéro copié). Le 🔗 fait le même
+« Link » que sur Shopify. Le numéro de commande Etsy est lu dans les liens de la page.
+
 ## Lien live Shopify → Chit Chats (écran partagé)
 
 Deux onglets côte à côte : une commande Shopify et Chit Chats.
