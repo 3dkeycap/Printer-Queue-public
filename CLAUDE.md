@@ -63,6 +63,8 @@ docker compose up -d --build      # stack complète : app + worker + updater
 - Deux dépôts identiques : `3dkeycap/Printer-Queue` (privé) et `3dkeycap/Printer-Queue-public`.
   Le serveur de l'atelier se met à jour depuis **`main` du dépôt public** : toute modification
   livrée doit être poussée sur `main` des **deux** dépôts (même commit).
+  `sh scripts/publish.sh` le fait d'un coup (tests, push, vérification que les deux `main` sont identiques ;
+  `--dry-run` pour voir sans pousser).
 - Ne jamais commiter de secret (token, `.env`, base SQLite). Les faux tokens de test sont
   préfixés explicitement (`shpat_test`…).
 

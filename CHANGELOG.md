@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **`scripts/publish.sh`** : publie le commit courant sur `main` des deux dépôts (privé et public) après les tests et vérifie que les deux pointent sur le même commit (`--dry-run` pour simuler).
 - **Extension 1.7.0 : tags par commande (Shopify et Etsy).** La fenêtre « J'ai packé » a une section « Tags de la
   commande » : To pack, Pre packed, Started, Hold, Address, Nylon restock (liste modifiable dans Réglages → Atelier
   → Tags de commande). Cocher un tag l'ajoute aux **tags de la commande Shopify** (le décocher le retire) ; sur Etsy,
