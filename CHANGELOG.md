@@ -6,6 +6,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Extension 1.6.5 (Etsy)** : un petit bouton (le logo) reste sur chaque commande, en plus de la barre de
+  droite : il sélectionne la commande et ouvre / ferme sa boîte « J'ai packé ».
 - **Extension 1.6.4 (Etsy)** : « Commande inconnue de l'app » sur des commandes pourtant synchronisées : le
   numéro affiché par Etsy (`#4208…`) n'est pas toujours le `receipt_id` que l'app a enregistré. L'extension
   essaie maintenant chaque identifiant des liens de la ligne avant le numéro affiché, et l'app retrouve aussi

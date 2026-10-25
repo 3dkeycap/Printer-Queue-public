@@ -239,10 +239,47 @@
       if (fromUrl && orders.has(fromUrl)) select(fromUrl, rowOf(orders.get(fromUrl), fromUrl, orders));
     }
   };
+  /*
+   * Un petit bouton (le logo) reste sur chaque commande, en plus de la barre : il sélectionne
+   * la commande et ouvre / ferme sa boîte « J'ai packé ».
+   */
+  const logoUrl = chrome.runtime.getURL('icon32.png');
+  const addCardButtons = () => {
+    const orders = findOrders();
+    for (const [id, node] of orders) {
+      const row = rowOf(node, id, orders);
+      if (row.querySelector(':scope > [data-resin-queue-card]')) continue;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('data-resin-queue-card', '');
+      button.title = `Resin Queue : bac de la commande ${id}`;
+      button.style.cssText =
+        'all:unset;position:absolute;right:56px;top:12px;z-index:5;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+        'width:34px;height:34px;box-sizing:border-box;border-radius:999px;background:#fff;border:1px solid #c9d3e8;box-shadow:0 4px 12px -6px rgba(20,30,60,.5);';
+      const icon = document.createElement('img');
+      icon.src = logoUrl;
+      icon.alt = 'Resin Queue';
+      icon.style.cssText = 'width:22px;height:22px;display:block;';
+      button.append(icon);
+      button.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        select(id, row);
+        if (selected.key === selected.id && selected.candidates.length > 1) await resolveKey(selected);
+        globalThis.ResinQueuePack?.toggle(selected.key, dock);
+      });
+      if (getComputedStyle(row).position === 'static') row.style.position = 'relative';
+      row.append(button);
+    }
+  };
+
   let timer = null;
   new MutationObserver(() => {
     clearTimeout(timer);
-    timer = setTimeout(autoSelect, 500);
+    timer = setTimeout(() => {
+      addCardButtons();
+      autoSelect();
+    }, 500);
   }).observe(document.body, { childList: true, subtree: true });
 
   chrome.runtime.onMessage.addListener((message) => {
@@ -254,5 +291,6 @@
 
   render();
   refreshLink();
+  addCardButtons();
   autoSelect();
 })();

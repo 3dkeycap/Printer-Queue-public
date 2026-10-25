@@ -49,7 +49,7 @@ Sur Etsy Shop Manager → Commandes (`etsy.com/your/orders/…`), la même barre
 au bord droit. Etsy n'a pas de page plein écran par commande : **clique la ligne d'une commande** pour la
 sélectionner (elle est entourée en bleu). La barre ouvre alors la boîte « J'ai packé » et amène Chit Chats
 sur la commande (cherchée par le **nom de l'acheteur**, ligne « Ship to ») ; 🔗 Link fait le même lien
-live que sur Shopify. Une seule commande à l'écran : elle est sélectionnée d'office.
+live que sur Shopify. Un petit bouton (le logo) reste aussi sur chaque commande : il la sélectionne et ouvre sa boîte « J'ai packé ». Une seule commande à l'écran : elle est sélectionnée d'office.
 
 ## Lien live Shopify → Chit Chats (écran partagé)
 
