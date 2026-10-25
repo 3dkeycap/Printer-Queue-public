@@ -207,13 +207,13 @@
       live.textContent = '● Live';
       live.title = "Chaque commande ouverte ici s'affiche dans l'onglet Chit Chats lié";
       live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;';
-      // « Stop live » est remplacé par « Bug » (page des bugs de l'app) ; cliquer « ● Live » coupe le lien
+      // « Stop live » est remplacé par « Bug » (signalement d'un bug dans l'app) ; cliquer « ● Live » coupe le lien
       live.style.cursor = 'pointer';
       live.title = "Lien actif : chaque commande ouverte ici s'affiche dans l'onglet Chit Chats lié (cliquer pour couper)";
       live.addEventListener('click', () => send({ type: 'link-stop' }));
       linkPart.append(
         live,
-        linkButton('🐞 Bug', 'Ouvrir la page des bugs de l’app', '#b43a3a', async () => {
+        linkButton('🐞 Bug', 'Signaler un bug (ouvre l’app sur la fenêtre de signalement)', '#b43a3a', async () => {
           const result = await send({ type: 'open-bugs' });
           if (result && !result.ok && result.error) alert(result.error);
         }),

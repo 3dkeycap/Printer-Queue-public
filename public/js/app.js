@@ -934,14 +934,25 @@ const updateNavCounts = () => {
   });
 };
 
-/** Vue demandée par l'adresse ; « #bugs » (bouton Bug de l'extension) ouvre Réglages → Mises à jour, où est la liste. */
+/**
+ * Vue demandée par l'adresse. « #bug » (bouton Bug de l'extension) ouvre la fenêtre pour signaler un
+ * bug (la coccinelle) ; « #bugs » ouvre la liste des bugs signalés (Réglages → Mises à jour).
+ */
 const viewFromHash = () => {
   const hash = location.hash.replace('#', '');
   if (hash === 'bugs') {
     openSettingsTab('maj');
     return 'integrations';
   }
+  if (hash === 'bug') return 'board';
   return hash;
+};
+
+/** Ouvre la fenêtre « signaler un bug » si l'adresse le demande, puis revient à la vue normale. */
+const openBugFromHash = () => {
+  if (location.hash !== '#bug') return;
+  history.replaceState(null, '', `${location.pathname}#board`);
+  document.getElementById('bug-button')?.click();
 };
 
 const setView = (view) => {
@@ -1073,6 +1084,7 @@ const bindEvents = () => {
       location.hash = 'board';
       return;
     }
+    openBugFromHash();
     if (!isKiosk && VIEW_META[view] && view !== state.view) setView(view);
   });
 
@@ -1144,6 +1156,7 @@ const boot = async () => {
   state.view = !isKiosk && (!isSimple() || bugsLink) && VIEW_META[initial] ? initial : 'board';
 
   await refresh();
+  openBugFromHash();
 
   // première visite sur cet appareil : la visite guidée démarre toute seule (une seule fois)
   if (state.view === 'board' && !tutorialSeen()) setTimeout(startTutorial, 900);

@@ -316,10 +316,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}`).then(sendResponse);
     return true;
   }
-  // bouton « Bug » des barres : la page des bugs signalés de l'app
+  // bouton « Bug » des barres : la fenêtre « signaler un bug » de l'app
   if (message?.type === 'open-bugs') {
     getConfig().then((config) => {
-      if (config.appUrl) chrome.tabs.create({ url: `${config.appUrl}/#bugs` });
+      if (config.appUrl) chrome.tabs.create({ url: `${config.appUrl}/#bug` });
       sendResponse({ ok: Boolean(config.appUrl), error: config.appUrl ? null : "Adresse de l'app non configurée (Réglages de l'extension)" });
     });
     return true;
