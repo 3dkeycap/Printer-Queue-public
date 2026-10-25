@@ -45,11 +45,11 @@ Les versions 1.0.0 n'ont pas encore ce bouton : il faut les remplacer une derni�
 
 ## Etsy (liste des commandes)
 
-Sur Etsy Shop Manager → Commandes (`etsy.com/your/orders/…`), il n'y a pas de page plein écran par
-commande : l'extension accroche à **chaque commande** un bouton avec son logo, plus un bouton 🔗.
-Le logo ouvre la boîte « J'ai packé » de la commande et amène Chit Chats sur la bonne commande
-(onglet lié si le lien live est actif, sinon un nouvel onglet, numéro copié). Le 🔗 fait le même
-« Link » que sur Shopify. Le numéro de commande Etsy (`#…`) est lu sur la page ; Chit Chats est cherché par le **nom de l'acheteur** (« Ship to »).
+Sur Etsy Shop Manager → Commandes (`etsy.com/your/orders/…`), la même barre que sur Shopify est accrochée
+au bord droit. Etsy n'a pas de page plein écran par commande : **clique la ligne d'une commande** pour la
+sélectionner (elle est entourée en bleu). La barre ouvre alors la boîte « J'ai packé » et amène Chit Chats
+sur la commande (cherchée par le **nom de l'acheteur**, ligne « Ship to ») ; 🔗 Link fait le même lien
+live que sur Shopify. Une seule commande à l'écran : elle est sélectionnée d'office.
 
 ## Lien live Shopify → Chit Chats (écran partagé)
 

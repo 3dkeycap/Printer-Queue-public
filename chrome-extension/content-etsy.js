@@ -1,11 +1,11 @@
 /*
- * Sur la liste des commandes d'Etsy Shop Manager (/your/orders/sold) : pas de
- * page « une commande » plein écran comme sur Shopify, donc un petit bouton
- * (le logo de l'extension) est accroché à chaque commande. Il fait comme la
- * barre de Shopify : ouvre la boîte « J'ai packé » de la commande et amène
- * l'onglet Chit Chats sur la bonne commande (lien live, ou nouvel onglet).
- * Le numéro de commande Etsy (order_id dans les liens) est celui que l'app
- * connaît (receipt_id).
+ * Sur la liste des commandes d'Etsy Shop Manager (/your/orders/sold) : la même
+ * barre que sur Shopify, accrochée au bord droit (poignée ⋮⋮ pour la déplacer,
+ * position partagée avec Shopify). Etsy n'a pas de page « une commande » : la
+ * barre agit sur la commande sélectionnée en cliquant sa ligne (elle est alors
+ * entourée) ; s'il n'y en a qu'une à l'écran, elle est sélectionnée d'office.
+ * Chit Chats est cherché par le nom de l'acheteur (« Ship to »), pas par le
+ * numéro Etsy, que Chit Chats ne connaît pas toujours.
  */
 (() => {
   // lien d'une commande (repli) : ?order_id=123…
@@ -13,17 +13,13 @@
   const send = (message) => chrome.runtime.sendMessage(message).catch(() => null);
   globalThis.ResinQueuePackSource = 'etsy';
 
-  const logo = chrome.runtime.getURL('icon32.png');
-  const groups = new Map(); // orderId -> { group, linkBtn }
-  let lastClicked = null;
+  let dock = null;
+  let selected = null; // { id, row, name }
   let linkStatus = {};
 
   const orderIdOf = (href) => ORDER_ID.exec(href ?? '')?.[1] ?? null;
 
-  /**
-   * Une entrée par commande : le numéro affiché sous le nom de l'acheteur (« #4208091578 »)
-   * est celui que l'app connaît ; les liens ?order_id= ne servent que de repli.
-   */
+  /** Une entrée par commande : le numéro affiché sous le nom (« #4208091578 ») est celui de l'app. */
   const findOrders = () => {
     const found = new Map();
     for (const node of document.querySelectorAll('a, span, div')) {
@@ -40,13 +36,6 @@
     return found;
   };
 
-  /** Nom de l'acheteur : la ligne qui suit « Ship to » dans la commande. */
-  const buyerName = (row) => {
-    const lines = (row.innerText ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
-    const at = lines.findIndex((line) => /^ship to$/i.test(line));
-    return (at >= 0 && lines[at + 1]) || null;
-  };
-
   /** La ligne de la commande : le plus petit bloc qui contient aussi sa case à cocher. */
   const rowOf = (anchor, id, all) => {
     let node = anchor;
@@ -61,127 +50,182 @@
     return node;
   };
 
-  const toast = (text) => {
-    alert(text);
-  };
-
-  const button = (label, title, extra, onClick) => {
-    const node = document.createElement('button');
-    node.type = 'button';
-    node.title = title;
-    node.style.cssText =
-      'all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;height:34px;min-width:34px;box-sizing:border-box;' +
-      `border-radius:999px;background:#fff;border:1px solid #c9d3e8;box-shadow:0 4px 12px -6px rgba(20,30,60,.5);font:600 13px system-ui,sans-serif;${extra}`;
-    if (label instanceof Node) node.append(label);
-    else node.textContent = label;
-    node.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      onClick(event);
-    });
-    return node;
+  /** Nom de l'acheteur : la ligne qui suit « Ship to » dans la commande. */
+  const buyerName = (row) => {
+    const lines = (row?.innerText ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
+    const at = lines.findIndex((line) => /^ship to$/i.test(line));
+    return (at >= 0 && lines[at + 1]) || null;
   };
 
   const mine = () => linkStatus.link && linkStatus.link.shopifyTabId === linkStatus.tabId;
-
-  const paintLink = () => {
-    const live = mine() && linkStatus.link.state === 'live';
-    const pending = mine() && linkStatus.link.state === 'pending';
-    for (const { linkBtn } of groups.values()) {
-      linkBtn.textContent = live ? '● Live' : pending ? '🔗…' : '🔗';
-      linkBtn.title = live
-        ? 'Chaque commande cliquée ici s’affiche dans l’onglet Chit Chats lié (cliquer pour couper)'
-        : pending
-          ? 'Clique « Link » sur l’onglet Chit Chats… (cliquer pour annuler)'
-          : 'Lier un onglet Chit Chats : il suivra les commandes cliquées ici';
-      linkBtn.style.background = live ? '#167a43' : pending ? '#8a6414' : '#fff';
-      linkBtn.style.color = live || pending ? '#fff' : '#163f8f';
-      linkBtn.style.padding = '0 10px';
-    }
-  };
   const refreshLink = async () => {
     linkStatus = (await send({ type: 'link-status' })) ?? {};
-    paintLink();
+    render();
   };
 
-  /** Amène Chit Chats sur la commande : onglet lié, sinon nouvel onglet (numéro copié). */
-  const goChitChats = async (id, customerName) => {
-    lastClicked = { id, customerName };
-    if (mine() && linkStatus.link.state === 'live') {
-      send({ type: 'link-order', orderNumber: id, customerName });
-      return;
-    }
-    const info = await send({ type: 'resolve', pageOrderNumber: id, customerName });
+  /** Lien live : la commande sélectionnée s'affiche dans l'onglet Chit Chats lié. */
+  const syncLinkedOrder = () => {
+    if (selected) send({ type: 'link-order', orderNumber: selected.id, customerName: selected.name });
+  };
+
+  const select = (id, row) => {
+    if (selected?.id === id) return;
+    if (selected?.row?.isConnected) selected.row.style.outline = selected.previousOutline ?? '';
+    const previousOutline = row.style.outline;
+    row.style.outline = '3px solid #1f5fd6';
+    row.style.outlineOffset = '-3px';
+    selected = { id, row, name: buyerName(row), previousOutline };
+    // la boîte du bac déjà ouverte passe sur cette commande
+    if (globalThis.ResinQueuePack?.isOpen()) globalThis.ResinQueuePack.open(id, dock);
+    syncLinkedOrder();
+    render();
+  };
+
+  const openChitChats = async () => {
+    if (!selected) return;
+    const info = await send({ type: 'resolve', pageOrderNumber: selected.id, customerName: selected.name });
     if (!info?.chitchatsUrl) return;
     try {
-      await navigator.clipboard.writeText(id);
+      await navigator.clipboard.writeText(selected.name || selected.id);
     } catch {
       /* presse-papiers refusé : on ouvre quand même */
     }
     window.open(info.chitchatsUrl, '_blank', 'noopener');
   };
 
-  const onLogo = (id, node, row) => {
-    const closing = globalThis.ResinQueuePack?.openOrder() === id;
-    globalThis.ResinQueuePack?.toggle(id, node);
-    if (!closing) goChitChats(id, row ? buyerName(row) : null);
+  const removeDock = () => {
+    dock?.remove();
+    dock = null;
   };
 
-  const onLink = async () => {
-    if (mine()) await send({ type: 'link-stop' });
-    else {
-      const result = await send({ type: 'link-start' });
-      if (result?.warning) toast(result.warning);
+  async function render() {
+    const { dockTop = 14 } = await chrome.storage.local.get('dockTop');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.setAttribute('data-resin-queue', '');
+      document.documentElement.append(dock);
     }
-    refreshLink();
-  };
+    dock.style.cssText =
+      `position:fixed;right:0;top:${dockTop}%;z-index:2147483646;display:flex;align-items:stretch;` +
+      'font:600 13px system-ui,-apple-system,sans-serif;box-shadow:0 8px 24px -8px rgba(20,30,60,.45);' +
+      'border-radius:10px 0 0 10px;overflow:hidden;user-select:none;';
 
-  const attach = (id, row, floating = false) => {
-    if (groups.get(id)?.group.isConnected) return;
-    const group = document.createElement('div');
-    group.setAttribute('data-resin-queue', '');
-    group.style.cssText = floating
-      ? 'position:fixed;right:12px;top:30%;z-index:2147483646;display:flex;gap:6px;'
-      : 'position:absolute;right:56px;top:12px;z-index:5;display:flex;gap:6px;';
-    const icon = document.createElement('img');
-    icon.src = logo;
-    icon.alt = 'Resin Queue';
-    icon.style.cssText = 'width:22px;height:22px;display:block;';
-    const logoBtn = button(icon, `Resin Queue : bac + Chit Chats pour la commande ${id}`, 'padding:0 5px;', () => onLogo(id, logoBtn, floating ? null : row));
-    const linkBtn = button('🔗', 'Lier un onglet Chit Chats', 'padding:0 10px;', onLink);
-    group.append(logoBtn, linkBtn);
-    if (!floating && getComputedStyle(row).position === 'static') row.style.position = 'relative';
-    (floating ? document.documentElement : row).append(group);
-    groups.set(id, { group, linkBtn });
-    paintLink();
-  };
+    const grip = document.createElement('span');
+    grip.title = 'Glisser pour déplacer';
+    grip.textContent = '⋮⋮';
+    grip.style.cssText = 'display:flex;align-items:center;padding:0 5px;background:#163f8f;color:#9db7ea;cursor:ns-resize;font-size:11px;letter-spacing:-2px;';
+    grip.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      grip.setPointerCapture(event.pointerId);
+      const move = (e) => {
+        dock.style.top = `${Math.min(92, Math.max(4, (e.clientY / window.innerHeight) * 100))}%`;
+        globalThis.ResinQueuePack?.place();
+      };
+      const up = () => {
+        grip.removeEventListener('pointermove', move);
+        chrome.storage.local.set({ dockTop: Number.parseFloat(dock.style.top) });
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up, { once: true });
+    });
 
-  const scan = () => {
-    for (const [id, entry] of groups) if (!entry.group.isConnected) groups.delete(id);
+    const btn = (label, title, color, onClick, extra = '') => {
+      const node = document.createElement('button');
+      node.type = 'button';
+      node.title = title;
+      node.textContent = label;
+      node.style.cssText = `all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 12px;background:${color};color:#fff;${extra}`;
+      node.addEventListener('click', onClick);
+      return node;
+    };
+
+    const parts = [grip];
+    if (!selected) {
+      const hint = document.createElement('span');
+      hint.textContent = 'Clique une commande';
+      hint.title = 'Clique la ligne d’une commande pour la sélectionner';
+      hint.style.cssText = 'display:flex;align-items:center;padding:10px 14px;background:#1f5fd6;color:#fff;';
+      parts.push(hint);
+    } else {
+      const label = `${selected.name ?? ''} #${selected.id}`.trim();
+      parts.push(
+        btn(`Chit Chats ${selected.name ?? '#' + selected.id}`, `Ouvrir ${label} sur Chit Chats (cherché par le nom de l’acheteur)`, '#1f5fd6', openChitChats, 'padding:10px 14px 10px 11px;'),
+      );
+      const open = globalThis.ResinQueuePack?.isOpen();
+      parts.push(
+        btn(open ? '📦 J’ai packé ▴' : '📦 J’ai packé ▾', 'Indiquer ce qui est dans le bac de cette commande', '#7a4fd0', () => globalThis.ResinQueuePack?.toggle(selected.id, dock), 'border-left:1px solid rgba(255,255,255,.25);'),
+      );
+    }
+
+    // lien live avec un onglet Chit Chats (même fonctionnement que sur Shopify)
+    const link = linkStatus.link;
+    const linkPart = document.createElement('span');
+    linkPart.style.cssText = 'display:flex;align-items:stretch;border-left:1px solid rgba(255,255,255,.25);';
+    if (mine() && link.state === 'live') {
+      const live = document.createElement('span');
+      live.textContent = '● Live';
+      live.title = 'Chaque commande sélectionnée ici s’affiche dans l’onglet Chit Chats lié';
+      live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;';
+      linkPart.append(live, btn('Stop live', 'Couper le lien avec Chit Chats', '#b43a3a', () => send({ type: 'link-stop' })));
+    } else if (mine() && link.state === 'pending') {
+      linkPart.append(btn('Clique « Link » sur Chit Chats… ✕', 'Annuler', '#8a6414', () => send({ type: 'link-stop' })));
+    } else {
+      linkPart.append(
+        btn('🔗 Link', 'Lier un onglet Chit Chats : il suivra la commande sélectionnée ici', '#163f8f', async () => {
+          const result = await send({ type: 'link-start' });
+          if (result?.warning) alert(result.warning);
+        }),
+      );
+    }
+    parts.push(linkPart);
+
+    dock.replaceChildren(...parts);
+    globalThis.ResinQueuePack?.place();
+  }
+
+  /** Sélection d'une commande : un clic n'importe où sur sa ligne. */
+  document.addEventListener(
+    'click',
+    (event) => {
+      if (dock?.contains(event.target) || event.target.closest?.('[data-resin-queue-pack]')) return;
+      const orders = findOrders();
+      for (const [id, node] of orders) {
+        const row = rowOf(node, id, orders);
+        if (row.contains(event.target)) return select(id, row);
+      }
+    },
+    true,
+  );
+
+  // une seule commande à l'écran : sélectionnée d'office (et à chaque rechargement de la liste)
+  const autoSelect = () => {
     const orders = findOrders();
-    for (const [id, anchor] of orders) attach(id, rowOf(anchor, id, orders));
-    // page d'une seule commande sans lien repérable : bouton flottant
-    if (!orders.size) {
+    if (selected && !selected.row.isConnected) {
+      const again = orders.get(selected.id);
+      if (again) selected = { ...selected, row: rowOf(again, selected.id, orders) };
+    }
+    if (!selected && orders.size === 1) {
+      const [[id, node]] = [...orders];
+      select(id, rowOf(node, id, orders));
+    } else if (!selected) {
       const fromUrl = orderIdOf(location.href);
-      if (fromUrl) attach(fromUrl, document.body, true);
+      if (fromUrl && orders.has(fromUrl)) select(fromUrl, rowOf(orders.get(fromUrl), fromUrl, orders));
     }
   };
-
   let timer = null;
-  const later = () => {
+  new MutationObserver(() => {
     clearTimeout(timer);
-    timer = setTimeout(scan, 400);
-  };
-  // Etsy recharge la liste sans recharger la page (filtres, onglets, pages)
-  new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
+    timer = setTimeout(autoSelect, 500);
+  }).observe(document.body, { childList: true, subtree: true });
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'link-changed') refreshLink();
-    if (message?.type === 'link-sync' && lastClicked) send({ type: 'link-order', orderNumber: lastClicked.id, customerName: lastClicked.customerName });
+    if (message?.type === 'link-sync') syncLinkedOrder();
     return false;
   });
-  globalThis.addEventListener('resin-queue-pack', () => paintLink());
+  globalThis.addEventListener('resin-queue-pack', () => render());
 
-  scan();
+  render();
   refreshLink();
+  autoSelect();
 })();
