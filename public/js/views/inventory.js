@@ -105,13 +105,23 @@ export const questionsEditor = (initial = [], onChange = () => {}) => {
  * Ce qui manque, d'après les réponses données aux scans (une ligne par scan). Les réponses sont en gros,
  * aussi lisibles que le nom de l'objet : c'est ce qu'on lit pour savoir quoi commander.
  */
-const detailLines = (item) =>
-  (item.flag_details ?? []).map((detail) =>
+const detailLines = (item) => {
+  // plusieurs employés répondent pareil : une seule ligne, « signalé N fois » et l'heure du dernier scan
+  const groups = new Map();
+  for (const detail of item.flag_details ?? []) {
+    const key = JSON.stringify(detail.answers.map((answer) => [answer.label, answer.value]));
+    const group = groups.get(key) ?? { answers: detail.answers, count: 0, last: detail.at };
+    group.count += 1;
+    if (detail.at > group.last) group.last = detail.at;
+    groups.set(key, group);
+  }
+  return [...groups.values()].map((group) =>
     el('div', { class: 'inv-answer' }, [
-      ...detail.answers.map((answer) => el('span', { class: 'inv-ans' }, [el('small', {}, answer.label), el('strong', {}, answer.value)])),
-      el('small', { class: 'inv-when' }, fromNow(detail.at)),
+      ...group.answers.map((answer) => el('span', { class: 'inv-ans' }, [el('small', {}, answer.label), el('strong', {}, answer.value)])),
+      el('small', { class: 'inv-when' }, group.count > 1 ? `Signalé ${group.count} fois · dernier scan ${fromNow(group.last)}` : fromNow(group.last)),
     ]),
   );
+};
 
 /**
  * Formulaire des questions d'un objet (le même que sur le téléphone, au scan) : sert au bouton

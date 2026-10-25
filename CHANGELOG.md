@@ -113,6 +113,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 
 ### Modifié
 - **Inventaire : les réponses aux questions en gros.** Une fois signalé, ce qui manque (« Noir, Gris », « 3 »…) s'affiche en grosses pastilles, aussi lisibles que le nom de l'objet, dans « À racheter » et sur la carte de l'objet (avec la question en petit au-dessus).
+  Les réponses identiques de plusieurs employés sont regroupées en une seule ligne : « Signalé 3 fois · dernier scan il y a 5 min ».
 - **Cartes de « Resin Queue » : ce qui vient du bac s'affiche avec le nom de la personne.** Le « Manque au bac : <raison> »
   est suivi de « — <qui a packé> », et la note écrite dans le bac (ex. « Bac 4, étagère du haut ») apparaît sur la
   carte, aussi en mode simple, avec le même nom : on sait à qui demander.
