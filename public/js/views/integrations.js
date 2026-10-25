@@ -28,6 +28,16 @@ const readTab = () => {
 };
 let activeTab = readTab();
 
+/** Ouvre un onglet des réglages (lien direct « #bugs » depuis l'extension). */
+export const openSettingsTab = (key) => {
+  activeTab = key;
+  try {
+    sessionStorage.setItem(TAB_KEY, key);
+  } catch {
+    /* stockage indisponible : sans importance */
+  }
+};
+
 // des modifications pas encore enregistrées : le navigateur demande confirmation avant de recharger
 let unsaved = false;
 window.addEventListener('beforeunload', (event) => {

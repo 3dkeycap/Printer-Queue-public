@@ -316,6 +316,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}`).then(sendResponse);
     return true;
   }
+  // bouton « Bug » des barres : la page des bugs signalés de l'app
+  if (message?.type === 'open-bugs') {
+    getConfig().then((config) => {
+      if (config.appUrl) chrome.tabs.create({ url: `${config.appUrl}/#bugs` });
+      sendResponse({ ok: Boolean(config.appUrl), error: config.appUrl ? null : "Adresse de l'app non configurée (Réglages de l'extension)" });
+    });
+    return true;
+  }
   // Etsy : le numéro affiché n'est pas toujours le receipt_id connu de l'app, on essaie chaque identifiant de la ligne
   if (message?.type === 'etsy-find') {
     (async () => {

@@ -6,6 +6,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Extension 1.6.6** : quand le lien live est actif, « Stop live » est remplacé par **« 🐞 Bug »**, qui ouvre la
+  page des bugs de l'app (adresse `/#bugs` = Réglages → Mises à jour). Pour couper le lien, on clique sur « ● Live ».
 - **Inventaire : questions au scan.** Un objet peut poser des questions quand on scanne sa carte : un
   **choix** (liste libre ou **couleurs de résine** du catalogue, une ou plusieurs réponses), un **nombre** ou
   un **texte libre**. Une seule étiquette « Résine » suffit : on coche les couleurs qui manquent. Les réponses

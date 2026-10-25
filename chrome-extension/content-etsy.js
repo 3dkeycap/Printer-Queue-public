@@ -191,9 +191,17 @@
     if (mine() && link.state === 'live') {
       const live = document.createElement('span');
       live.textContent = '● Live';
-      live.title = 'Chaque commande sélectionnée ici s’affiche dans l’onglet Chit Chats lié';
-      live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;';
-      linkPart.append(live, btn('Stop live', 'Couper le lien avec Chit Chats', '#b43a3a', () => send({ type: 'link-stop' })));
+      live.title = 'Chaque commande sélectionnée ici s’affiche dans l’onglet Chit Chats lié (cliquer pour couper)';
+      live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;cursor:pointer;';
+      live.addEventListener('click', () => send({ type: 'link-stop' }));
+      // « Stop live » est remplacé par « Bug » (page des bugs de l'app)
+      linkPart.append(
+        live,
+        btn('🐞 Bug', 'Ouvrir la page des bugs de l’app', '#b43a3a', async () => {
+          const result = await send({ type: 'open-bugs' });
+          if (result && !result.ok && result.error) alert(result.error);
+        }),
+      );
     } else if (mine() && link.state === 'pending') {
       linkPart.append(btn('Clique « Link » sur Chit Chats… ✕', 'Annuler', '#8a6414', () => send({ type: 'link-stop' })));
     } else {

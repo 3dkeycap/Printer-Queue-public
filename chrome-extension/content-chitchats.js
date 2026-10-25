@@ -1,7 +1,7 @@
 /*
  * Onglet Chit Chats : bouton « Link » quand un onglet Shopify attend d'être
  * lié, puis une pastille « Live » tant que cet onglet suit les commandes
- * ouvertes dans Shopify (le lien se coupe depuis Shopify : « Stop live »).
+ * ouvertes dans Shopify (le lien se coupe depuis Shopify : clic sur « ● Live »).
  */
 (() => {
   let badge = null;

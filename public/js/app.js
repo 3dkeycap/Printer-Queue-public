@@ -21,7 +21,7 @@ import {
 } from './store.js';
 import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
-import { renderIntegrations } from './views/integrations.js';
+import { openSettingsTab, renderIntegrations } from './views/integrations.js';
 import { renderFailures } from './views/failures.js';
 import { questionsEditor, questionsForm, renderInventory } from './views/inventory.js';
 import { closeDrawer, openDrawer } from './drawer.js';
@@ -934,6 +934,16 @@ const updateNavCounts = () => {
   });
 };
 
+/** Vue demandée par l'adresse ; « #bugs » (bouton Bug de l'extension) ouvre Réglages → Mises à jour, où est la liste. */
+const viewFromHash = () => {
+  const hash = location.hash.replace('#', '');
+  if (hash === 'bugs') {
+    openSettingsTab('maj');
+    return 'integrations';
+  }
+  return hash;
+};
+
 const setView = (view) => {
   state.view = view;
   state.selection.clear();
@@ -1057,9 +1067,9 @@ const bindEvents = () => {
   });
 
   window.addEventListener('hashchange', () => {
-    const view = location.hash.replace('#', '');
-    // mode simple : seulement « Resin Queue » (pas de « Tout » ni de Réglages)
-    if (isSimple() && view !== 'board') {
+    const view = viewFromHash();
+    // mode simple : seulement « Resin Queue » (pas de « Tout » ni de Réglages), sauf le lien direct vers les bugs
+    if (isSimple() && view !== 'board' && location.hash !== '#bugs') {
       location.hash = 'board';
       return;
     }
@@ -1129,8 +1139,9 @@ const boot = async () => {
   state.colors = colors.items;
   updateConnectorBadge();
 
-  const initial = location.hash.replace('#', '');
-  state.view = !isKiosk && !isSimple() && VIEW_META[initial] ? initial : 'board';
+  const initial = viewFromHash();
+  const bugsLink = location.hash === '#bugs';
+  state.view = !isKiosk && (!isSimple() || bugsLink) && VIEW_META[initial] ? initial : 'board';
 
   await refresh();
 

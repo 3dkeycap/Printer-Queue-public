@@ -60,7 +60,7 @@ Deux onglets côte à côte : une commande Shopify et Chit Chats.
    déplace n'importe où avec la poignée ⋮⋮ (position mémorisée ; double-clic sur ⋮⋮ = retour en bas).
 3. C'est **Live** : chaque commande que tu ouvres dans Shopify s'affiche automatiquement dans
    l'onglet Chit Chats (sens unique, Shopify → Chit Chats).
-4. **Stop live** (sur Shopify) coupe le lien. Fermer un des deux onglets le coupe aussi.
+4. Cliquer sur **● Live** (sur Shopify) coupe le lien ; à côté, le bouton **🐞 Bug** ouvre la page des bugs de l'app (Réglages → Mises à jour). Fermer un des deux onglets coupe aussi le lien.
 
 Il faut le Client ID Chit Chats dans les réglages de l'extension.
 

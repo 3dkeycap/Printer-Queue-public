@@ -34,7 +34,7 @@
     {
       title: '🔗 Link : deux onglets côte à côte',
       find: dockButton('Link'),
-      text: 'Pour travailler avec Shopify et Chit Chats en écran partagé : clique « 🔗 Link » ici, puis « 🔗 Link » dans l’onglet Chit Chats. Ensuite, chaque commande que tu ouvres dans Shopify s’affiche toute seule dans Chit Chats. « Stop live » coupe le lien.',
+      text: 'Pour travailler avec Shopify et Chit Chats en écran partagé : clique « 🔗 Link » ici, puis « 🔗 Link » dans l’onglet Chit Chats. Ensuite, chaque commande que tu ouvres dans Shopify s’affiche toute seule dans Chit Chats. Cliquer sur « ● Live » coupe le lien (le bouton « 🐞 Bug » ouvre la page des bugs).',
     },
     {
       title: 'À toi d’essayer',
