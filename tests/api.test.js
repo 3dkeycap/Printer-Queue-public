@@ -152,6 +152,6 @@ describe('API HTTP', () => {
   it('sert le dashboard sur la racine', async () => {
     const response = await fetch(`${base}/`);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /Resin Print Queue/);
+    assert.match(await response.text(), /3D Keycap Lab/);
   });
 });

@@ -1,6 +1,6 @@
 {
-  "name": "Resin Print Queue — Kiosque",
-  "short_name": "Print Queue",
+  "name": "3D Keycap Lab — Kiosque",
+  "short_name": "Keycap Lab",
   "start_url": "/kiosk",
   "scope": "/",
   "display": "fullscreen",

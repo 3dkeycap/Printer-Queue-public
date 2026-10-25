@@ -2,7 +2,7 @@ import { el } from './ui.js';
 import { state } from './store.js';
 
 /**
- * Visite guidée de la page « À imprimer », pensée pour quelqu'un qui n'a
+ * Visite guidée de la page « Resin Queue », pensée pour quelqu'un qui n'a
  * jamais vu l'outil : peu d'étapes, des phrases courtes, aucun jargon.
  * Un projecteur sur chaque élément et une bulle d'explication ; les étapes
  * dont l'élément n'est pas à l'écran (kiosque, tableau vide...) sont sautées.

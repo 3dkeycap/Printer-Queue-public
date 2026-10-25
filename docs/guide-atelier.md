@@ -1,4 +1,4 @@
-# Guide de l'atelier
+# Guide de l'atelier — 3D Keycap Lab
 
 Pour quelqu'un qui n'a jamais utilisé l'outil. Compte 10 minutes de lecture, ou lance la
 visite guidée : bouton **Tutoriel** en haut de la page (elle démarre aussi toute seule la
@@ -42,7 +42,7 @@ ratent le plus souvent.
 ## Commande annulée
 
 Quand un client annule sa commande (Shopify ou Etsy), ses cartes **disparaissent toutes seules**
-de « À imprimer » à la synchro suivante (au plus 5 minutes). Elles restent dans la page **Tout**
+de « Resin Queue » à la synchro suivante (au plus 5 minutes). Elles restent dans la page **Tout**
 (mode Avancé) avec l'étiquette rouge « Annulée », pour l'historique. Si tu as déjà emballé une
 pièce de cette commande, la boîte « J'ai packé » de l'extension te prévient qu'elle est annulée.
 
@@ -97,7 +97,7 @@ Le **thème** (couleurs de l'écran) se change avec le sélecteur en haut de l'�
 
 Le sélecteur en haut de la page (ordinateur seulement) :
 
-- **Simple** (par défaut) : seulement le tableau « À imprimer ».
+- **Simple** (par défaut) : seulement la page **Resin Queue** (le tableau des 3 colonnes).
 - **Avancé** : en plus, les pages **Tout** (toutes les pièces, tableau modifiable),
   **Échecs** et **Réglages**, ainsi que l'UV, le rush, la provenance et le numéro de commande
   sur les cartes.

@@ -38,6 +38,6 @@ export const basicAuth = (req, res, next) => {
     }
   }
 
-  res.set('WWW-Authenticate', 'Basic realm="Resin Print Queue", charset="UTF-8"');
+  res.set('WWW-Authenticate', 'Basic realm="3D Keycap Lab", charset="UTF-8"');
   return res.status(401).json({ error: 'Authentication required' });
 };

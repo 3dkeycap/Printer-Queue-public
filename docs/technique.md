@@ -1,4 +1,4 @@
-# Resin Print Queue — documentation technique
+# 3D Keycap Lab — documentation technique
 
 > Version courte : [README](../README.md). Guide pour l'atelier : [guide-atelier.md](guide-atelier.md). Règles de travail : [CLAUDE.md](../CLAUDE.md). Historique : [CHANGELOG](../CHANGELOG.md).
 
@@ -20,7 +20,7 @@ les réglages sont stockés en base.
 
 | Page | Rôle |
 | --- | --- |
-| **À imprimer** | Le tableau de production : colonnes *À imprimer · En impression · Imprimé*, glisser-déposer, regroupement par couleur de résine. Un échec renvoie la pièce dans « À imprimer ». |
+| **Resin Queue** | Le tableau de production : colonnes *À imprimer · En impression · Imprimé*, glisser-déposer, regroupement par couleur de résine. Un échec renvoie la pièce dans « À imprimer ». |
 | **Tout** | Toutes les pièces, tous statuts confondus, en tableau éditable (statut, UV, tags) — l'équivalent direct de la feuille de calcul (mode Avancé). |
 | **Échecs** | Historique de chaque impression ratée et taux d'échec par fichier (mode Avancé). |
 | **Réglages** | Tous les réglages : Shopify, Etsy, Chit Chats, planification, listes UV / commentaires, catalogue de résines, journal des synchronisations. |

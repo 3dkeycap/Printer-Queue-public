@@ -123,7 +123,7 @@ export const openDrawer = async (partId, actions) => {
       part.cancelled
         ? el('div', { class: 'buyer-box pack-note-box' }, [
             el('div', { class: 'buyer-title' }, [icon('alert'), 'Commande annulée']),
-            el('div', { class: 'buyer-line' }, el('div', {}, "Annulée dans la boutique : cette pièce n'est plus dans « À imprimer » (elle reste ici pour l'historique).")),
+            el('div', { class: 'buyer-line' }, el('div', {}, "Annulée dans la boutique : cette pièce n'est plus dans « Resin Queue » (elle reste ici pour l'historique).")),
           ])
         : null,
 
@@ -195,14 +195,14 @@ export const openDrawer = async (partId, actions) => {
           {
             class: `chip${part.not_printed ? ' is-on' : ''}`,
             title: part.not_printed
-              ? 'Remettre cette pièce dans « À imprimer »'
-              : "Article en stock / pas imprimé ici : le retirer de « À imprimer » (il reste dans « Tout »)",
+              ? 'Remettre cette pièce dans « Resin Queue »'
+              : "Article en stock / pas imprimé ici : le retirer de « Resin Queue » (il reste dans « Tout »)",
             onclick: async () => {
               await actions.patchPart(part.id, { not_printed: !part.not_printed });
               openDrawer(part.id, actions);
             },
           },
-          [icon('printer'), part.not_printed ? "Pas imprimé ici — remettre dans « À imprimer »" : 'Pas imprimé ici (en stock)'],
+          [icon('printer'), part.not_printed ? "Pas imprimé ici — remettre dans « Resin Queue »" : 'Pas imprimé ici (en stock)'],
         ),
       ]),
 

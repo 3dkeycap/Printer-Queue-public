@@ -107,7 +107,7 @@ export const bugReportForClaude = (id) => {
       .map((entry) => (typeof entry === 'string' ? entry : JSON.stringify(entry)))
       .join('\n');
   return [
-    `# Bug #${bug.id} — Resin Print Queue`,
+    `# Bug #${bug.id} — 3D Keycap Lab`,
     '',
     `- Signalé par : ${bug.reporter ?? 'inconnu'}`,
     `- Le : ${bug.created_at}`,

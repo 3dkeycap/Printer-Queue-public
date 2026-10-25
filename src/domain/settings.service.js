@@ -138,7 +138,7 @@ export const DEFINITIONS = [
     group: 'production',
     label: 'Suppléments à ne pas imprimer',
     type: 'list',
-    hint: "Une valeur par ligne. Si le titre, la variante ou le SKU d'une ligne de commande CONTIENT un de ces mots (Etsy/Shopify), c'est un supplément/upsell : aucune pièce n'est créée. Si le nom d'une résine contient un de ces mots (ex. « Nylon »), cette résine est aussi retirée de « À imprimer ».",
+    hint: "Une valeur par ligne. Si le titre, la variante ou le SKU d'une ligne de commande CONTIENT un de ces mots (Etsy/Shopify), c'est un supplément/upsell : aucune pièce n'est créée. Si le nom d'une résine contient un de ces mots (ex. « Nylon »), cette résine est aussi retirée de « Resin Queue ».",
     fallback: () => ['Custom UV Printed Legends', 'Color Variety Pack'],
   },
   {
@@ -154,7 +154,7 @@ export const DEFINITIONS = [
     group: 'production',
     label: 'Couleurs retirées de la file',
     type: 'list',
-    hint: "Clés de résine (ex. « nylon-gray ») qu'on n'imprime pas ici (autre usine). Leurs pièces n'apparaissent plus dans « À imprimer ». Plus simple : bouton « Couleurs masquées » dans la barre de filtres.",
+    hint: "Clés de résine (ex. « nylon-gray ») qu'on n'imprime pas ici (autre usine). Leurs pièces n'apparaissent plus dans « Resin Queue ». Plus simple : bouton « Couleurs masquées » dans la barre de filtres.",
     fallback: () => [],
   },
   {

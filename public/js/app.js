@@ -37,7 +37,7 @@ const NEXT_STATUS = {
 };
 
 const VIEW_META = {
-  board: { title: 'À imprimer', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
+  board: { title: 'Resin Queue', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
   all: { title: 'Tout', subtitle: 'Toutes les pièces, tous statuts confondus.' },
   failures: { title: 'Échecs', subtitle: 'Chaque impression ratée est gardée ici, avec le taux d’échec par fichier.' },
   inventory: { title: 'Inventaire', subtitle: 'Un objet = une carte avec un code QR : on le scanne quand il faut en racheter.' },
@@ -364,7 +364,7 @@ const actions = {
     await modal({
       title: 'Couleurs retirées de la file',
       body: el('div', {}, [
-        el('p', { class: 'cell-sub' }, "Coche les couleurs qu'on n'imprime pas ici (ex. Nylon, fait dans une autre usine). Elles disparaissent de « À imprimer » ; « Tout » les montre toujours."),
+        el('p', { class: 'cell-sub' }, "Coche les couleurs qu'on n'imprime pas ici (ex. Nylon, fait dans une autre usine). Elles disparaissent de « Resin Queue » ; « Tout » les montre toujours."),
         ...boxes.map(({ color, input }) =>
           el('label', { class: 'check-row' }, [input, swatch(color.hex), color.name]),
         ),
@@ -396,7 +396,7 @@ const actions = {
       const confirmed = await modal({
         title: 'Enlever de la file maintenant ?',
         body: el('div', {}, [
-          el('p', {}, `${preview.removed} pièce(s) seront retirées de « À imprimer » et « Échec » (elles restent dans « Tout », pour l'expédition) :`),
+          el('p', {}, `${preview.removed} pièce(s) seront retirées de « Resin Queue » (elles restent dans « Tout », pour l'expédition) :`),
           el('ul', { class: 'purge-list' }, preview.items.map((item) => el('li', {}, `${item.count} × ${item.name}`))),
           el('p', { class: 'cell-sub' }, "Les pièces ajoutées à la main, en cours d'impression ou déjà imprimées ne sont pas touchées."),
         ]),
@@ -1018,7 +1018,7 @@ const bindEvents = () => {
 
   window.addEventListener('hashchange', () => {
     const view = location.hash.replace('#', '');
-    // mode simple : seulement « À imprimer » (pas de « Tout » ni de Réglages)
+    // mode simple : seulement « Resin Queue » (pas de « Tout » ni de Réglages)
     if (isSimple() && view !== 'board') {
       location.hash = 'board';
       return;

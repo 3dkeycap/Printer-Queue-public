@@ -1,6 +1,6 @@
-# Règles du projet — Resin Print Queue
+# Règles du projet — 3D Keycap Lab
 
-File d'impression d'une ferme d'imprimantes 3D résine (Shopify / Etsy → une carte par pièce
+Application « 3D Keycap Lab » : file d'impression d'une ferme d'imprimantes 3D résine (Shopify / Etsy → une carte par pièce
 physique). Node 22, Express, SQLite (`better-sqlite3`), front-end en modules ES **sans build**.
 Voir `README.md` (démarrage), `docs/technique.md` (architecture, API, base) et
 `docs/guide-atelier.md` (usage).
@@ -44,6 +44,9 @@ docker compose up -d --build      # stack complète : app + worker + updater
   ouvrir son adresse (GET) ne doit **jamais** modifier l'état : seul le POST du script de la page signale.
 - **Tags** : un tag tapé sur une pièce reste sur cette pièce ; seule la liste Réglages →
   Atelier → Tags alimente les suggestions.
+- **Noms** : l'application s'appelle « 3D Keycap Lab » ; sa page principale s'appelle « Resin Queue »
+  (les 3 colonnes restent « À imprimer », « En impression », « Imprimé » : ce sont des statuts).
+  Le nom de l'extension Chrome et ceux du dépôt / de Docker ne changent pas.
 - Plus de sélecteur d'imprimante ni de colonne « Échec » : ne pas les réintroduire sans demande.
 
 ## Docker, données, mises à jour

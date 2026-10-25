@@ -40,6 +40,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- L'application s'appelle maintenant **3D Keycap Lab** (menu, titre de l'onglet, kiosque installé,
+  signalements de bug) et sa page principale **Resin Queue** (ex. « À imprimer »). Les trois
+  colonnes gardent leurs noms « À imprimer », « En impression », « Imprimé » (ce sont des statuts).
+  L'extension Chrome, le dépôt et Docker gardent leurs noms.
 - Extension Chrome 1.4.1, boîte « J'ai packé » : plus de **rouge** pour ce qui n'est qu'une étape à
   compléter (nom pas choisi, raison d'une pièce manquante, bac commencé) — rappel aimable en ambre,
   champ entouré, qui disparaît dès que la personne agit. Les vraies pannes restent en rouge mais

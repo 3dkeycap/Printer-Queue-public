@@ -230,7 +230,7 @@ const tabAtelier = (draft, touch, actions) => {
   return [
     section(
       "Ce qu'on n'imprime pas ici",
-      "Les résines faites ailleurs et les articles toujours en stock n'apparaissent pas dans « À imprimer », mais restent dans « Tout » pour l'expédition.",
+      "Les résines faites ailleurs et les articles toujours en stock n'apparaissent pas dans « Resin Queue », mais restent dans « Tout » pour l'expédition.",
       [
         f('production.hiddenColors', {
           label: 'Résines retirées de la file',
@@ -248,7 +248,7 @@ const tabAtelier = (draft, touch, actions) => {
             ]),
           label: 'Articles toujours en stock (mots à repérer)',
           placeholder: 'Ex. Keycap Puller — puis Entrée',
-          hint: "Il suffit que le titre, la variante ou le SKU CONTIENNE le mot. Ces articles sortent de « À imprimer » mais restent dans « Tout » (on les expédie d'ici). Si le nom d'une résine contient le mot (ex. « Nylon »), la résine sort aussi de la file. Une pièce qu'un humain a déjà modifiée reste dans la file.",
+          hint: "Il suffit que le titre, la variante ou le SKU CONTIENNE le mot. Ces articles sortent de « Resin Queue » mais restent dans « Tout » (on les expédie d'ici). Si le nom d'une résine contient le mot (ex. « Nylon »), la résine sort aussi de la file. Une pièce qu'un humain a déjà modifiée reste dans la file.",
         }),
       ],
     ),
@@ -440,7 +440,7 @@ const tabApparence = (actions) => [
       ),
     ),
   ]),
-  section('Aide', 'Une visite guidée de la page « À imprimer ».', [
+  section('Aide', 'Une visite guidée de la page « Resin Queue ».', [
     el('div', { class: 'panel-foot left' }, [
       el('button', { class: 'primary-btn', onclick: () => actions.startTutorial() }, [icon('help'), 'Lancer le tutoriel']),
     ]),
@@ -466,7 +466,7 @@ const tabApparence = (actions) => [
       ]),
     ],
   ),
-  section('Mode kiosque (iPad)', "Une version sans menu, pensée pour l'écran tactile de l'atelier : uniquement la file « À imprimer », avec de gros boutons.", [
+  section('Mode kiosque (iPad)', "Une version sans menu, pensée pour l'écran tactile de l'atelier : uniquement la file « Resin Queue », avec de gros boutons.", [
     el('p', { class: 'field-hint mono' }, `${location.origin}/kiosk`),
     el('div', { class: 'panel-foot left' }, [
       el('a', { class: 'ghost-btn', href: '/kiosk', target: '_blank', rel: 'noopener' }, 'Ouvrir le kiosque'),

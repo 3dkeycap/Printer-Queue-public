@@ -1,8 +1,8 @@
-# Resin Print Queue
+# 3D Keycap Lab
 
 File d'impression d'une ferme d'imprimantes 3D résine. Elle importe les commandes
 **Shopify** et **Etsy** toutes les 5 minutes, crée **une carte par pièce physique** et les
-suit de « À imprimer » à « Imprimé », groupées par couleur de résine.
+suit de « À imprimer » à « Imprimé », groupées par couleur de résine, sur la page **Resin Queue**.
 
 ## Démarrer
 
