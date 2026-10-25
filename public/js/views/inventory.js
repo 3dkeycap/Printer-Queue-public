@@ -101,10 +101,16 @@ export const questionsEditor = (initial = [], onChange = () => {}) => {
   };
 };
 
-/** Ce qui manque, d'après les réponses données aux scans (une ligne par scan). */
+/**
+ * Ce qui manque, d'après les réponses données aux scans (une ligne par scan). Les réponses sont en gros,
+ * aussi lisibles que le nom de l'objet : c'est ce qu'on lit pour savoir quoi commander.
+ */
 const detailLines = (item) =>
   (item.flag_details ?? []).map((detail) =>
-    el('div', { class: 'cell-sub inv-missing' }, `${fromNow(detail.at)} — ${detail.answers.map((answer) => `${answer.label} : ${answer.value}`).join(' · ')}`),
+    el('div', { class: 'inv-answer' }, [
+      ...detail.answers.map((answer) => el('span', { class: 'inv-ans' }, [el('small', {}, answer.label), el('strong', {}, answer.value)])),
+      el('small', { class: 'inv-when' }, fromNow(detail.at)),
+    ]),
   );
 
 /**
@@ -216,6 +222,7 @@ const itemCard = (item, actions) =>
   el('article', { class: `inv-card${item.status === 'reorder' ? ' is-reorder' : ''}` }, [
     el('div', { class: 'inv-card-top' }, [el('h4', {}, item.name), statusPill(item)]),
     el('p', { class: 'inv-rule' }, ['Scanner quand il en reste ', el('strong', {}, String(item.reorder_at))]),
+    item.status === 'reorder' ? el('div', { class: 'inv-answers' }, detailLines(item)) : null,
     item.notes ? el('p', { class: 'cell-sub' }, item.notes) : null,
     item.questions?.length ? el('p', { class: 'cell-sub' }, `Questions au scan : ${item.questions.map((q) => q.label).join(' · ')}`) : null,
     el('img', { class: 'inv-qr', src: `/api/inventory/${item.id}/qr.svg`, alt: `Code QR : ${item.name}`, width: '110', height: '110', loading: 'lazy' }),

@@ -861,3 +861,12 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .inv-phone { display: flex; gap: 16px; align-items: center; }
 .inv-phone img { flex: none; border-radius: 8px; background: #fff; padding: 4px; }
 .inv-phone .sub { margin: 4px 0 10px; }
+
+/* Inventaire : les réponses aux questions, en gros (aussi importantes que le nom) */
+.inv-buy-row .inv-grow > strong { font-size: 18px; }
+.inv-answer { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin-top: 6px; }
+.inv-ans { display: inline-flex; flex-direction: column; padding: 4px 12px 6px; border-radius: 10px; background: color-mix(in srgb, var(--warn) 18%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent); line-height: 1.15; }
+.inv-ans small { font-size: 11px; color: var(--muted); }
+.inv-ans strong { font-size: 18px; font-weight: 800; color: var(--text); overflow-wrap: anywhere; }
+.inv-when { color: var(--muted); font-size: 12px; }
+.inv-answers { display: flex; flex-direction: column; gap: 4px; }
