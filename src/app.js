@@ -14,6 +14,7 @@ import { settingsRouter } from './routes/settings.js';
 import { shopifyOAuthRouter } from './routes/shopifyOAuth.js';
 import { statsRouter } from './routes/stats.js';
 import { failuresRouter } from './routes/failures.js';
+import { inventoryPagesRouter, inventoryRouter, scanRouter } from './routes/inventory.js';
 import { syncRouter } from './routes/sync.js';
 import { presenceRouter } from './routes/presence.js';
 import { extensionRouter } from './routes/extension.js';
@@ -89,6 +90,9 @@ export const createApp = () => {
   app.use('/api/stats', statsRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/failures', failuresRouter);
+  app.use('/api/inventory', inventoryRouter);
+  app.use('/inventory', inventoryPagesRouter);
+  app.use('/r', scanRouter);
   app.use('/api/sync', syncRouter);
   app.use('/api/system', systemRouter);
   app.use('/api/presence', presenceRouter);

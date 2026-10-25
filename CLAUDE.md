@@ -40,6 +40,8 @@ docker compose up -d --build      # stack complète : app + worker + updater
   est toujours en simple et n'écrase pas le choix mémorisé.
 - **Chit Chats** : aucun affichage dans l'app (cartes, fiche, « Tout »). On garde ses réglages,
   la synchro côté serveur et l'extension Chrome (`chrome-extension/`).
+- **Inventaire** : le code QR (`/r/<token>`) est public (téléphones de l'atelier, sans mot de passe) ;
+  ouvrir son adresse (GET) ne doit **jamais** modifier l'état : seul le POST du script de la page signale.
 - **Tags** : un tag tapé sur une pièce reste sur cette pièce ; seule la liste Réglages →
   Atelier → Tags alimente les suggestions.
 - Plus de sélecteur d'imprimante ni de colonne « Échec » : ne pas les réintroduire sans demande.

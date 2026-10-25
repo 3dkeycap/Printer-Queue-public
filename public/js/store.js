@@ -52,6 +52,7 @@ export const state = {
   runs: [],
   settings: [],
   connectors: {},
+  inventory: null, // objets à racheter (page « Inventaire »)
   failures: null, // historique des échecs (page « Échecs »)
   showHiddenFailures: false, // montrer aussi les fichiers masqués de la page « Échecs »
   failureFile: '', // fichier dont on regarde les échecs ('' = tous)

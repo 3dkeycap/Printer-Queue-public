@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Inventaire** (nouvel onglet) : « il faut en racheter ». On crée un objet (nom + quantité à
+  laquelle scanner) et on obtient une **carte imprimable avec un code QR** vers
+  `http://3dkeycap.local/r/…`. Scanner le code avec un téléphone passe l'objet à « à racheter »
+  tout seul (confirmation + « annuler » en cas d'erreur) ; il apparaît dans la liste « À racheter »
+  du tableau de bord jusqu'à ce qu'on clique « Commandé ». Adresse des codes réglable (Réglages →
+  Atelier → Inventaire). Nouvelle dépendance : `qrcode-generator`.
 - **Annuler (Ctrl+Z)** et bouton « Annuler » : défait les déplacements de cartes, les échecs
   (retirés aussi de la page Échecs) et les modifications d'une pièce, jusqu'à 30 actions.
 - Bouton **Regrouper** à 3 états par colonne : *Commande* (défaut, une carte par commande avec la

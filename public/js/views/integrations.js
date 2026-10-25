@@ -271,6 +271,9 @@ const tabAtelier = (draft, touch, actions) => {
       f('production.lateWarnDays', { label: 'Orange après (jours)', hint: null }),
       f('production.lateDays', { label: 'Rouge / « En retard » après (jours)', hint: null }),
     ]),
+    section('Inventaire (codes QR)', "Chaque objet de la page « Inventaire » a une carte avec un code QR : le scanner note qu'il faut en racheter.", [
+      f('inventory.scanUrl', { label: "Adresse de l'app dans les codes QR", placeholder: 'http://3dkeycap.local', hint: "Celle que les téléphones de l'atelier savent ouvrir. La changer rend inutilisables les cartes déjà imprimées." }),
+    ]),
     section('Postes UV', 'Les choix proposés pour le champ UV de chaque pièce.', [
       f('production.uvOptions', { label: 'Options UV', hint: null }),
       f('production.defaultUv', { label: 'Valeur UV par défaut', hint: 'Laisser vide pour ne rien pré-remplir.' }),

@@ -22,6 +22,8 @@ export const basicAuth = (req, res, next) => {
   if (!config.auth.enabled) return next();
   if (
     req.path.startsWith('/api/webhooks') ||
+    // scan d'un code QR d'inventaire depuis un téléphone : le jeton du code est le secret
+    req.path.startsWith('/r/') ||
     OAUTH_CALLBACK_PATH.test(req.path) ||
     req.path === '/api/health'
   ) {

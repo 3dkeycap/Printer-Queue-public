@@ -66,6 +66,22 @@ Un tag est une petite étiquette libre sur une pièce (« Attente client », « 
 Dans la fiche d'une pièce : écris dans la case, puis **Entrée**. Un tag tapé reste sur sa
 pièce. Pour qu'un tag soit **proposé partout**, ajoute-le dans Réglages → Atelier → Tags.
 
+## Inventaire : « il faut en racheter »
+
+Onglet **Inventaire** (mode Avancé). Pour chaque chose qu'on rachète (gants, alcool, filtres…) :
+
+1. **Crée l'objet** : son nom, et la quantité à laquelle il faut prévenir (« quand il en reste 2 »).
+2. **Imprime sa carte** (bouton « Imprimer la carte ») : le nom, la quantité et un **code QR**.
+   Colle-la sur l'étagère ou la boîte.
+3. Quand il n'en reste plus que cette quantité, **scanne le code QR avec ton téléphone** (appareil
+   photo, sur le réseau de l'atelier). L'écran répond « C'est noté ! » : l'objet passe tout seul à
+   **à racheter**. Une erreur ? Bouton « Je me suis trompé : annuler » sur ce même écran.
+4. Celui qui commande voit la liste **À racheter** dans l'onglet ; une fois commandé, il clique
+   **Commandé** (l'objet repasse à OK).
+
+Le code QR ouvre `http://3dkeycap.local/…` : pas besoin de se connecter. Si quelqu'un scanne deux
+fois, rien n'est doublé (c'est juste noté).
+
 ## L'écran d'atelier (kiosque)
 
 Sur l'iPad ou l'écran de l'atelier, ouvre `http://<adresse du serveur>:8080/kiosk` : la même

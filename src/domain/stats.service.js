@@ -64,7 +64,8 @@ export const getSummary = () => {
          (SELECT COUNT(*) FROM parts WHERE status = 'DONE' AND date(status_changed_at) = date('now')) AS done_today,
          (SELECT COUNT(*) FROM parts WHERE status = 'PRINTING') AS printing_now,
          (SELECT COUNT(*) FROM parts WHERE status = 'FAILED') AS failed_open,
-         (SELECT COUNT(*) FROM print_results WHERE outcome = 'failed') AS failures_total`,
+         (SELECT COUNT(*) FROM print_results WHERE outcome = 'failed') AS failures_total,
+         (SELECT COUNT(*) FROM inventory_items WHERE status = 'reorder') AS reorder_count`,
     )
     .get();
 

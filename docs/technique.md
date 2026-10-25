@@ -472,6 +472,9 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `GET` | `/api/colors` · `POST` · `PATCH /api/colors/:key` · `DELETE` | Catalogue de résines, alias, stock en grammes |
 | `GET` | `/api/settings` | Tous les réglages (secrets masqués) + état des connecteurs |
 | `PUT` | `/api/settings` | Enregistre un lot de réglages |
+| `GET` `POST` | `/api/inventory` | Objets d'inventaire (liste, création) ; `PATCH`/`DELETE /:id`, `POST /:id/flag` (signaler sans scanner), `POST /:id/ordered` (commandé), `GET /:id/qr.svg` |
+| `GET` | `/inventory/cards?ids=1,2` | Cartes imprimables (HTML : nom, quantité, QR) |
+| `GET` `POST` | `/r/:token` · `/r/:token/scan` · `/r/:token/undo` | **Publics** (sans mot de passe) : page ouverte par le code QR ; le `GET` ne change rien, c'est son script qui envoie le `POST` |
 | `POST` | `/api/parts/:id/undo-failure` | Annule le dernier échec d'une pièce (Ctrl+Z) |
 | `GET` | `/api/failures` | Historique des échecs + taux d'échec par fichier (échecs / (échecs + impressions réussies)) |
 | `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |
@@ -502,6 +505,16 @@ déjà `DONE` et signale l'incohérence dans les logs.
 Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 
 ---
+
+### Inventaire (codes QR)
+
+Tables `inventory_items` (nom, seuil `reorder_at`, `token` secret, `status` ok/reorder, `flagged_at`,
+`scan_count`, `ordered_at`) et `inventory_events`. Le code QR encode
+`<inventory.scanUrl>/r/<token>` (défaut `http://3dkeycap.local`), généré en SVG côté serveur
+(`src/lib/qr.js`, dépendance `qrcode-generator`). `/r/…` est exempté du mot de passe du dashboard
+(le jeton est le secret) ; ouvrir l'adresse ne modifie rien (les aperçus de lien et antivirus la
+visitent), seul le `POST` du script `public/js/scan.js` signale. Un 2e scan d'un objet déjà « à
+racheter » est compté sans changer la date ; « annuler » ne défait qu'un scan qui avait changé l'état.
 
 ### Commandes annulées
 

@@ -23,6 +23,7 @@ import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { renderFailures } from './views/failures.js';
+import { renderInventory } from './views/inventory.js';
 import { closeDrawer, openDrawer } from './drawer.js';
 import { startTutorial, tutorialSeen } from './tutorial.js';
 import { mountFullscreen } from './fullscreen.js';
@@ -39,6 +40,7 @@ const VIEW_META = {
   board: { title: 'À imprimer', subtitle: 'Chaque carte = une pièce physique à imprimer.' },
   all: { title: 'Tout', subtitle: 'Toutes les pièces, tous statuts confondus.' },
   failures: { title: 'Échecs', subtitle: 'Chaque impression ratée est gardée ici, avec le taux d’échec par fichier.' },
+  inventory: { title: 'Inventaire', subtitle: 'Un objet = une carte avec un code QR : on le scanne quand il faut en racheter.' },
   integrations: { title: 'Réglages', subtitle: 'Tout ce qui se configure, rangé par thème.' },
 };
 
@@ -77,6 +79,7 @@ const pushUndo = (entry) => {
 };
 
 const actions = {
+  api, // les vues s'en servent pour de petits appels directs (inventaire)
   nextStatus: (status) => NEXT_STATUS[status] ?? null,
 
   /** Défait la dernière action (déplacement de pièces ou modification), puis la précédente… */
@@ -175,6 +178,66 @@ const actions = {
     state.selection.clear();
     if (select) for (const part of state.parts) state.selection.add(part.id);
     render();
+  },
+
+  /* ---- inventaire ---- */
+  async createInventoryItem(body) {
+    try {
+      const item = await api.createInventoryItem(body);
+      toast(`« ${item.name} » ajouté : imprime sa carte et colle-la`);
+      await refresh({ silent: true });
+      return item;
+    } catch (error) {
+      toast(error.message, 'err');
+      return null;
+    }
+  },
+
+  async inventoryAction(id, run, message) {
+    try {
+      await run();
+      toast(message);
+      await refresh({ silent: true });
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
+
+  async editInventoryItem(item) {
+    const name = el('input', { value: item.name });
+    const threshold = el('input', { type: 'number', min: '0', value: String(item.reorder_at) });
+    const notes = el('input', { value: item.notes ?? '', placeholder: 'Ex. étagère du haut, marque, lien…' });
+    await modal({
+      title: 'Modifier l’objet',
+      body: el('div', {}, [
+        el('div', { class: 'field' }, [el('label', {}, 'Nom'), name]),
+        el('div', { class: 'field' }, [el('label', {}, 'Scanner quand il en reste'), threshold]),
+        el('div', { class: 'field' }, [el('label', {}, 'Note (facultatif)'), notes]),
+      ]),
+      confirmLabel: 'Enregistrer',
+      onConfirm: async () => {
+        try {
+          await api.patchInventoryItem(item.id, { name: name.value, reorder_at: threshold.value, notes: notes.value });
+          toast('Objet modifié');
+          await refresh({ silent: true });
+          return true;
+        } catch (error) {
+          toast(error.message, 'err');
+          return false;
+        }
+      },
+    });
+  },
+
+  async deleteInventoryItem(item) {
+    const confirmed = await modal({
+      title: 'Supprimer cet objet ?',
+      body: el('p', {}, `« ${item.name} » disparaît de l’inventaire. Sa carte imprimée ne fonctionnera plus (le code QR affichera « carte inconnue »).`),
+      confirmLabel: 'Supprimer',
+      onConfirm: () => true,
+    });
+    if (!confirmed) return;
+    await actions.inventoryAction(item.id, () => api.deleteInventoryItem(item.id), `« ${item.name} » supprimé`);
   },
 
   async hideFailureFile(name, hidden) {
@@ -471,7 +534,7 @@ const chip = (label, isOn, onclick, extra = [], count = null) =>
   ].filter(Boolean));
 
 const renderToolbar = () => {
-  if (state.view === 'integrations' || state.view === 'failures') {
+  if (state.view === 'integrations' || state.view === 'failures' || state.view === 'inventory') {
     dom.toolbar.hidden = true;
     return;
   }
@@ -729,6 +792,7 @@ const render = () => {
     } else renderBoard(root, actions);
   } else if (state.view === 'all') renderAll(root, actions);
   else if (state.view === 'failures') renderFailures(root, actions);
+  else if (state.view === 'inventory') renderInventory(root, actions);
   else renderIntegrations(root, actions);
   restoreScroll(scroll);
 };
@@ -785,6 +849,11 @@ const refresh = async ({ silent = false } = {}) => {
       state.colors = colors.items;
       state.runs = runs.items;
       state.summary = summary;
+    } else if (state.view === 'inventory') {
+      const [summary, inventory] = await Promise.all([api.summary(), api.inventory()]);
+      if (seq !== refreshSeq) return;
+      state.summary = summary;
+      state.inventory = inventory.items;
     } else if (state.view === 'failures') {
       const [summary, failures] = await Promise.all([api.summary(), api.failures()]);
       if (seq !== refreshSeq) return;
@@ -818,7 +887,7 @@ const refresh = async ({ silent = false } = {}) => {
 
 const updateNavCounts = () => {
   const totals = state.summary?.totals ?? {};
-  const counts = { board: totals.parts_active ?? 0, all: totals.parts_total ?? 0, failures: totals.failures_total ?? 0 };
+  const counts = { board: totals.parts_active ?? 0, all: totals.parts_total ?? 0, failures: totals.failures_total ?? 0, inventory: totals.reorder_count ?? 0 };
   document.querySelectorAll('.nav-count').forEach((node) => {
     const value = counts[node.dataset.count];
     node.textContent = value ? String(value) : '';

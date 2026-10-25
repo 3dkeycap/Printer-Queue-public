@@ -126,6 +126,32 @@ CREATE TABLE IF NOT EXISTS print_results (
 CREATE INDEX IF NOT EXISTS idx_print_results_name ON print_results (name, outcome);
 CREATE INDEX IF NOT EXISTS idx_print_results_part ON print_results (part_id, id DESC);
 
+-- Inventaire : « il faut en racheter ». Un objet = une carte imprimable avec un
+-- code QR ; scanner le code (http://…/r/<token>) le passe à « à racheter ».
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL,
+  reorder_at  INTEGER NOT NULL DEFAULT 1,           -- scanner quand il en reste autant
+  notes       TEXT,
+  token       TEXT NOT NULL UNIQUE,                 -- secret du code QR
+  status      TEXT NOT NULL DEFAULT 'ok',           -- ok | reorder
+  flagged_at  TEXT,                                 -- depuis quand « à racheter »
+  scan_count  INTEGER NOT NULL DEFAULT 0,
+  ordered_at  TEXT,                                 -- dernière commande passée
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS inventory_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id    INTEGER NOT NULL REFERENCES inventory_items (id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,                         -- created | scan | flag | ordered | undo
+  note       TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_inventory_events_item ON inventory_events (item_id, id DESC);
+
 CREATE TABLE IF NOT EXISTS sync_runs (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   source         TEXT NOT NULL,                     -- shopify | etsy | chitchats

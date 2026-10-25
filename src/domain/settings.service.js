@@ -117,6 +117,17 @@ export const DEFINITIONS = [
   { key: 'update.autoEnabled', group: 'update', label: 'Mise à jour automatique', type: 'boolean', hint: 'Installe toute seule les nouvelles versions (sauvegarde + retour arrière si échec).', fallback: () => true },
   { key: 'update.intervalMinutes', group: 'update', label: 'Vérifier toutes les (minutes)', type: 'number', fallback: () => 60 },
 
+  // --- Inventaire ---------------------------------------------------------
+  {
+    key: 'inventory.scanUrl',
+    group: 'inventory',
+    label: "Adresse de l'app dans les codes QR",
+    type: 'text',
+    placeholder: 'http://3dkeycap.local',
+    hint: "Les codes QR imprimés pointent vers cette adresse. La changer plus tard rend les anciennes cartes inutilisables.",
+    fallback: () => 'http://3dkeycap.local',
+  },
+
   // --- Production ---------------------------------------------------------
   { key: 'production.uvOptions', group: 'production', label: 'Options UV', type: 'list', hint: 'Une valeur par ligne. Affichée sur chaque carte.', fallback: () => ['Standard', 'A', 'B', 'C'] },
   { key: 'production.commentOptions', group: 'production', label: 'Commentaires prédéfinis', type: 'list', hint: 'Liste déroulante disponible sur chaque pièce.', fallback: () => ['Réimpression', 'Support à revoir', 'Attente client', 'Pièce cassée', 'Prioritaire', 'Échantillon'] },
