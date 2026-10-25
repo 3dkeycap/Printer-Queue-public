@@ -2,6 +2,7 @@ import { config } from '../config.js';
 import { getDb, nowIso } from '../db/index.js';
 import { badRequest, notFound } from '../lib/errors.js';
 import { createLogger, recentLogs } from '../lib/logger.js';
+import { notifyBugWebhook } from './bugWebhook.js';
 
 const log = createLogger('bugs');
 
@@ -60,7 +61,10 @@ export const createBugReport = ({ reporter, description, page, screenshot, clien
       nowIso(),
     );
   log.warn('bug reported', { id: Number(info.lastInsertRowid), reporter, page });
-  return getBugReport(info.lastInsertRowid);
+  const bug = getBugReport(info.lastInsertRowid);
+  // webhook HTTP en tâche de fond : la personne n'attend pas, et une panne n'empêche rien
+  notifyBugWebhook(bug).catch((error) => log.warn('bug webhook crashed', { error: error.message }));
+  return bug;
 };
 
 export const listBugReports = () =>

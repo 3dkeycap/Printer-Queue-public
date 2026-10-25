@@ -475,6 +475,7 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `GET` `POST` | `/api/inventory` | Objets d'inventaire (liste, création) ; `PATCH`/`DELETE /:id`, `POST /:id/flag` (signaler sans scanner), `POST /:id/ordered` (commandé), `GET /:id/qr.svg` |
 | `GET` | `/inventory/cards?ids=1,2` | Cartes imprimables (HTML : nom, quantité, QR) |
 | `GET` `POST` | `/r/:token` · `/r/:token/scan` · `/r/:token/undo` | **Publics** (sans mot de passe) : page ouverte par le code QR ; le `GET` ne change rien, c'est son script qui envoie le `POST` |
+| `GET` `POST` | `/api/bugs/webhook` · `/api/bugs/webhook/test` | État du dernier envoi du webhook « nouveau bug » ; envoi d'un faux bug (`{ url? }`) |
 | `POST` | `/api/parts/:id/undo-failure` | Annule le dernier échec d'une pièce (Ctrl+Z) |
 | `GET` | `/api/failures` | Historique des échecs + taux d'échec par fichier (échecs / (échecs + impressions réussies)) |
 | `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |
@@ -525,6 +526,16 @@ Shopify `cancelled_at` (commande reçue par la synchro/webhook, ou lue par
 pièces non expédiées ; `scope=board` et les compteurs filtrent `p.cancelled = 0`, la vue « Tout »
 les garde. Une commande annulée n'est plus importée dans Chit Chats ni interrogée par la synchro
 d'expéditions.
+
+### Webhook « nouveau bug »
+
+Réglage `bugs.webhookUrl` (type `secret` : jamais renvoyé par l'API). `createBugReport()` appelle
+`notifyBugWebhook()` en tâche de fond (`src/domain/bugWebhook.js`) : `POST` JSON
+`{ event: "bug.created", app, text, content, bug: { id, status, reporter, description, page,
+version, created_at, has_screenshot, links: { report_markdown, screenshot, dashboard } } }`
+(les liens utilisent le nom d'hôte de l'inventaire ; la capture n'est jamais dans le corps). Délai
+8 s, un 2e essai après 2 s, résultat gardé dans `internal.bugWebhookLast`. Le bouton « Envoyer un
+test » envoie `event: "bug.test"` (`bug.id` = 0).
 
 ## 8. Exploitation
 

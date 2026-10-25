@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Webhook HTTP « nouveau bug »** : à chaque bug signalé avec la coccinelle, l'app appelle en
+  **POST** (JSON) l'adresse réglée dans Réglages → Mises à jour (un résumé dans `text` / `content`,
+  compatible Slack et Discord, et le détail dans `bug` avec des liens vers le rapport et la capture).
+  Bouton « Envoyer un test » et état du dernier envoi ; l'adresse (souvent avec un jeton) n'est
+  jamais renvoyée par l'API. Une panne du webhook ne bloque jamais un signalement.
 - Extension Chrome 1.5.0 : **tutoriel** (visite guidée du bandeau, de « J'ai packé » et du lien
   live) lancé seulement depuis la page de réglages de l'extension, sur la fausse page Shopify.
 - **Kiosque** : sélecteur de thème en haut de l'écran (le menu latéral qui le portait y est caché).

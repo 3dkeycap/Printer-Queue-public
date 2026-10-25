@@ -117,6 +117,16 @@ export const DEFINITIONS = [
   { key: 'update.autoEnabled', group: 'update', label: 'Mise à jour automatique', type: 'boolean', hint: 'Installe toute seule les nouvelles versions (sauvegarde + retour arrière si échec).', fallback: () => true },
   { key: 'update.intervalMinutes', group: 'update', label: 'Vérifier toutes les (minutes)', type: 'number', fallback: () => 60 },
 
+  // --- Bugs signalés ------------------------------------------------------
+  {
+    key: 'bugs.webhookUrl',
+    group: 'bugs',
+    label: 'Webhook des nouveaux bugs (HTTP POST)',
+    type: 'secret', // l'adresse contient souvent un jeton (Slack, Discord, Zapier…) : jamais renvoyée par l'API
+    hint: "Adresse appelée en POST (JSON) à chaque nouveau bug signalé avec la coccinelle. Laisser vide pour désactiver.",
+    fallback: () => process.env.BUG_WEBHOOK_URL || '',
+  },
+
   // --- Inventaire ---------------------------------------------------------
   {
     key: 'inventory.scanUrl',

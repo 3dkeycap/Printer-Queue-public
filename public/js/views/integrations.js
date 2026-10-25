@@ -493,8 +493,53 @@ const tabMaj = (draft, touch) => {
           : null,
       ],
     ),
+    bugWebhookSection(draft, touch),
     bugsSection(),
   ];
+};
+
+/** Webhook HTTP appelé à chaque nouveau bug, avec bouton « Tester ». */
+const bugWebhookSection = (draft, touch) => {
+  const definition = state.settings.find((item) => item.key === 'bugs.webhookUrl');
+  if (!definition) return null;
+  const status = el('p', { class: 'field-hint' });
+  const showLast = async () => {
+    try {
+      const { last } = await api.bugWebhook();
+      status.textContent = last
+        ? `Dernier envoi ${fromNow(last.at)}${last.test ? ' (test)' : last.bugId ? ` (bug #${last.bugId})` : ''} : ${last.ok ? 'reçu ✓' : `échec — ${last.error ?? 'erreur'}`}`
+        : 'Aucun envoi pour l’instant.';
+    } catch {
+      status.textContent = '';
+    }
+  };
+  const test = el(
+    'button',
+    {
+      class: 'ghost-btn',
+      type: 'button',
+      title: 'Envoie un faux bug à cette adresse',
+      onclick: async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+          const result = await api.testBugWebhook(draft['bugs.webhookUrl'] ?? '');
+          toast(result.ok ? 'Test envoyé : le webhook a répondu OK' : `Test en échec : ${result.error}`, result.ok ? 'ok' : 'err');
+        } catch (error) {
+          toast(error.message, 'err');
+        }
+        button.disabled = false;
+        showLast();
+      },
+    },
+    [icon('refresh'), 'Envoyer un test'],
+  );
+  showLast();
+  return section(
+    'Webhook des nouveaux bugs',
+    'À chaque bug signalé avec la coccinelle, l’app appelle cette adresse en POST (JSON : un résumé dans « text » / « content », et le détail dans « bug »).',
+    [field(definition, draft, touch), el('div', { class: 'panel-foot left' }, [test]), status],
+  );
 };
 
 /* ------------------------------------------------------- bugs signalés --- */

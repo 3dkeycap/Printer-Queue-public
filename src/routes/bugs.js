@@ -8,6 +8,7 @@ import {
   listBugReports,
   setBugStatus,
 } from '../domain/bugs.js';
+import { lastBugWebhook, testBugWebhook } from '../domain/bugWebhook.js';
 
 export const bugsRouter = Router();
 
@@ -19,6 +20,19 @@ bugsRouter.post(
   '/',
   asyncRoute((req, res) => {
     res.status(201).json(createBugReport(req.body ?? {}));
+  }),
+);
+
+/** Dernier envoi du webhook « nouveau bug » (pour les réglages). */
+bugsRouter.get('/webhook', (req, res) => {
+  res.json({ last: lastBugWebhook() });
+});
+
+/** Bouton « Tester » : { url? } (adresse tapée mais pas encore enregistrée), sinon l'adresse enregistrée. */
+bugsRouter.post(
+  '/webhook/test',
+  asyncRoute(async (req, res) => {
+    res.json(await testBugWebhook(req.body?.url));
   }),
 );
 
