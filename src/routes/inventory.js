@@ -45,9 +45,12 @@ inventoryRouter.delete(
   }),
 );
 
-inventoryRouter.post('/:id/flag', (req, res) => {
-  res.json(flagItem(req.params.id));
-});
+inventoryRouter.post(
+  '/:id/flag',
+  asyncRoute((req, res) => {
+    res.json(flagItem(req.params.id, req.body?.answers));
+  }),
+);
 
 inventoryRouter.post('/:id/ordered', (req, res) => {
   res.json(markOrdered(req.params.id));

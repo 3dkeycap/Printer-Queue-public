@@ -118,6 +118,8 @@ export const modal = ({ title, body, confirmLabel = 'Confirmer', onConfirm }) =>
             class: 'primary-btn',
             onclick: async () => {
               const result = onConfirm ? await onConfirm() : true;
+              // « false » : la fenêtre reste ouverte (erreur à corriger) pour ne rien faire retaper
+              if (result === false) return;
               dialog.close();
               resolve(result);
             },

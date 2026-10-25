@@ -850,3 +850,6 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .inv-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .inv-questions-box summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 .inv-missing { color: var(--text); }
+.inv-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.inv-opt { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.inv-opt:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); }

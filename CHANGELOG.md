@@ -12,6 +12,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   (une ligne par scan) s'affichent sous l'objet dans « À racheter » et s'accumulent jusqu'à « Commandé ».
   Sans question, rien ne change (le scan signale tout seul). Ouvrir l'adresse du code ne modifie toujours rien :
   c'est l'envoi du formulaire qui signale.
+  Le bouton **« À racheter »** du tableau de bord pose les mêmes questions (fenêtre « Qu'est-ce qui manque ? »), et
+  « Il manque aussi… » permet d'ajouter une autre variante à un objet déjà signalé.
 - **Extension 1.6.5 (Etsy)** : un petit bouton (le logo) reste sur chaque commande, en plus de la barre de
   droite : il sélectionne la commande et ouvre / ferme sa boîte « J'ai packé ».
 - **Extension 1.6.4 (Etsy)** : « Commande inconnue de l'app » sur des commandes pourtant synchronisées : le

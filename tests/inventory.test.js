@@ -216,6 +216,19 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
       assert.deepEqual(inventory.markOrdered(item.id).flag_details, []);
     });
 
+    it('le bouton « À racheter » du tableau de bord demande aussi les réponses', async () => {
+      const item = inventory.createItem({ name: 'Flag tableau', reorder_at: 1, questions: [{ label: 'Taille', type: 'choice', choices: 'S, M' }] });
+      assert.throws(() => inventory.flagItem(item.id), /Choisis une réponse/);
+      const done = inventory.flagItem(item.id, { q0: 'M' });
+      assert.equal(done.status, 'reorder');
+      assert.deepEqual(done.flag_details[0].answers, [{ label: 'Taille', value: 'M' }]);
+      const viaApi = await call(`/api/inventory/${item.id}/flag`, { method: 'POST', body: { answers: { q0: 'S' } } });
+      assert.equal(viaApi.status, 200);
+      assert.equal((await viaApi.json()).flag_details.length, 2);
+      const plain = inventory.createItem({ name: 'Flag simple', reorder_at: 1 });
+      assert.equal(inventory.flagItem(plain.id).status, 'reorder');
+    });
+
     it('la page de scan demande les réponses sans rien enregistrer ; sans question, rien ne change', async () => {
       const item = inventory.createItem({ name: 'Page questions', reorder_at: 1, questions: [{ label: 'Quoi ?', type: 'text' }] });
       const token = item.scan_url.split('/r/')[1];

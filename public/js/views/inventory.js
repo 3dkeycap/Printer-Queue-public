@@ -105,6 +105,36 @@ const detailLines = (item) =>
     el('div', { class: 'cell-sub inv-missing' }, `${fromNow(detail.at)} — ${detail.answers.map((answer) => `${answer.label} : ${answer.value}`).join(' · ')}`),
   );
 
+/**
+ * Formulaire des questions d'un objet (le même que sur le téléphone, au scan) : sert au bouton
+ * « À racheter » du tableau de bord. answers() renvoie { q0: …, q1: … } pour l'API.
+ */
+export const questionsForm = (questions) => {
+  const fields = questions.map((question) => {
+    const legend = el('label', { class: 'lbl' }, question.label);
+    let control;
+    if (question.type === 'choice') {
+      const inputs = question.choices.map((choice) =>
+        el('input', { type: question.multiple ? 'checkbox' : 'radio', name: `ask-${question.id}`, value: choice }),
+      );
+      control = el('div', { class: 'inv-opts' }, question.choices.map((choice, index) => el('label', { class: 'inv-opt' }, [inputs[index], choice])));
+      control.read = () => {
+        const picked = inputs.filter((input) => input.checked).map((input) => input.value);
+        return question.multiple ? picked : picked[0];
+      };
+    } else {
+      const input = el('input', { type: question.type === 'number' ? 'number' : 'text', inputmode: question.type === 'number' ? 'decimal' : 'text', autocomplete: 'off' });
+      control = el('div', {}, input);
+      control.read = () => input.value;
+    }
+    return { question, control, node: el('div', { class: 'field' }, [legend, control]) };
+  });
+  return {
+    node: el('div', {}, fields.map((field) => field.node)),
+    answers: () => Object.fromEntries(fields.map(({ question, control }) => [question.id, control.read()])),
+  };
+};
+
 /** Formulaire de création : nom + quantité à laquelle il faut scanner. */
 // ce qui est tapé dans le formulaire survit à tout redessin de la page (rafraîchissement, autre action)
 const createDraft = { name: '', threshold: '2', questions: [], open: false };
@@ -180,7 +210,11 @@ const itemCard = (item, actions) =>
       pngButton(item),
       item.status === 'reorder'
         ? el('button', { class: 'ghost-btn', onclick: () => actions.inventoryAction(item.id, () => actions.api.orderedInventoryItem(item.id), `« ${item.name} » : commande notée`) }, 'Commandé')
-        : el('button', { class: 'ghost-btn', title: 'Signaler sans scanner', onclick: () => actions.inventoryAction(item.id, () => actions.api.flagInventoryItem(item.id), `« ${item.name} » : à racheter`) }, 'À racheter'),
+        : el('button', { class: 'ghost-btn', title: 'Signaler sans scanner', onclick: () => actions.flagInventoryItem(item) }, 'À racheter'),
+      // déjà à racheter : une autre variante peut manquer (autre couleur…)
+      item.status === 'reorder' && item.questions?.length
+        ? el('button', { class: 'ghost-btn', title: 'Signaler aussi autre chose', onclick: () => actions.flagInventoryItem(item) }, 'Il manque aussi…')
+        : null,
       el('button', { class: 'mini-btn', title: 'Modifier', onclick: () => actions.editInventoryItem(item) }, 'Modifier'),
       el('button', { class: 'mini-btn danger', title: 'Supprimer', onclick: () => actions.deleteInventoryItem(item) }, icon('trash')),
     ]),

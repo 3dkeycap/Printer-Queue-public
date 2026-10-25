@@ -23,7 +23,7 @@ import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { renderFailures } from './views/failures.js';
-import { questionsEditor, renderInventory } from './views/inventory.js';
+import { questionsEditor, questionsForm, renderInventory } from './views/inventory.js';
 import { closeDrawer, openDrawer } from './drawer.js';
 import { startTutorial, tutorialSeen } from './tutorial.js';
 import { mountFullscreen } from './fullscreen.js';
@@ -201,6 +201,31 @@ const actions = {
     } catch (error) {
       toast(error.message, 'err');
     }
+  },
+
+  /** « À racheter » depuis le tableau de bord : avec des questions, on demande ce qui manque (comme au scan). */
+  async flagInventoryItem(item) {
+    if (!item.questions?.length) {
+      await actions.inventoryAction(item.id, () => api.flagInventoryItem(item.id), `« ${item.name} » : à racheter`);
+      return;
+    }
+    const form = questionsForm(item.questions);
+    await modal({
+      title: `Qu’est-ce qui manque ? — ${item.name}`,
+      body: form.node,
+      confirmLabel: 'Signaler',
+      onConfirm: async () => {
+        try {
+          await api.flagInventoryItem(item.id, form.answers());
+          toast(`« ${item.name} » : à racheter`);
+          await refresh({ silent: true });
+          return true;
+        } catch (error) {
+          toast(error.message, 'err');
+          return false;
+        }
+      },
+    });
   },
 
   async editInventoryItem(item) {

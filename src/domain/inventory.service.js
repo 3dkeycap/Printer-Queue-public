@@ -256,9 +256,11 @@ export const undoScan = (token) => {
 };
 
 /** Signalement à la main depuis le tableau de bord (sans scanner). */
-export const flagItem = (id) => {
+export const flagItem = (id, answers) => {
   const row = find(id);
-  flag(row, { kind: 'flag' });
+  // comme au scan : un objet avec questions se signale avec ce qui manque
+  const hasQuestions = parseJson(row.questions, []).length > 0;
+  flag(row, { kind: 'flag', answers: hasQuestions ? cleanAnswers(row, answers) : null });
   return getItem(id);
 };
 
