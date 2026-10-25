@@ -117,6 +117,22 @@ describe('renouvellement automatique du token Etsy (expire toutes les heures)', 
     assert.ok(seen.some((url) => url.includes('/shops/4242/receipts')));
   });
 
+  it('fetchOrders() parcourt toutes les pages de reçus (100 par page)', async () => {
+    updateSettings({ 'etsy.shopId': '4242' });
+    const offsets = [];
+    globalThis.fetch = async (url, options) => {
+      if (!String(url).includes('/shops/4242/receipts')) return originalFetch(url, options);
+      const offset = Number(new URL(url).searchParams.get('offset'));
+      offsets.push(offset);
+      const count = offset === 0 ? 100 : 20;
+      const results = Array.from({ length: count }, (_, i) => ({ receipt_id: 1000 + offset + i, name: 'Acheteur', transactions: [] }));
+      return new Response(JSON.stringify({ results }), { status: 200 });
+    };
+    const orders = await fetchOrders({});
+    assert.deepEqual(offsets, [0, 100]);
+    assert.equal(orders.length, 120);
+  });
+
   it('sans shared secret : message clair, aucun appel en boucle', async () => {
     updateSettings({ 'etsy.sharedSecret': null, 'etsy.apiKey': 'keystring_123' });
     let called = false;

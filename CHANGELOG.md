@@ -58,6 +58,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Etsy : commandes manquantes** : la synchro ne lisait que la première page de 100 reçus ; au-delà, les plus
+  anciennes commandes non expédiées n'arrivaient jamais. Elle parcourt maintenant toutes les pages.
 - **Mémoire du serveur** : les caches de photos (Shopify, Etsy) et des essais de récupération d'images
   grossissaient sans limite tant que l'app tournait ; ils sont plafonnés à 5000 entrées. (Mesuré :
   ni les routes de l'API ni la synchro simulée ne montrent d'autre fuite ; l'interface reste stable

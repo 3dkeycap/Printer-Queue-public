@@ -137,18 +137,27 @@ export const fetchOrders = async ({ since } = {}) => {
     );
   }
 
-  const fetchReceipts = (shopId) => {
-    const url = new URL(`${config.etsy.apiBase}/shops/${shopId}/receipts`);
-    url.searchParams.set('was_paid', 'true');
-    url.searchParams.set('was_shipped', 'false');
-    url.searchParams.set('limit', '100');
-    if (since) url.searchParams.set('min_created', String(Math.floor(new Date(since).getTime() / 1000)));
-    return requestJson(url.toString(), {
-      headers: {
-        'x-api-key': etsyApiKeyHeader(freshSettings),
-        Authorization: `Bearer ${freshSettings['etsy.accessToken']}`,
-      },
-    });
+  // Etsy plafonne à 100 reçus par page : sans pagination, au-delà de 100 commandes non expédiées
+  // les plus anciennes n'arrivaient jamais (et le curseur avançait par-dessus).
+  const fetchReceipts = async (shopId) => {
+    const results = [];
+    for (let offset = 0; offset < 1000; offset += 100) {
+      const url = new URL(`${config.etsy.apiBase}/shops/${shopId}/receipts`);
+      url.searchParams.set('was_paid', 'true');
+      url.searchParams.set('was_shipped', 'false');
+      url.searchParams.set('limit', '100');
+      url.searchParams.set('offset', String(offset));
+      if (since) url.searchParams.set('min_created', String(Math.floor(new Date(since).getTime() / 1000)));
+      const page = await requestJson(url.toString(), {
+        headers: {
+          'x-api-key': etsyApiKeyHeader(freshSettings),
+          Authorization: `Bearer ${freshSettings['etsy.accessToken']}`,
+        },
+      });
+      results.push(...(page?.results ?? []));
+      if ((page?.results ?? []).length < 100) break;
+    }
+    return { results };
   };
 
   let payload;
