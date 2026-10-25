@@ -49,7 +49,7 @@ Sur Etsy Shop Manager → Commandes (`etsy.com/your/orders/…`), il n'y a pas d
 commande : l'extension accroche à **chaque commande** un bouton avec son logo, plus un bouton 🔗.
 Le logo ouvre la boîte « J'ai packé » de la commande et amène Chit Chats sur la bonne commande
 (onglet lié si le lien live est actif, sinon un nouvel onglet, numéro copié). Le 🔗 fait le même
-« Link » que sur Shopify. Le numéro de commande Etsy est lu dans les liens de la page.
+« Link » que sur Shopify. Le numéro de commande Etsy (`#…`) est lu sur la page ; Chit Chats est cherché par le **nom de l'acheteur** (« Ship to »).
 
 ## Lien live Shopify → Chit Chats (écran partagé)
 

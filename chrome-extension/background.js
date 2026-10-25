@@ -60,13 +60,15 @@ const DEFAULT_CHITCHATS_TEMPLATE = 'https://chitchats.com/clients/{clientId}/shi
  * marche même si l'app est injoignable (Client ID dans les réglages de
  * l'extension, pré-rempli quand elle est téléchargée depuis l'app).
  */
-const buildChitChatsUrl = async (orderNumber) => {
+const buildChitChatsUrl = async (orderNumber, customerName) => {
   const defaults = await loadDefaults();
   const { chitchatsClientId = defaults.chitchatsClientId ?? '' } = await chrome.storage.sync.get('chitchatsClientId');
   const order = String(orderNumber ?? '').replace(/^#/, '').trim();
   if (!order || !chitchatsClientId) return null;
+  // Etsy : le numéro de commande n'est pas toujours connu de Chit Chats, le nom de l'acheteur l'est
+  const query = String(customerName ?? '').trim() || order;
   return (defaults.chitchatsTemplate || DEFAULT_CHITCHATS_TEMPLATE)
-    .replaceAll('{order}', encodeURIComponent(order))
+    .replaceAll('{order}', encodeURIComponent(query))
     .replaceAll('{clientId}', encodeURIComponent(chitchatsClientId));
 };
 
@@ -251,11 +253,11 @@ const unlinkIfInvolved = async (tabId) => {
 };
 
 /** Affiche la commande dans l'onglet Chit Chats lié (si elle a changé). */
-const followOrder = async (orderNumber) => {
+const followOrder = async (orderNumber, customerName) => {
   const link = await getLink();
   if (link?.state !== 'live' || !orderNumber) return;
   // onglet Chit Chats de démonstration : on le fait suivre vers la fausse page
-  const url = link.demo ? demoChitChatsUrl(orderNumber) : await buildChitChatsUrl(orderNumber);
+  const url = link.demo ? demoChitChatsUrl(orderNumber) : await buildChitChatsUrl(orderNumber, customerName);
   if (!url || link.lastOrder === orderNumber) return;
   try {
     await chrome.tabs.update(link.chitchatsTabId, { url });
@@ -296,7 +298,7 @@ const handleLinkMessage = async (message, sender) => {
       await broadcastLink();
       return { ok: true };
     case 'link-order': // l'onglet Shopify affiche une (autre) commande
-      if (link?.state === 'live' && link.shopifyTabId === tabId) await followOrder(message.orderNumber);
+      if (link?.state === 'live' && link.shopifyTabId === tabId) await followOrder(message.orderNumber, message.customerName);
       return { ok: true };
     default:
       return null;
@@ -337,7 +339,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const tabUrl = sender.url ?? sender.tab?.url ?? (await chrome.tabs.get(tabId).catch(() => null))?.url;
       const chitchatsUrl = isDemoUrl(tabUrl) && orderNumber
         ? demoChitChatsUrl(orderNumber)
-        : (await buildChitChatsUrl(orderNumber)) || app?.chitchatsUrl || null;
+        : (await buildChitChatsUrl(orderNumber, message.customerName)) || app?.chitchatsUrl || null;
       sendResponse({
         orderNumber,
         chitchatsUrl,

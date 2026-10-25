@@ -8,7 +8,8 @@
  * connaît (receipt_id).
  */
 (() => {
-  const ORDER_ID = /(?:[?&]order_id=|\/orders\/sold\/(?:[a-z-]+\/)?)(\d{6,})/i;
+  // lien d'une commande (repli) : ?order_id=123…
+  const ORDER_ID = /[?&]order_id=(\d{6,})/i;
   const send = (message) => chrome.runtime.sendMessage(message).catch(() => null);
   globalThis.ResinQueuePackSource = 'etsy';
 
@@ -19,20 +20,37 @@
 
   const orderIdOf = (href) => ORDER_ID.exec(href ?? '')?.[1] ?? null;
 
-  /** Un lien par commande trouvée : { id, node }. */
+  /**
+   * Une entrée par commande : le numéro affiché sous le nom de l'acheteur (« #4208091578 »)
+   * est celui que l'app connaît ; les liens ?order_id= ne servent que de repli.
+   */
   const findOrders = () => {
     const found = new Map();
-    for (const anchor of document.querySelectorAll('a[href]')) {
-      const id = orderIdOf(anchor.getAttribute('href'));
-      if (id && !found.has(id)) found.set(id, anchor);
+    for (const node of document.querySelectorAll('a, span, div')) {
+      if (node.children.length > 1) continue;
+      const match = /^#(\d{8,})$/.exec((node.textContent ?? '').trim());
+      if (match && !found.has(match[1])) found.set(match[1], node);
+    }
+    if (!found.size) {
+      for (const anchor of document.querySelectorAll('a[href]')) {
+        const id = orderIdOf(anchor.getAttribute('href'));
+        if (id && !found.has(id)) found.set(id, anchor);
+      }
     }
     return found;
+  };
+
+  /** Nom de l'acheteur : la ligne qui suit « Ship to » dans la commande. */
+  const buyerName = (row) => {
+    const lines = (row.innerText ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
+    const at = lines.findIndex((line) => /^ship to$/i.test(line));
+    return (at >= 0 && lines[at + 1]) || null;
   };
 
   /** La ligne de la commande : le plus petit bloc qui contient aussi sa case à cocher. */
   const rowOf = (anchor, id, all) => {
     let node = anchor;
-    for (let depth = 0; depth < 12 && node.parentElement; depth += 1) {
+    for (let depth = 0; depth < 14 && node.parentElement; depth += 1) {
       const parent = node.parentElement;
       if (parent === document.body || parent.tagName === 'MAIN') break;
       // un bloc qui contient une autre commande n'est plus « la » ligne
@@ -87,13 +105,13 @@
   };
 
   /** Amène Chit Chats sur la commande : onglet lié, sinon nouvel onglet (numéro copié). */
-  const goChitChats = async (id) => {
-    lastClicked = id;
+  const goChitChats = async (id, customerName) => {
+    lastClicked = { id, customerName };
     if (mine() && linkStatus.link.state === 'live') {
-      send({ type: 'link-order', orderNumber: id });
+      send({ type: 'link-order', orderNumber: id, customerName });
       return;
     }
-    const info = await send({ type: 'resolve', pageOrderNumber: id });
+    const info = await send({ type: 'resolve', pageOrderNumber: id, customerName });
     if (!info?.chitchatsUrl) return;
     try {
       await navigator.clipboard.writeText(id);
@@ -103,10 +121,10 @@
     window.open(info.chitchatsUrl, '_blank', 'noopener');
   };
 
-  const onLogo = (id, node) => {
+  const onLogo = (id, node, row) => {
     const closing = globalThis.ResinQueuePack?.openOrder() === id;
     globalThis.ResinQueuePack?.toggle(id, node);
-    if (!closing) goChitChats(id);
+    if (!closing) goChitChats(id, row ? buyerName(row) : null);
   };
 
   const onLink = async () => {
@@ -129,7 +147,7 @@
     icon.src = logo;
     icon.alt = 'Resin Queue';
     icon.style.cssText = 'width:22px;height:22px;display:block;';
-    const logoBtn = button(icon, `Resin Queue : bac + Chit Chats pour la commande ${id}`, 'padding:0 5px;', () => onLogo(id, logoBtn));
+    const logoBtn = button(icon, `Resin Queue : bac + Chit Chats pour la commande ${id}`, 'padding:0 5px;', () => onLogo(id, logoBtn, floating ? null : row));
     const linkBtn = button('🔗', 'Lier un onglet Chit Chats', 'padding:0 10px;', onLink);
     group.append(logoBtn, linkBtn);
     if (!floating && getComputedStyle(row).position === 'static') row.style.position = 'relative';
@@ -159,7 +177,7 @@
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'link-changed') refreshLink();
-    if (message?.type === 'link-sync' && lastClicked) send({ type: 'link-order', orderNumber: lastClicked });
+    if (message?.type === 'link-sync' && lastClicked) send({ type: 'link-order', orderNumber: lastClicked.id, customerName: lastClicked.customerName });
     return false;
   });
   globalThis.addEventListener('resin-queue-pack', () => paintLink());

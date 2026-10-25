@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Extension 1.6.2 (Etsy)** : les boutons sont posés sur chaque commande (repérée par son numéro `#…` affiché,
+  plus par les liens de la page, ce qui les mettait aussi dans la barre d'onglets), et Chit Chats cherche
+  **le nom de l'acheteur** (ligne « Ship to ») au lieu du numéro Etsy, qu'il ne connaît pas toujours.
 - **Tags de l'extension → commande Shopify** : quand on enregistre le bac (« J'ai packé »), l'app ajoute à la
   commande Shopify le tag « Packé par X » et, si le bac est complet, « Pre packed » (retiré si le bac redevient
   incomplet). Les autres tags de la commande ne sont pas touchés. **À faire une fois** : Réglages → Boutiques →
