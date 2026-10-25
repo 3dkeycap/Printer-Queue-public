@@ -176,6 +176,9 @@ export const migrate = () => {
   // commandes annulées (Shopify / Etsy) : retirées de « À imprimer » mais gardées dans « Tout »
   addColumnIfMissing(db, 'orders', 'cancelled_at', 'TEXT');
   addColumnIfMissing(db, 'parts', 'cancelled', 'INTEGER NOT NULL DEFAULT 0');
+  // inventaire : questions posées au scan (couleur, quantité…) et réponses en attente de commande
+  addColumnIfMissing(db, 'inventory_items', 'questions', "TEXT NOT NULL DEFAULT '[]'");
+  addColumnIfMissing(db, 'inventory_items', 'flag_details', "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing(db, 'order_items', 'image_url', 'TEXT');
   // import automatique des commandes dans Chit Chats : résultat et raison d'un échec
   addColumnIfMissing(db, 'orders', 'chitchats_import_status', 'TEXT');

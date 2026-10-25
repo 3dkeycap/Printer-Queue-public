@@ -839,3 +839,14 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .api-method.m-post { color: var(--warn); }
 .api-method.m-get { color: var(--ok); }
 .api-code { margin: 8px 0 0; padding: 10px; overflow: auto; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--text) 4%, transparent); font: 12px/1.5 var(--mono); white-space: pre; user-select: all; }
+
+/* Inventaire : questions posées au scan */
+.inv-questions { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+.inv-q { border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.inv-q-head { display: flex; gap: 8px; align-items: center; }
+.inv-q-head input { flex: 1; min-width: 0; }
+.inv-q-choice { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inv-q-choice input[type=text], .inv-q-choice > input:not([type=checkbox]) { flex: 1 1 200px; min-width: 0; }
+.inv-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.inv-questions-box summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.inv-missing { color: var(--text); }

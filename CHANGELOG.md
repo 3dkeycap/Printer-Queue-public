@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Inventaire : questions au scan.** Un objet peut poser des questions quand on scanne sa carte : un
+  **choix** (liste libre ou **couleurs de résine** du catalogue, une ou plusieurs réponses), un **nombre** ou
+  un **texte libre**. Une seule étiquette « Résine » suffit : on coche les couleurs qui manquent. Les réponses
+  (une ligne par scan) s'affichent sous l'objet dans « À racheter » et s'accumulent jusqu'à « Commandé ».
+  Sans question, rien ne change (le scan signale tout seul). Ouvrir l'adresse du code ne modifie toujours rien :
+  c'est l'envoi du formulaire qui signale.
 - **Extension 1.6.5 (Etsy)** : un petit bouton (le logo) reste sur chaque commande, en plus de la barre de
   droite : il sélectionne la commande et ouvre / ferme sa boîte « J'ai packé ».
 - **Extension 1.6.4 (Etsy)** : « Commande inconnue de l'app » sur des commandes pourtant synchronisées : le

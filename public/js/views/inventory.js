@@ -31,10 +31,83 @@ const pngButton = (item) =>
 const printLink = (ids, label) =>
   el('a', { class: 'ghost-btn', href: `/inventory/cards?ids=${ids.join(',')}`, target: '_blank', rel: 'noopener' }, [icon('receipt'), label]);
 
+
+/** Libellé court d'une question, pour la liste. */
+const TYPE_LABEL = { choice: 'Choix', text: 'Texte libre', number: 'Nombre' };
+
+/**
+ * Éditeur des questions posées au scan (ex. « Quelle résine ? » = couleurs de résine, plusieurs
+ * possibles). Renvoie { node, value() } : value() donne la liste à envoyer à l'API.
+ */
+export const questionsEditor = (initial = []) => {
+  const list = el('div', { class: 'inv-questions' });
+  const rows = [];
+
+  const addRow = (question = {}) => {
+    const label = el('input', { placeholder: 'Ex. Quelle résine manque ?', maxlength: '60', value: question.label ?? '' });
+    const type = el(
+      'select',
+      {},
+      Object.entries(TYPE_LABEL).map(([value, text]) => el('option', { value, selected: (question.type ?? 'choice') === value }, text)),
+    );
+    const source = el('select', {}, [
+      el('option', { value: 'list', selected: !question.colors }, 'Ma liste de choix'),
+      el('option', { value: 'colors', selected: Boolean(question.colors) }, 'Couleurs de résine (catalogue)'),
+    ]);
+    const choices = el('input', { placeholder: 'Choix séparés par des virgules : S, M, L', value: (question.choices ?? []).join(', ') });
+    const multiple = el('input', { type: 'checkbox', checked: Boolean(question.multiple) });
+    const multipleLabel = el('label', { class: 'inv-check' }, [multiple, 'Plusieurs réponses possibles']);
+    const choiceBox = el('div', { class: 'inv-q-choice' }, [source, choices, multipleLabel]);
+    const row = el('div', { class: 'inv-q' }, [
+      el('div', { class: 'inv-q-head' }, [
+        label,
+        type,
+        el('button', { class: 'mini-btn danger', type: 'button', title: 'Retirer la question', onclick: () => { rows.splice(rows.indexOf(entry), 1); row.remove(); } }, icon('trash')),
+      ]),
+      choiceBox,
+    ]);
+    const refresh = () => {
+      choiceBox.hidden = type.value !== 'choice';
+      choices.hidden = source.value === 'colors';
+    };
+    type.addEventListener('change', refresh);
+    source.addEventListener('change', refresh);
+    refresh();
+    const entry = {
+      value: () => ({
+        label: label.value,
+        type: type.value,
+        ...(type.value === 'choice' ? { colors: source.value === 'colors', multiple: multiple.checked, choices: choices.value } : {}),
+      }),
+    };
+    rows.push(entry);
+    list.append(row);
+  };
+
+  for (const question of initial) addRow(question);
+  const add = el('button', { class: 'ghost-btn', type: 'button', onclick: () => addRow() }, [icon('plus'), 'Ajouter une question']);
+  const node = el('div', {}, [list, add]);
+  return {
+    node,
+    value: () => rows.map((row) => row.value()),
+    reset: () => {
+      rows.length = 0;
+      list.replaceChildren();
+    },
+  };
+};
+
+/** Ce qui manque, d'après les réponses données aux scans (une ligne par scan). */
+const detailLines = (item) =>
+  (item.flag_details ?? []).map((detail) =>
+    el('div', { class: 'cell-sub inv-missing' }, `${fromNow(detail.at)} — ${detail.answers.map((answer) => `${answer.label} : ${answer.value}`).join(' · ')}`),
+  );
+
 /** Formulaire de création : nom + quantité à laquelle il faut scanner. */
 const createForm = (actions) => {
   const name = el('input', { id: 'inv-name', placeholder: 'Ex. Gants nitrile M, IPA 99 %, Filtres résine…', required: true, maxlength: '80' });
   const threshold = el('input', { id: 'inv-threshold', type: 'number', min: '0', value: '2', inputmode: 'numeric' });
+  const questions = questionsEditor([]);
   const form = el(
     'form',
     {
@@ -43,10 +116,11 @@ const createForm = (actions) => {
         event.preventDefault();
         const button = form.querySelector('button');
         button.disabled = true;
-        const item = await actions.createInventoryItem({ name: name.value, reorder_at: threshold.value });
+        const item = await actions.createInventoryItem({ name: name.value, reorder_at: threshold.value, questions: questions.value() });
         button.disabled = false;
         if (item) {
           name.value = '';
+          questions.reset();
           name.focus();
         }
       },
@@ -54,6 +128,11 @@ const createForm = (actions) => {
     [
       el('div', { class: 'field inv-grow' }, [el('label', { for: 'inv-name' }, "Nom de l'objet"), name]),
       el('div', { class: 'field' }, [el('label', { for: 'inv-threshold' }, 'Scanner quand il en reste'), threshold]),
+      el('details', { class: 'inv-grow inv-questions-box' }, [
+        el('summary', {}, 'Poser des questions au scan (couleur de résine, quantité…)'),
+        el('p', { class: 'field-hint' }, 'Une seule étiquette, mais la personne qui scanne choisit ce qui manque : une ou plusieurs couleurs, un nombre ou un texte.'),
+        questions.node,
+      ]),
       el('button', { class: 'primary-btn', type: 'submit' }, [icon('plus'), 'Créer la carte']),
     ],
   );
@@ -69,6 +148,7 @@ const toBuyRow = (item, actions) =>
     el('div', { class: 'inv-grow' }, [
       el('strong', {}, item.name),
       el('div', { class: 'cell-sub' }, `Signalé ${fromNow(item.flagged_at)}${item.scan_count > 1 ? ` · scanné ${item.scan_count} fois` : ''}`),
+      ...detailLines(item),
     ]),
     el(
       'button',
@@ -86,6 +166,7 @@ const itemCard = (item, actions) =>
     el('div', { class: 'inv-card-top' }, [el('h4', {}, item.name), statusPill(item)]),
     el('p', { class: 'inv-rule' }, ['Scanner quand il en reste ', el('strong', {}, String(item.reorder_at))]),
     item.notes ? el('p', { class: 'cell-sub' }, item.notes) : null,
+    item.questions?.length ? el('p', { class: 'cell-sub' }, `Questions au scan : ${item.questions.map((q) => q.label).join(' · ')}`) : null,
     el('img', { class: 'inv-qr', src: `/api/inventory/${item.id}/qr.svg`, alt: `Code QR : ${item.name}`, width: '110', height: '110', loading: 'lazy' }),
     el('div', { class: 'inv-actions' }, [
       printLink([item.id], 'Imprimer la carte'),

@@ -167,4 +167,67 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
     assert.equal((await call(`/r/${token}`, { auth: false })).status, 404);
     assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM inventory_events WHERE item_id = ?').get(item.id).n, 0);
   });
+
+  describe('questions au scan (couleur, texte, nombre)', () => {
+    const questions = [
+      { label: 'Quelle résine ?', type: 'choice', colors: true, multiple: true },
+      { label: 'Taille', type: 'choice', choices: 'S, M, L' },
+      { label: 'Combien ?', type: 'number' },
+      { label: 'Remarque', type: 'text' },
+    ];
+
+    it('crée les questions et lit les couleurs de résine du catalogue', () => {
+      const item = inventory.createItem({ name: 'Résine à commander', reorder_at: 1, questions });
+      assert.equal(item.questions.length, 4);
+      assert.ok(item.questions[0].choices.length > 3, 'les résines actives sont proposées');
+      assert.deepEqual(item.questions[1].choices, ['S', 'M', 'L']);
+      assert.throws(() => inventory.createItem({ name: 'X', questions: [{ label: 'Vide', type: 'choice', choices: ' ' }] }), /au moins un choix/);
+      assert.throws(() => inventory.createItem({ name: 'X', questions: [{ label: ' ', type: 'text' }] }), /titre/);
+    });
+
+    it('le scan exige les réponses, les garde, et elles s’accumulent jusqu’à la commande', () => {
+      const item = inventory.createItem({ name: 'Résine accumulée', reorder_at: 1, questions });
+      const token = item.scan_url.split('/r/')[1];
+      const red = item.questions[0].choices[0];
+      const blue = item.questions[0].choices[1];
+      assert.throws(() => inventory.scanByToken(token), /Choisis une réponse/);
+      assert.throws(() => inventory.scanByToken(token, { q0: ['Inconnue'], q1: 'M', q2: '2', q3: 'ok' }), /inconnue/);
+      assert.throws(() => inventory.scanByToken(token, { q0: [red], q1: 'M', q2: 'beaucoup', q3: 'ok' }), /nombre/);
+      assert.equal(inventory.getItem(item.id).status, 'ok', 'une réponse refusée ne signale rien');
+
+      const first = inventory.scanByToken(token, { q0: [red, blue], q1: 'M', q2: '2,5', q3: 'urgent' });
+      assert.equal(first.alreadyFlagged, false);
+      assert.deepEqual(first.item.flag_details[0].answers, [
+        { label: 'Quelle résine ?', value: `${red}, ${blue}` },
+        { label: 'Taille', value: 'M' },
+        { label: 'Combien ?', value: '2.5' },
+        { label: 'Remarque', value: 'urgent' },
+      ]);
+      const second = inventory.scanByToken(token, { q0: [red], q1: 'L', q2: '1', q3: 'aussi' });
+      assert.equal(second.alreadyFlagged, true);
+      assert.equal(second.item.flag_details.length, 2);
+
+      // annuler enlève seulement le dernier signalement, l'objet reste « à racheter »
+      const undone = inventory.undoScan(token);
+      assert.equal(undone.undone, true);
+      assert.equal(undone.item.status, 'reorder');
+      assert.equal(undone.item.flag_details.length, 1);
+
+      assert.deepEqual(inventory.markOrdered(item.id).flag_details, []);
+    });
+
+    it('la page de scan demande les réponses sans rien enregistrer ; sans question, rien ne change', async () => {
+      const item = inventory.createItem({ name: 'Page questions', reorder_at: 1, questions: [{ label: 'Quoi ?', type: 'text' }] });
+      const token = item.scan_url.split('/r/')[1];
+      const html = await (await call(`/r/${token}`, { auth: false })).text();
+      assert.match(html, /data-questions=/);
+      assert.equal(inventory.getItem(item.id).status, 'ok');
+      const plain = inventory.createItem({ name: 'Sans question', reorder_at: 1 });
+      const plainHtml = await (await call(`/r/${plain.scan_url.split('/r/')[1]}`, { auth: false })).text();
+      assert.ok(!plainHtml.includes('data-questions'));
+      const posted = await call(`/r/${token}/scan`, { auth: false, method: 'POST', body: { answers: { q0: 'Résine noire' } } });
+      assert.equal(posted.status, 200);
+      assert.equal(inventory.getItem(item.id).flag_details[0].answers[0].value, 'Résine noire');
+    });
+  });
 });

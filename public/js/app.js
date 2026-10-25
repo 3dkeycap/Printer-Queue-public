@@ -23,7 +23,7 @@ import { renderBoard } from './views/board.js';
 import { renderAll } from './views/all.js';
 import { renderIntegrations } from './views/integrations.js';
 import { renderFailures } from './views/failures.js';
-import { renderInventory } from './views/inventory.js';
+import { questionsEditor, renderInventory } from './views/inventory.js';
 import { closeDrawer, openDrawer } from './drawer.js';
 import { startTutorial, tutorialSeen } from './tutorial.js';
 import { mountFullscreen } from './fullscreen.js';
@@ -207,17 +207,19 @@ const actions = {
     const name = el('input', { value: item.name });
     const threshold = el('input', { type: 'number', min: '0', value: String(item.reorder_at) });
     const notes = el('input', { value: item.notes ?? '', placeholder: 'Ex. étagère du haut, marque, lien…' });
+    const questions = questionsEditor(item.questions ?? []);
     await modal({
       title: 'Modifier l’objet',
       body: el('div', {}, [
         el('div', { class: 'field' }, [el('label', {}, 'Nom'), name]),
         el('div', { class: 'field' }, [el('label', {}, 'Scanner quand il en reste'), threshold]),
         el('div', { class: 'field' }, [el('label', {}, 'Note (facultatif)'), notes]),
+        el('div', { class: 'field' }, [el('label', {}, 'Questions posées au scan'), questions.node]),
       ]),
       confirmLabel: 'Enregistrer',
       onConfirm: async () => {
         try {
-          await api.patchInventoryItem(item.id, { name: name.value, reorder_at: threshold.value, notes: notes.value });
+          await api.patchInventoryItem(item.id, { name: name.value, reorder_at: threshold.value, notes: notes.value, questions: questions.value() });
           toast('Objet modifié');
           await refresh({ silent: true });
           return true;

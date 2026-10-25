@@ -477,6 +477,7 @@ Le `POST` d'une commande Shopify (ou par id local) ajoute ensuite les tags « Pa
 | `GET` | `/api/settings` | Tous les réglages (secrets masqués) + état des connecteurs |
 | `PUT` | `/api/settings` | Enregistre un lot de réglages |
 | `GET` `POST` | `/api/inventory` | Objets d'inventaire (liste, création) ; `PATCH`/`DELETE /:id`, `POST /:id/flag` (signaler sans scanner), `POST /:id/ordered` (commandé), `GET /:id/qr.svg` |
+| `POST` | `/api/inventory` · `PATCH /api/inventory/:id` — champ `questions` | Questions posées au scan : `[{ label, type: 'choice'\|'text'\|'number', choices, colors, multiple }]` (6 max). `colors: true` = résines actives du catalogue. Les réponses arrivent par `POST /r/:token/scan` (`{ answers: { q0: … } }`) et sont gardées dans `flag_details` jusqu'à « Commandé » ; colonnes `questions` / `flag_details` de `inventory_items` |
 | `GET` | `/inventory/cards?ids=1,2` | Cartes imprimables (HTML : nom, quantité, QR) |
 | `GET` `POST` | `/r/:token` · `/r/:token/scan` · `/r/:token/undo` | **Publics** (sans mot de passe) : page ouverte par le code QR ; le `GET` ne change rien, c'est son script qui envoie le `POST` |
 | `GET` `POST` | `/api/bugs/webhook` · `/api/bugs/webhook/test` | État du dernier envoi du webhook « nouveau bug » ; envoi d'un faux bug (`{ url? }`) |

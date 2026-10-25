@@ -91,7 +91,7 @@ const cardHtml = (item) => `
     <div>
       <h2>${esc(item.name)}</h2>
       <div class="qty">Quand il en reste ${esc(item.reorder_at)}</div>
-      <p>👉 <strong>Scanne ce code</strong> avec ton téléphone : l’app note toute seule qu’il faut en racheter.</p>
+      <p>👉 <strong>Scanne ce code</strong> avec ton téléphone : ${item.questions.length ? 'choisis ce qui manque et' : ''} l’app note qu’il faut en racheter.</p>
       ${item.notes ? `<p>${esc(item.notes)}</p>` : ''}
       <div class="url">${esc(item.scan_url)}</div>
     </div>
@@ -139,12 +139,22 @@ const SCAN_CSS = `
   a { color: #1f5fd6; }
   .ok .big, .ok h1 { color: #16663a; }
   .soft .big, .soft h1 { color: #8a4b0c; }
+  form { text-align: left; margin-top: 8px; }
+  fieldset { border: 0; margin: 0 0 16px; padding: 0; }
+  legend, label.lbl { display: block; margin-bottom: 8px; font-weight: 700; font-size: 16px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 2px solid #d5dbe8; border-radius: 12px; background: #fff; font-size: 16px; cursor: pointer; }
+  .opt:has(input:checked) { border-color: #1f5fd6; background: #eaf1ff; }
+  .opt input { width: 18px; height: 18px; }
+  input[type=text], input[type=number] { width: 100%; padding: 12px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; }
+  .send { width: 100%; background: #1f5fd6; color: #fff; font-size: 18px; padding: 14px; }
+  .err { color: #a02828; font-size: 15px; margin: 0 0 8px; }
 `;
 
-const scanPage = ({ token, title, body, tone = 'soft' }) => `<!doctype html>
+const scanPage = ({ token, title, body, tone = 'soft', questions = null }) => `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>${esc(title)}</title><style>${SCAN_CSS}</style></head>
-<body data-token="${esc(token)}"><main id="box" class="${tone}">${body}</main><script src="/r/scan.js"></script></body></html>`;
+<body data-token="${esc(token)}"${questions ? ` data-questions="${esc(JSON.stringify(questions))}"` : ''}><main id="box" class="${tone}">${body}</main><script src="/r/scan.js"></script></body></html>`;
 
 /**
  * Ouvrir l'adresse du code ne change RIEN (les aperçus de lien et les antivirus la
@@ -162,11 +172,16 @@ scanRouter.get('/:token', (req, res) => {
       }),
     );
   }
+  // avec des questions (couleur, quantité…) la page les pose d'abord : toujours rien d'enregistré à l'ouverture
+  const asks = item.questions.length > 0;
   res.type('html').send(
     scanPage({
       token,
       title: `Racheter : ${item.name}`,
-      body: `<div class="big">⏳</div><h1>Un instant…</h1><p>On note qu’il faut racheter <span class="name">${esc(item.name)}</span>.</p><noscript><p>Active JavaScript pour que le signalement soit envoyé.</p></noscript>`,
+      questions: asks ? item.questions : null,
+      body: asks
+        ? `<div class="big">🛒</div><h1>${esc(item.name)}</h1><p>Qu’est-ce qui manque ?</p><noscript><p>Active JavaScript pour répondre.</p></noscript>`
+        : `<div class="big">⏳</div><h1>Un instant…</h1><p>On note qu’il faut racheter <span class="name">${esc(item.name)}</span>.</p><noscript><p>Active JavaScript pour que le signalement soit envoyé.</p></noscript>`,
     }),
   );
 });
@@ -174,7 +189,7 @@ scanRouter.get('/:token', (req, res) => {
 scanRouter.post(
   '/:token/scan',
   asyncRoute((req, res) => {
-    res.json(scanByToken(req.params.token));
+    res.json(scanByToken(req.params.token, req.body?.answers));
   }),
 );
 

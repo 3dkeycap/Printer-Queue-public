@@ -116,6 +116,12 @@ Quand tu enregistres le bac, la commande Shopify reçoit « Packé par <ton nom>
 bac, « Pre packed ». Première fois seulement : Réglages → Boutiques → reconnecter Shopify (autorisation
 d'écriture).
 
+## Inventaire : une étiquette, plusieurs variantes
+
+Dans Inventaire, « Poser des questions au scan » : par exemple une carte « Résine » qui demande
+**quelle résine manque** (couleurs du catalogue, plusieurs possibles), ou un nombre de bouteilles, ou un
+texte. Au scan, le téléphone affiche les questions ; les réponses apparaissent dans « À racheter ».
+
 ## Piloter l'app depuis un script ou n8n
 
 Réglages → **API** : des exemples à copier (curl, Windows, n8n). Pas de jeton à créer, l'API répond
