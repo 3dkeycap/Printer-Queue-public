@@ -13,6 +13,7 @@ import {
   listItems,
   listItemsForCards,
   markOrdered,
+  newItemUrl,
   scanByToken,
   undoScan,
   updateItem,
@@ -56,6 +57,11 @@ inventoryRouter.post(
 
 inventoryRouter.post('/:id/ordered', (req, res) => {
   res.json(markOrdered(req.params.id));
+});
+
+/** Code QR de la page « ajouter depuis le téléphone » (affiché sur la page Inventaire). */
+inventoryRouter.get('/phone-qr.svg', (req, res) => {
+  res.type('image/svg+xml').set('Cache-Control', 'no-cache').send(qrSvg(newItemUrl()));
 });
 
 /** La photo d'un objet (celle de l'étiquette grand format). */
@@ -201,6 +207,38 @@ inventoryPagesRouter.get('/cards', (req, res) => {
   ${large ? `<main>${largePages(items)}</main>` : `<main class="sheet">${items.map(cardHtml).join('')}</main>`}
   <script src="/js/print-cards.js"></script>
 </body></html>`);
+});
+
+/* ------------------------------------------- ajouter un objet depuis le téléphone */
+
+const NEW_CSS = `
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100dvh; padding: 16px; font: 17px system-ui, -apple-system, sans-serif; color: #1c2230; background: #eef0f4; }
+  main { width: min(480px, 100%); margin: 0 auto; background: #fff; border-radius: 18px; padding: 22px 18px 26px; box-shadow: 0 18px 50px -24px rgba(20,30,60,.4); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .sub { margin: 0 0 16px; color: #5a6479; font-size: 15px; }
+  label { display: block; margin: 14px 0 6px; font-weight: 700; font-size: 15px; }
+  .opt { font-weight: 400; color: #7b859a; }
+  input[type=text], input[type=number] { width: 100%; padding: 13px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; background: #fff; }
+  .photo { display: flex; gap: 12px; align-items: center; }
+  .photo img { width: 84px; height: 84px; object-fit: cover; border-radius: 12px; border: 1px solid #d5dbe8; }
+  .photo img[hidden] { display: none; }
+  .snap { display: inline-block; padding: 13px 16px; border-radius: 12px; background: #e8ecf4; font-weight: 700; cursor: pointer; }
+  .snap input { display: none; }
+  .send { width: 100%; margin-top: 22px; padding: 15px; border: 0; border-radius: 14px; background: #1f5fd6; color: #fff; font: 700 18px system-ui; cursor: pointer; }
+  .send[disabled] { opacity: .6; }
+  .err { color: #a02828; font-size: 15px; min-height: 1.2em; margin: 12px 0 0; }
+  .done { text-align: center; }
+  .done .big { font-size: 56px; }
+  .done a, .done button { display: block; width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 12px; background: #e8ecf4; color: #1c2230; font: 700 16px system-ui; text-decoration: none; cursor: pointer; }
+`;
+
+inventoryPagesRouter.get('/new', (req, res) => {
+  const suppliers = [...new Set(listItems().map((item) => item.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  res.type('html').send(`<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>Ajouter à l’inventaire</title><style>${NEW_CSS}</style></head>
+<body data-suppliers="${esc(JSON.stringify(suppliers))}"><main id="box"></main><script type="module" src="/js/inventory-new.js"></script></body></html>`);
 });
 
 /* ---------------------------------------------- scan d'un code QR (public, téléphone) */

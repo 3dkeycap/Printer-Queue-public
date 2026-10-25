@@ -26,6 +26,9 @@ export const normalizeBaseUrl = (value) => {
 
 const baseUrl = () => normalizeBaseUrl(getSettings()['inventory.scanUrl']);
 
+/** Page « ajouter un objet » pensée pour le téléphone (on se promène et on ajoute). */
+export const newItemUrl = () => `${baseUrl()}/inventory/new`;
+
 /** Adresse encodée dans le code QR d'un objet. */
 export const scanUrl = (token) => `${baseUrl()}/r/${token}`;
 

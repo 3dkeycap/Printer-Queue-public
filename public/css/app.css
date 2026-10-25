@@ -858,3 +858,6 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .inv-extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
 .photo-field { display: flex; gap: 10px; align-items: center; }
 .photo-preview { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.inv-phone { display: flex; gap: 16px; align-items: center; }
+.inv-phone img { flex: none; border-radius: 8px; background: #fff; padding: 4px; }
+.inv-phone .sub { margin: 4px 0 10px; }

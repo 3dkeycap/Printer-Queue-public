@@ -286,4 +286,15 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
       assert.ok(small.includes('size: 2in 1in'), 'le style par défaut reste 2 po × 1 po');
     });
   });
+
+  it('page « ajouter depuis le téléphone » : formulaire, fournisseurs connus, code QR, mot de passe demandé', async () => {
+    inventory.createItem({ name: 'Pour fournisseur', reorder_at: 1, supplier: 'Fournisseur Test' });
+    const html = await (await call('/inventory/new')).text();
+    assert.ok(html.includes('/js/inventory-new.js'));
+    assert.ok(html.includes('Fournisseur Test'), 'les fournisseurs déjà saisis sont proposés');
+    assert.ok(!/<script(?![^>]*\ssrc=)/.test(html), 'pas de script en ligne (CSP)');
+    const qr = await call('/api/inventory/phone-qr.svg');
+    assert.equal(qr.headers.get('content-type').split(';')[0], 'image/svg+xml');
+    assert.equal((await call('/inventory/new', { auth: false })).status, 401);
+  });
 });

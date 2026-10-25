@@ -242,6 +242,15 @@ export const renderInventory = (root, actions) => {
 
   root.append(
     createForm(actions),
+    // ajouter des objets en se promenant : la page du téléphone s'ouvre en scannant ce code
+    el('article', { class: 'panel settings-panel inv-phone' }, [
+      el('img', { src: '/api/inventory/phone-qr.svg', alt: 'Code QR : ajouter depuis le téléphone', width: '96', height: '96' }),
+      el('div', {}, [
+        el('h3', {}, 'Ajouter depuis le téléphone'),
+        el('p', { class: 'sub' }, 'Scanne ce code avec ton téléphone : un formulaire simple (photo, nom, minimum, fournisseur) pour ajouter un objet en te promenant dans l’atelier.'),
+        el('a', { class: 'ghost-btn', href: '/inventory/new', target: '_blank', rel: 'noopener' }, 'Ouvrir la page'),
+      ]),
+    ]),
 
     toBuy.length ? el('div', { class: 'section-title' }, `À racheter (${toBuy.length})`) : null,
     toBuy.length ? el('article', { class: 'panel inv-buy' }, toBuy.map((item) => toBuyRow(item, actions))) : null,

@@ -6,6 +6,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Ajouter un objet d'inventaire depuis le téléphone** : page `/inventory/new` pensée pour le téléphone (nom,
+  **photo prise avec l'appareil**, minimum, quantité à commander, fournisseur ; les fournisseurs déjà saisis sont
+  proposés). Un code QR sur la page Inventaire l'ouvre ; après l'ajout, « Ajouter un autre objet » et « Voir la
+  grande étiquette ». Marche en mode simple comme avancé (page indépendante, protégée par le mot de passe de l'app s'il y en a un).
 - **Deuxième style d'étiquette : grande, 4 par feuille Lettre.** Nom de l'article, **photo**, code QR, **minimum**,
   **quantité à commander** et **commander chez** (les trois derniers facultatifs : absents de l'étiquette s'ils sont vides).
   Chaque objet a maintenant deux boutons d'impression (« Étiquette 2×1 po » et « Grande étiquette »), et « Toutes en
