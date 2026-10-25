@@ -56,8 +56,21 @@ export const drawCard = async (item) => {
   const pad = px(1.8);
   const qrSize = px(21.5);
   const textWidth = width - pad * 2 - qrSize - px(1.5);
-  const label = `Scanner à ${item.reorder_at}`;
-  const pillMm = 2.6;
+  const amount = `${item.reorder_at}${item.unit ? ` ${item.unit}` : ''}`;
+  let label = `Scanner à ${amount}`;
+  let pillMm = 2.6;
+  // une unité longue (« bouteilles ») : la pastille rétrécit, puis perd « Scanner à » plutôt que d'être coupée
+  const fit = document.createElement('canvas').getContext('2d');
+  const widthAt = (text, mm) => {
+    fit.font = `700 ${px(mm)}px ${FONT}`;
+    return fit.measureText(text).width + px(2.4);
+  };
+  while (widthAt(label, pillMm) > width - px(1.8) * 2 - px(21.5) - px(1.5) && pillMm > 1.9) pillMm = Math.round((pillMm - 0.1) * 10) / 10;
+  if (widthAt(label, pillMm) > width - px(1.8) * 2 - px(21.5) - px(1.5)) {
+    label = amount;
+    pillMm = 2.6;
+    while (widthAt(label, pillMm) > width - px(1.8) * 2 - px(21.5) - px(1.5) && pillMm > 1.9) pillMm = Math.round((pillMm - 0.1) * 10) / 10;
+  }
   const pill = px(4.2);
   const available = height - pad * 2 - pill - px(1);
 

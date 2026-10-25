@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Unité du minimum** : on peut choisir une unité (rouleaux, bac, boîtes, bouteilles… ou n'importe quel texte) pour la quantité minimale et la quantité à commander : « Scanner à 2 rouleaux », « Minimum 1 bac ». Champ « Unité » dans le formulaire, « Modifier » et la page du téléphone ; elle apparaît sur les deux étiquettes (si l'unité est longue, la petite étiquette réduit le texte ou affiche seulement « 2 rouleaux ») et sur les cartes de l'app.
 - **Étiquette « Ajouter à l'inventaire »** : un code QR imprimable (2×1 po ou grande) à coller dans l'atelier, qui ouvre la page d'ajout du téléphone (`/inventory/add-card`, boutons sur la page Inventaire).
 - **Questions au scan depuis le téléphone** : la page d'ajout du téléphone a une section « Questions au scan » (choix dans une liste ou couleurs de résine avec plusieurs réponses possibles, nombre, texte libre).
 - **Ajouter un objet d'inventaire depuis le téléphone** : page `/inventory/new` pensée pour le téléphone (nom,

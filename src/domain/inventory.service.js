@@ -118,6 +118,12 @@ const cleanSupplier = (value) => {
   return text || null;
 };
 
+const cleanUnit = (value) => {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (text.length > 20) throw badRequest("L'unité est trop longue (20 caractères maximum)");
+  return text || null;
+};
+
 const cleanOrderQty = (value) => {
   if (value === null || value === undefined || String(value).trim() === '') return null;
   const number = Number.parseInt(value, 10);
@@ -148,6 +154,7 @@ const present = (row, { withImage = false } = {}) => ({
   ordered_at: row.ordered_at,
   created_at: row.created_at,
   order_qty: row.order_qty ?? null,
+  unit: row.unit ?? null,
   supplier: row.supplier ?? null,
   has_image: Boolean(row.image),
   ...(withImage ? { image: row.image ?? null } : {}),
@@ -201,7 +208,7 @@ export const itemImage = (id) => {
   return match ? { mime: match[1], buffer: Buffer.from(match[2], 'base64') } : null;
 };
 
-export const createItem = ({ name, reorder_at, notes = null, questions, order_qty, supplier, image } = {}) => {
+export const createItem = ({ name, reorder_at, notes = null, questions, order_qty, supplier, image, unit } = {}) => {
   const db = getDb();
   const row = {
     name: cleanName(name),
@@ -209,6 +216,7 @@ export const createItem = ({ name, reorder_at, notes = null, questions, order_qt
     notes: String(notes ?? '').trim() || null,
     questions: JSON.stringify(cleanQuestions(questions)),
     order_qty: cleanOrderQty(order_qty),
+    unit: cleanUnit(unit),
     supplier: cleanSupplier(supplier),
     image: image ? cleanImage(image) : null,
     token: crypto.randomBytes(9).toString('base64url'),
@@ -216,8 +224,8 @@ export const createItem = ({ name, reorder_at, notes = null, questions, order_qt
   };
   const info = db
     .prepare(
-      `INSERT INTO inventory_items (name, reorder_at, notes, questions, order_qty, supplier, image, token, created_at, updated_at)
-       VALUES (@name, @reorder_at, @notes, @questions, @order_qty, @supplier, @image, @token, @ts, @ts)`,
+      `INSERT INTO inventory_items (name, reorder_at, notes, questions, order_qty, unit, supplier, image, token, created_at, updated_at)
+       VALUES (@name, @reorder_at, @notes, @questions, @order_qty, @unit, @supplier, @image, @token, @ts, @ts)`,
     )
     .run(row);
   event(db, Number(info.lastInsertRowid), 'created');
@@ -227,13 +235,14 @@ export const createItem = ({ name, reorder_at, notes = null, questions, order_qt
 export const updateItem = (id, patch = {}) => {
   const db = getDb();
   const current = find(id);
-  db.prepare('UPDATE inventory_items SET name = @name, reorder_at = @reorder_at, notes = @notes, questions = @questions, order_qty = @order_qty, supplier = @supplier, image = @image, updated_at = @ts WHERE id = @id').run({
+  db.prepare('UPDATE inventory_items SET name = @name, reorder_at = @reorder_at, notes = @notes, questions = @questions, order_qty = @order_qty, unit = @unit, supplier = @supplier, image = @image, updated_at = @ts WHERE id = @id').run({
     id: current.id,
     name: patch.name === undefined ? current.name : cleanName(patch.name),
     reorder_at: patch.reorder_at === undefined ? current.reorder_at : cleanThreshold(patch.reorder_at),
     notes: patch.notes === undefined ? current.notes : String(patch.notes ?? '').trim() || null,
     questions: patch.questions === undefined ? current.questions : JSON.stringify(cleanQuestions(patch.questions)),
     order_qty: patch.order_qty === undefined ? current.order_qty : cleanOrderQty(patch.order_qty),
+    unit: patch.unit === undefined ? current.unit : cleanUnit(patch.unit),
     supplier: patch.supplier === undefined ? current.supplier : cleanSupplier(patch.supplier),
     image: patch.image === undefined ? current.image : cleanImage(patch.image),
     ts: nowIso(),

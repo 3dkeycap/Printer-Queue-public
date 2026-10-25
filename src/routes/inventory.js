@@ -93,7 +93,7 @@ const PAGE_CSS = `
   .label { width: 50.8mm; height: 25.4mm; padding: 1.8mm; background: #fff; display: grid; grid-template-columns: 1fr 21.5mm; gap: 1.5mm; align-items: center; overflow: hidden; break-inside: avoid; box-shadow: 0 0 0 0.2mm #c3c9d6; }
   .label .txt { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1mm; }
   .label h2 { margin: 0; font-weight: 800; line-height: 1.12; word-break: break-word; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
-  .label .qty { align-self: flex-start; padding: 0.3mm 1.2mm; border: 0.25mm solid #000; border-radius: 99px; font-weight: 700; font-size: 2.6mm; line-height: 1.3; white-space: nowrap; }
+  .label .qty { align-self: flex-start; padding: 0.3mm 1.2mm; border: 0.25mm solid #000; border-radius: 1.6mm; font-weight: 700; font-size: 2.6mm; line-height: 1.25; }
   .label svg { width: 21.5mm; height: 21.5mm; display: block; }
   @media print {
     @page { size: 2in 1in; margin: 0; }
@@ -114,11 +114,14 @@ const nameSize = (name) => {
   return 2.2;
 };
 
+/** « 2 rouleaux » : le nombre suivi de l'unité choisie (facultative). */
+const withUnit = (value, unit) => `${value}${unit ? ` ${unit}` : ''}`;
+
 const cardHtml = (item) => `
   <article class="label">
     <div class="txt">
       <h2 style="font-size:${nameSize(item.name)}mm">${esc(item.name)}</h2>
-      <div class="qty">Scanner à ${esc(item.reorder_at)}</div>
+      <div class="qty">Scanner à ${esc(withUnit(item.reorder_at, item.unit))}</div>
     </div>
     ${qrSvg(item.scan_url, { cellSize: 8, margin: 1 })}
   </article>`;
@@ -167,8 +170,8 @@ const largeCardHtml = (item) => `
     <div class="band"></div>
     <h2 style="font-size:${largeNameSize(item.name)}in">${esc(item.name)}</h2>
     <div class="facts">
-      <div><span class="k">Minimum</span><span class="v">${esc(item.reorder_at)}</span></div>
-      ${item.order_qty !== null && item.order_qty !== undefined ? `<div><span class="k">À commander</span><span class="v">${esc(item.order_qty)}</span></div>` : ''}
+      <div><span class="k">Minimum</span><span class="v">${esc(withUnit(item.reorder_at, item.unit))}</span></div>
+      ${item.order_qty !== null && item.order_qty !== undefined ? `<div><span class="k">À commander</span><span class="v">${esc(withUnit(item.order_qty, item.unit))}</span></div>` : ''}
       ${item.supplier ? `<div class="wide"><span class="k">Commander chez</span><span class="v">${esc(item.supplier)}</span></div>` : ''}
     </div>
     <div class="media${item.image ? '' : ' solo'}">

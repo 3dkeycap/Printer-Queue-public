@@ -72,6 +72,7 @@ const showForm = () => {
   let photo = null;
   const name = node('input', { id: 'n', type: 'text', maxlength: '80', placeholder: 'Ex. Ruban d’emballage', autocomplete: 'off', required: true });
   const minimum = node('input', { type: 'number', min: '0', inputmode: 'numeric', value: '2' });
+  const unit = node('input', { type: 'text', maxlength: '20', list: 'units', placeholder: 'Ex. rouleaux, bac, boîtes…', autocomplete: 'off' });
   const supplier = node('input', { type: 'text', maxlength: '80', list: 'suppliers', placeholder: 'Ex. Sticker Mule', autocomplete: 'off' });
   const orderQty = node('input', { type: 'number', min: '0', inputmode: 'numeric', placeholder: 'Ex. 4200' });
   const preview = node('img', { alt: '', hidden: true });
@@ -99,6 +100,9 @@ const showForm = () => {
     node('div', { class: 'photo' }, [preview, node('label', { class: 'snap' }, [node('span', { text: '📷 Prendre / choisir' }), file])]),
     node('label', { text: 'Minimum : scanner quand il en reste' }),
     minimum,
+    node('label', {}, ['Unité ', node('span', { class: 'opt', text: '(facultatif)' })]),
+    unit,
+    node('datalist', { id: 'units' }, ['unités', 'rouleaux', 'bac', 'boîtes', 'bouteilles', 'paquets', 'sacs'].map((value) => node('option', { value }))),
     node('label', {}, ['Quantité à commander ', node('span', { class: 'opt', text: '(facultatif)' })]),
     orderQty,
     node('label', {}, ['Commander chez ', node('span', { class: 'opt', text: '(facultatif)' })]),
@@ -121,7 +125,7 @@ const showForm = () => {
       const response = await fetch('/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.value, reorder_at: minimum.value, order_qty: orderQty.value, supplier: supplier.value, image: photo ?? undefined, questions: questions.value() }),
+        body: JSON.stringify({ name: name.value, reorder_at: minimum.value, unit: unit.value, order_qty: orderQty.value, supplier: supplier.value, image: photo ?? undefined, questions: questions.value() }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error ?? `Erreur ${response.status}`);

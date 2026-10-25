@@ -305,4 +305,17 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
     assert.ok(large.includes('size: letter') && large.includes('Ajouter à l’inventaire') && large.includes('<svg'));
     assert.equal((await call('/inventory/add-card', { auth: false })).status, 401);
   });
+
+  it('unité du minimum et de la quantité à commander (« 2 rouleaux », « 1 bac »)', async () => {
+    const item = inventory.createItem({ name: 'Ruban unité', reorder_at: 2, unit: '  rouleaux ', order_qty: 10 });
+    assert.equal(item.unit, 'rouleaux');
+    assert.equal(inventory.createItem({ name: 'Sans unité', reorder_at: 1 }).unit, null);
+    assert.throws(() => inventory.createItem({ name: 'X', unit: 'une unité vraiment beaucoup trop longue' }), /unité est trop longue/);
+    const small = await (await call(`/inventory/cards?ids=${item.id}`)).text();
+    assert.ok(small.includes('Scanner à 2 rouleaux'));
+    const large = await (await call(`/inventory/cards?ids=${item.id}&style=large`)).text();
+    assert.ok(large.includes('2 rouleaux') && large.includes('10 rouleaux'));
+    assert.equal(inventory.updateItem(item.id, { name: 'Ruban unité 2' }).unit, 'rouleaux', 'une modification sans unité la garde');
+    assert.equal(inventory.updateItem(item.id, { unit: '' }).unit, null);
+  });
 });

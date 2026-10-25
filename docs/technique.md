@@ -482,7 +482,7 @@ Le `POST` d'une commande Shopify (ou par id local) ajoute ensuite les tags « Pa
 | `GET` | `/inventory/cards?ids=1,2` | Cartes imprimables (HTML : nom, quantité, QR) |
 | `GET` | `/inventory/add-card?style=small\|large` | Étiquette imprimable avec le code QR qui ouvre `/inventory/new` |
 | `GET` | `/inventory/new` · `/api/inventory/phone-qr.svg` | Page mobile « ajouter un objet » (script `public/js/inventory-new.js`, photo réduite par `photo-resize.js`) et le code QR qui l'ouvre |
-| `GET` | `/api/inventory/:id/image` | Photo de l'objet (étiquette grand format) ; la photo est stockée en data URL dans `inventory_items.image` (colonnes `order_qty`, `supplier`, `image`) et n'est pas renvoyée par `GET /api/inventory` (`has_image`) |
+| `GET` | `/api/inventory/:id/image` | Photo de l'objet (étiquette grand format) ; la photo est stockée en data URL dans `inventory_items.image` (colonnes `order_qty`, `supplier`, `image`, `unit` = unité du minimum et de la quantité à commander) et n'est pas renvoyée par `GET /api/inventory` (`has_image`) |
 | `GET` | `/inventory/cards?ids=1,2&style=small\|large` | `small` (défaut) : 2 po × 1 po, une par page ; `large` : 4 par feuille Lettre avec photo, minimum, quantité à commander, fournisseur |
 | `GET` `POST` | `/r/:token` · `/r/:token/scan` · `/r/:token/undo` | **Publics** (sans mot de passe) : page ouverte par le code QR ; le `GET` ne change rien, c'est son script qui envoie le `POST` |
 | `GET` `POST` | `/api/bugs/webhook` · `/api/bugs/webhook/test` | État du dernier envoi du webhook « nouveau bug » ; envoi d'un faux bug (`{ url? }`) |
