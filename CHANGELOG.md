@@ -111,6 +111,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- **Cartes de « Resin Queue » : ce qui vient du bac s'affiche avec le nom de la personne.** Le « Manque au bac : <raison> »
+  est suivi de « — <qui a packé> », et la note écrite dans le bac (ex. « Bac 4, étagère du haut ») apparaît sur la
+  carte, aussi en mode simple, avec le même nom : on sait à qui demander.
 - **Extension 1.8.1** : le titre « 📦 Bac — commande #… » est remis en haut de la fenêtre « J'ai packé ».
 - **Mode simple, « Resin Queue »** : quand les cartes sont classées par couleur, la pastille de couleur de chaque carte
   est masquée (l'en-tête du groupe la donne déjà), de même que le « #1 » en haut à droite (le « ×3 » d'une pile

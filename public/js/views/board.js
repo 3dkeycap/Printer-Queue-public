@@ -66,6 +66,10 @@ const buildCard = (stack, actions) => {
   const age = stack.map(orderAge).reduce((max, item) => (item.days > max.days ? item : max));
   const packedBy = [...new Set(stack.filter((item) => item.packed_by).map((item) => item.packed_by))];
   const missing = stack.find((item) => !item.packed_at && item.pack?.missing)?.pack?.missing ?? null;
+  // qui a packé : s'affiche avec ce que la personne a écrit (raison, note) pour savoir à qui demander
+  const packer = stack.find((item) => item.pack?.packer)?.pack?.packer ?? null;
+  const packNote = stack.find((item) => item.pack_note)?.pack_note ?? null;
+  const by = packer ? ` — ${packer}` : '';
   const next = actions.nextStatus(part.status);
   const lines = stackLines(stack);
   const multi = lines.length > 1; // plusieurs pièces différentes d'une même commande
@@ -117,10 +121,11 @@ const buildCard = (stack, actions) => {
         ]),
       part.order_note &&
         el('div', { class: 'card-note', title: part.order_note }, [icon('note'), part.order_note]),
+      packNote && el('div', { class: 'card-note', title: packNote }, [icon('box'), `${packNote}${by}`]),
       (packedBy.length || missing) &&
         el('div', { class: 'card-pack' }, [
           packedBy.length ? el('span', { class: 'tag pack-ok' }, [icon('box'), `Dans le bac · ${packedBy.join(', ')}`]) : null,
-          missing ? el('span', { class: 'tag pack-missing', title: missing.reason ?? '' }, [icon('alert'), `Manque au bac${missing.reason ? ` : ${missing.reason}` : ''}`]) : null,
+          missing ? el('span', { class: 'tag pack-missing', title: missing.reason ?? '' }, [icon('alert'), `Manque au bac${missing.reason ? ` : ${missing.reason}` : ''}${by}`]) : null,
         ]),
       part.comment &&
         el('div', { class: 'card-comments' }, commentList(part).map((comment) => el('span', { class: 'comment-tag' }, [icon('note'), comment]))),
