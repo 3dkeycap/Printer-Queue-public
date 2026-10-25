@@ -71,6 +71,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   encore envoyé (nouvel objet d'inventaire, questions…). Dans Réglages, les modifications pas enregistrées
   survivent au changement d'onglet, l'onglet ouvert survit à F5, et le navigateur demande confirmation
   avant de recharger avec des modifications non enregistrées.
+  Le formulaire « Nouvel objet » de l'inventaire (nom, quantité, questions) se garde aussi à travers n'importe quel
+  redessin de la page (rafraîchissement, autre action).
 - **Etsy : commandes manquantes** : la synchro ne lisait que la première page de 100 reçus ; au-delà, les plus
   anciennes commandes non expédiées n'arrivaient jamais. Elle parcourt maintenant toutes les pages.
 - **Mémoire du serveur** : les caches de photos (Shopify, Etsy) et des essais de récupération d'images

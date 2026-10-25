@@ -39,7 +39,7 @@ const TYPE_LABEL = { choice: 'Choix', text: 'Texte libre', number: 'Nombre' };
  * Éditeur des questions posées au scan (ex. « Quelle résine ? » = couleurs de résine, plusieurs
  * possibles). Renvoie { node, value() } : value() donne la liste à envoyer à l'API.
  */
-export const questionsEditor = (initial = []) => {
+export const questionsEditor = (initial = [], onChange = () => {}) => {
   const list = el('div', { class: 'inv-questions' });
   const rows = [];
 
@@ -54,7 +54,7 @@ export const questionsEditor = (initial = []) => {
       el('option', { value: 'list', selected: !question.colors }, 'Ma liste de choix'),
       el('option', { value: 'colors', selected: Boolean(question.colors) }, 'Couleurs de résine (catalogue)'),
     ]);
-    const choices = el('input', { placeholder: 'Choix séparés par des virgules : S, M, L', value: (question.choices ?? []).join(', ') });
+    const choices = el('input', { placeholder: 'Choix séparés par des virgules : S, M, L', value: [].concat(question.choices ?? []).join(', ') });
     const multiple = el('input', { type: 'checkbox', checked: Boolean(question.multiple) });
     const multipleLabel = el('label', { class: 'inv-check' }, [multiple, 'Plusieurs réponses possibles']);
     const choiceBox = el('div', { class: 'inv-q-choice' }, [source, choices, multipleLabel]);
@@ -62,7 +62,7 @@ export const questionsEditor = (initial = []) => {
       el('div', { class: 'inv-q-head' }, [
         label,
         type,
-        el('button', { class: 'mini-btn danger', type: 'button', title: 'Retirer la question', onclick: () => { rows.splice(rows.indexOf(entry), 1); row.remove(); } }, icon('trash')),
+        el('button', { class: 'mini-btn danger', type: 'button', title: 'Retirer la question', onclick: () => { rows.splice(rows.indexOf(entry), 1); row.remove(); onChange(); } }, icon('trash')),
       ]),
       choiceBox,
     ]);
@@ -85,7 +85,9 @@ export const questionsEditor = (initial = []) => {
   };
 
   for (const question of initial) addRow(question);
-  const add = el('button', { class: 'ghost-btn', type: 'button', onclick: () => addRow() }, [icon('plus'), 'Ajouter une question']);
+  list.addEventListener('input', () => onChange());
+  list.addEventListener('change', () => onChange());
+  const add = el('button', { class: 'ghost-btn', type: 'button', onclick: () => { addRow(); onChange(); } }, [icon('plus'), 'Ajouter une question']);
   const node = el('div', {}, [list, add]);
   return {
     node,
@@ -104,10 +106,13 @@ const detailLines = (item) =>
   );
 
 /** Formulaire de création : nom + quantité à laquelle il faut scanner. */
+// ce qui est tapé dans le formulaire survit à tout redessin de la page (rafraîchissement, autre action)
+const createDraft = { name: '', threshold: '2', questions: [], open: false };
+
 const createForm = (actions) => {
-  const name = el('input', { id: 'inv-name', placeholder: 'Ex. Gants nitrile M, IPA 99 %, Filtres résine…', required: true, maxlength: '80' });
-  const threshold = el('input', { id: 'inv-threshold', type: 'number', min: '0', value: '2', inputmode: 'numeric' });
-  const questions = questionsEditor([]);
+  const name = el('input', { id: 'inv-name', placeholder: 'Ex. Gants nitrile M, IPA 99 %, Filtres résine…', required: true, maxlength: '80', value: createDraft.name, oninput: (event) => { createDraft.name = event.target.value; } });
+  const threshold = el('input', { id: 'inv-threshold', type: 'number', min: '0', value: createDraft.threshold, inputmode: 'numeric', oninput: (event) => { createDraft.threshold = event.target.value; } });
+  const questions = questionsEditor(createDraft.questions, () => { createDraft.questions = questions.value(); });
   const form = el(
     'form',
     {
@@ -120,6 +125,8 @@ const createForm = (actions) => {
         button.disabled = false;
         if (item) {
           name.value = '';
+          createDraft.name = '';
+          createDraft.questions = [];
           questions.reset();
           name.focus();
         }
@@ -128,7 +135,7 @@ const createForm = (actions) => {
     [
       el('div', { class: 'field inv-grow' }, [el('label', { for: 'inv-name' }, "Nom de l'objet"), name]),
       el('div', { class: 'field' }, [el('label', { for: 'inv-threshold' }, 'Scanner quand il en reste'), threshold]),
-      el('details', { class: 'inv-grow inv-questions-box' }, [
+      el('details', { class: 'inv-grow inv-questions-box', open: createDraft.open, ontoggle: (event) => { createDraft.open = event.currentTarget.open; } }, [
         el('summary', {}, 'Poser des questions au scan (couleur de résine, quantité…)'),
         el('p', { class: 'field-hint' }, 'Une seule étiquette, mais la personne qui scanne choisit ce qui manque : une ou plusieurs couleurs, un nombre ou un texte.'),
         questions.node,
