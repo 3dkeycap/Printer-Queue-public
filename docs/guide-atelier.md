@@ -91,6 +91,8 @@ file, sans menu, avec de gros boutons. Le bouton **Plein écran** (ou le premier
 l'écran) masque la barre du navigateur. Sur tablette, « Ajouter à l'écran d'accueil » ouvre
 directement en plein écran.
 
+Le **thème** (couleurs de l'écran) se change avec le sélecteur en haut de l'écran du kiosque.
+
 ## Simple ou Avancé
 
 Le sélecteur en haut de la page (ordinateur seulement) :
@@ -107,6 +109,13 @@ Le sélecteur en haut de la page (ordinateur seulement) :
   nom (ex. « Ore Keycap » = Nylon Grey).
 - **Résines** : couleurs, alias de détection, stock.
 - **Mises à jour** : bouton pour installer la dernière version (la base est sauvegardée avant).
+
+## Apprendre l'extension Chrome
+
+Dans les réglages de l'extension (clic droit sur son icône → Options), le bouton **Lancer le
+tutoriel de l'extension** ouvre une fausse page Shopify avec une visite guidée du bandeau
+Chit Chats, de la boîte « J'ai packé » et du lien live. Le tutoriel ne se lance jamais tout seul
+et jamais sur le vrai Shopify.
 
 ## Un problème ?
 

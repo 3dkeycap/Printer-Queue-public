@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- Extension Chrome 1.5.0 : **tutoriel** (visite guidée du bandeau, de « J'ai packé » et du lien
+  live) lancé seulement depuis la page de réglages de l'extension, sur la fausse page Shopify.
+- **Kiosque** : sélecteur de thème en haut de l'écran (le menu latéral qui le portait y est caché).
 - Inventaire : carte téléchargeable en **PNG** (bouton « PNG », 90 × 62 mm à 300 dpi, le nom
   rétrécit s'il est long) ; le champ « nom d'hôte » des Réglages accepte `3dkeycap.local`,
   `3dkeycap.local:8080` ou une IP sans écrire `http://`.
@@ -41,6 +44,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   compléter (nom pas choisi, raison d'une pièce manquante, bac commencé) — rappel aimable en ambre,
   champ entouré, qui disparaît dès que la personne agit. Les vraies pannes restent en rouge mais
   disent que rien n'est perdu et que ce n'est pas de la faute de l'employé.
+- Les **3 colonnes** de « À imprimer » se partagent toute la largeur de l'écran (bureau et
+  kiosque) ; sur un téléphone elles défilent. Une colonne agrandie prend toute la largeur.
 - Le contour de couleur des cartes passe de 2 à **3 px**.
 - La couleur de la résine **entoure toute la carte** (et la ligne du tableau « Tout ») au lieu
   d'un simple trait sur le côté.
