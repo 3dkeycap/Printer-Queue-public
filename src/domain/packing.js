@@ -30,6 +30,15 @@ const findOrder = ({ orderId, shopifyId, etsyId }) => {
   return order;
 };
 
+const parseTags = (order) => {
+  try {
+    const tags = JSON.parse(order.order_tags || '[]');
+    return Array.isArray(tags) ? tags : [];
+  } catch {
+    return [];
+  }
+};
+
 /** Note de l'acheteur + personnalisation (propriétés Shopify, variations Etsy). */
 export const buyerDetails = (order, items) => {
   const details = [];
@@ -103,6 +112,8 @@ export const getPackingView = (where) => {
     history,
     packers: settings['production.packers'] ?? [],
     reasons: settings['production.missingReasons'] ?? [],
+    orderTags: parseTags(order),
+    tagChoices: settings['production.orderTags'] ?? [],
   };
 };
 
@@ -244,6 +255,13 @@ export const PACKED_TAG = 'Pre packed';
  * null quand la commande ne vient pas de Shopify.
  */
 export const syncShopifyTags = async (view) => {
+  // l'état « Pre packed » suit le bac aussi dans l'app (Shopify ou Etsy)
+  if (view.history[0]) {
+    const tags = view.orderTags.filter((tag) => tag !== PACKED_TAG);
+    if (view.history[0].complete) tags.push(PACKED_TAG);
+    getDb().prepare('UPDATE orders SET order_tags = ? WHERE id = ?').run(JSON.stringify(tags), view.order.id);
+    view.orderTags = tags;
+  }
   if (view.order.source !== 'shopify') return null;
   if (!shopifyConfigured()) return null;
   const last = view.history[0];
@@ -257,6 +275,33 @@ export const syncShopifyTags = async (view) => {
     return { ok: true };
   } catch (error) {
     log.warn('shopify tags not updated', { orderId: view.order.id, error: error.message });
+    return { error: error.message };
+  }
+};
+
+/**
+ * Coche / décoche un tag de commande (« To pack », « Hold »…) : parmi ceux des réglages seulement.
+ * Garde l'état dans l'app ; pour Shopify, pushShopifyOrderTag() le répercute dans la boutique.
+ */
+export const setOrderTag = (where, rawTag, on) => {
+  const order = findOrder(where);
+  const choices = getSettings()['production.orderTags'] ?? [];
+  const tag = choices.find((choice) => choice.toLowerCase() === String(rawTag ?? '').trim().toLowerCase());
+  if (!tag) throw badRequest('Tag inconnu : ajoute-le dans Réglages → Atelier → Tags de commande');
+  const tags = parseTags(order).filter((current) => current !== tag);
+  if (on) tags.push(tag);
+  getDb().prepare('UPDATE orders SET order_tags = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(tags), nowIso(), order.id);
+  return { orderId: order.id, source: order.source, externalId: order.external_id, tag, on: Boolean(on), orderTags: tags };
+};
+
+/** Répercute un tag dans les tags de la commande Shopify ; { ok } ou { error }, null si pas Shopify. */
+export const pushShopifyOrderTag = async ({ source, externalId, tag, on }) => {
+  if (source !== 'shopify' || !shopifyConfigured()) return null;
+  try {
+    await updateOrderTags(externalId, on ? { add: [tag] } : { remove: [tag] });
+    return { ok: true };
+  } catch (error) {
+    log.warn('shopify tag not updated', { externalId, tag, error: error.message });
     return { error: error.message };
   }
 };

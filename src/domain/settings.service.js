@@ -192,6 +192,14 @@ export const DEFINITIONS = [
     fallback: () => ['Pas encore imprimée', 'Cassée', 'Mauvaise couleur', 'Pas en stock', 'Introuvable'],
   },
   {
+    key: 'production.orderTags',
+    group: 'production',
+    label: 'Tags de commande (extension)',
+    type: 'list',
+    hint: "Boutons de l'extension sur chaque commande. Sur Shopify, un tag coché est ajouté aux tags de la commande (et retiré quand on le décoche) ; sur Etsy il reste dans l'app.",
+    fallback: () => ['To pack', 'Pre packed', 'Started', 'Hold', 'Address', 'Nylon restock'],
+  },
+  {
     key: 'production.blockedImages',
     group: 'production',
     label: 'Photos masquées',

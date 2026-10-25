@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Extension 1.7.0 : tags par commande (Shopify et Etsy).** La fenêtre « J'ai packé » a une section « Tags de la
+  commande » : To pack, Pre packed, Started, Hold, Address, Nylon restock (liste modifiable dans Réglages → Atelier
+  → Tags de commande). Cocher un tag l'ajoute aux **tags de la commande Shopify** (le décocher le retire) ; sur Etsy,
+  qui n'accepte pas de tags depuis l'extérieur, il reste dans l'app. « Pre packed » suit aussi le bac complet.
+  Les boutons montrent ce qui a été coché depuis l'extension (pas les tags ajoutés à la main dans Shopify).
+  Besoin du scope `write_orders` (reconnecter Shopify une fois, voir plus haut).
 - **Extension 1.6.7** : quand le lien live est actif, « Stop live » est remplacé par **« 🐞 Bug »**, qui ouvre
   l'app sur la fenêtre **« Signaler un bug »** (adresse `/#bug`). Pour couper le lien, on clique sur « ● Live ».
   L'adresse `/#bugs` ouvre la liste des bugs signalés (Réglages → Mises à jour).

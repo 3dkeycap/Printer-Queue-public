@@ -470,6 +470,7 @@ L'onglet **Réglages → API** (`public/js/views/api-docs.js`) affiche des recet
 | `POST` | `/api/parts/:id/status` | Transition unitaire (`{ status, note, force }`) |
 | `POST` | `/api/parts/bulk/status` | Transition en lot (`{ ids, status }`) |
 | `GET` `POST` | `/api/packing/{shopify,etsy}/:id` · `/api/packing/orders/:orderId` | Bac « J'ai packé » d'une commande (id Shopify, n° de commande Etsy, ou id local) |
+| `POST` | `/api/packing/{shopify,etsy,orders}/:id/tags` | `{ tag, on }` : tag de commande (réglage `production.orderTags`) coché / décoché ; gardé dans `orders.order_tags`, poussé dans les tags Shopify (`shopifyTags`) |
 Le `POST` d'une commande Shopify (ou par id local) ajoute ensuite les tags « Packé par X » / « Pre packed » dans Shopify (mutations GraphQL `tagsAdd` / `tagsRemove`, scope `write_orders`) ; le résultat est dans `shopifyTags` (`{ ok }` ou `{ error }`) sans jamais faire échouer l'enregistrement.
 | `GET` | `/api/orders` · `/api/orders/:id` | Commandes et leurs pièces |
 | `POST` | `/api/orders/:id/ship` | Expédition manuelle |

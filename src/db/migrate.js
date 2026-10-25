@@ -177,6 +177,8 @@ export const migrate = () => {
   addColumnIfMissing(db, 'orders', 'cancelled_at', 'TEXT');
   addColumnIfMissing(db, 'parts', 'cancelled', 'INTEGER NOT NULL DEFAULT 0');
   // inventaire : questions posées au scan (couleur, quantité…) et réponses en attente de commande
+  // tags de commande posés depuis l'extension (To pack, Hold…) ; ceux de Shopify sont aussi poussés dans la boutique
+  addColumnIfMissing(db, 'orders', 'order_tags', "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing(db, 'inventory_items', 'questions', "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing(db, 'inventory_items', 'flag_details', "TEXT NOT NULL DEFAULT '[]'");
   addColumnIfMissing(db, 'order_items', 'image_url', 'TEXT');

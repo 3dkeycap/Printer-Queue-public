@@ -307,6 +307,7 @@ const tabAtelier = (draft, touch, actions) => {
     section("Bac (« J'ai packé » dans l'extension Chrome)", "Sur une commande Shopify, l'extension permet de dire ce qui a été mis dans le bac, ce qui manque et pourquoi, et qui l'a fait.", [
       f('production.packers', { label: 'Personnes', placeholder: 'Ex. Alex — puis Entrée', hint: "Aussi ajoutables directement depuis l'extension." }),
       f('production.missingReasons', { label: 'Raisons « pièce manquante »', hint: 'Un texte libre reste possible (« Autre… »).' }),
+      f('production.orderTags', { label: 'Tags de commande', placeholder: 'Ex. Hold — puis Entrée', hint: 'Boutons de tags sur chaque commande dans l’extension (ajoutés aux tags de la commande Shopify).' }),
     ]),
     section('Délais', "L'âge de chaque commande s'affiche sur les cartes ; le filtre « En retard » montre celles qui dépassent le seuil rouge.", [
       f('production.lateWarnDays', { label: 'Orange après (jours)', hint: null }),

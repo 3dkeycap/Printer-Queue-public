@@ -66,6 +66,10 @@
     .msg.hint, .msg.warn { color: #7a4b00; background: #fff7e6; border: 1px solid #f0d49a; border-radius: 8px; padding: 8px 10px; }
     .msg:empty { display: none; }
     .need { border-color: #e0a030 !important; box-shadow: 0 0 0 3px #ffe9b8; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tagbtn { padding: 5px 10px; border: 1px solid #ccd5e5; border-radius: 999px; background: #fff; color: #14213d; font: 600 12.5px system-ui, sans-serif; cursor: pointer; }
+    .tagbtn.on { background: #1f5fd6; border-color: #1f5fd6; color: #fff; }
+    .tagbtn[disabled] { opacity: .55; cursor: default; }
     .empty { color: #5b6a86; padding: 20px 0; text-align: center; }
   `;
 
@@ -136,6 +140,31 @@
     Object.entries(item.statuses ?? {})
       .map(([status, count]) => `${count} ${STATUS_LABEL[status] ?? status}`)
       .join(', ');
+
+  /** Tags de la commande : un bouton par tag, coché = ajouté (aux tags Shopify aussi). */
+  const tagsBox = (orderExternalId, view) => {
+    const active = new Set(view.orderTags ?? []);
+    const note = h('div', { class: 'meta' }, '');
+    const row = h('div', { class: 'tags' });
+    const box = h('div', { class: 'box' }, [h('h3', {}, 'Tags de la commande'), row, note]);
+    for (const tag of view.tagChoices) {
+      const button = h('button', { class: `tagbtn${active.has(tag) ? ' on' : ''}`, type: 'button' }, tag);
+      button.addEventListener('click', async () => {
+        const on = !button.classList.contains('on');
+        button.disabled = true;
+        const result = await send({ type: 'order-tag', orderExternalId, tag, on });
+        button.disabled = false;
+        if (result?.error) {
+          note.textContent = `Tag non enregistré : ${result.error}`;
+          return;
+        }
+        button.classList.toggle('on', on);
+        note.textContent = result.shopifyTags?.error ? `Enregistré ici, mais pas dans Shopify : ${result.shopifyTags.error}` : result.shopifyTags?.ok ? 'Ajouté dans Shopify aussi.' : '';
+      });
+      row.append(button);
+    }
+    return box;
+  };
 
   const render = async (orderExternalId, view, flash) => {
     ensureHost();
@@ -335,6 +364,7 @@
       h('div', { class: 'body' }, [
         order.cancelledAt ? h('div', { class: 'box note' }, `À savoir : cette commande a été annulée (${fmt(order.cancelledAt)}) : ne la packe pas.`) : null,
         order.shippedAt ? h('div', { class: 'box note' }, `À savoir : cette commande est déjà marquée expédiée (${fmt(order.shippedAt)}).`) : null,
+        view.tagChoices?.length ? tagsBox(orderExternalId, view) : null,
         h('div', { class: 'box' }, [
           h('h3', {}, 'Mis dans le bac'),
           view.items.length ? h('div', { class: 'items' }, view.items.flatMap(itemRow)) : h('div', { class: 'empty' }, 'Aucun article'),

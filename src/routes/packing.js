@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncRoute } from '../lib/errors.js';
-import { addPacker, getPackingView, savePack, syncShopifyTags } from '../domain/packing.js';
+import { addPacker, getPackingView, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
 
 export const packingRouter = Router();
 
@@ -12,7 +12,8 @@ packingRouter.post(
   '/shopify/:shopifyId',
   asyncRoute(async (req, res) => {
     const view = savePack({ shopifyId: req.params.shopifyId }, req.body ?? {});
-    res.json({ ...view, shopifyTags: await syncShopifyTags(view) });
+    const shopifyTags = await syncShopifyTags(view);
+    res.json({ ...view, shopifyTags });
   }),
 );
 
@@ -35,7 +36,8 @@ packingRouter.post(
   '/orders/:orderId',
   asyncRoute(async (req, res) => {
     const view = savePack({ orderId: req.params.orderId }, req.body ?? {});
-    res.json({ ...view, shopifyTags: await syncShopifyTags(view) });
+    const shopifyTags = await syncShopifyTags(view);
+    res.json({ ...view, shopifyTags });
   }),
 );
 
@@ -45,3 +47,13 @@ packingRouter.post(
     res.json(addPacker(req.body?.name));
   }),
 );
+
+/** Tag de commande coché / décoché depuis l'extension : { tag, on } ; Shopify le reçoit aussi. */
+const tagRoute = (key) =>
+  asyncRoute(async (req, res) => {
+    const result = setOrderTag({ [key]: req.params.id }, req.body?.tag, req.body?.on);
+    res.json({ orderTags: result.orderTags, shopifyTags: await pushShopifyOrderTag(result) });
+  });
+packingRouter.post('/shopify/:id/tags', tagRoute('shopifyId'));
+packingRouter.post('/etsy/:id/tags', tagRoute('etsyId'));
+packingRouter.post('/orders/:id/tags', tagRoute('orderId'));

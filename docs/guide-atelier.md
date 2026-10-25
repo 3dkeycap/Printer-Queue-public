@@ -110,6 +110,12 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 - **Résines** : couleurs, alias de détection, stock.
 - **Mises à jour** : bouton pour installer la dernière version (la base est sauvegardée avant).
 
+## Tags de commande (To pack, Hold…)
+
+Dans la fenêtre « J'ai packé » (Shopify et Etsy), la section **Tags de la commande** : un clic coche / décoche
+To pack, Pre packed, Started, Hold, Address, Nylon restock. Sur Shopify le tag est ajouté (ou retiré) aux tags
+de la commande ; sur Etsy il reste dans l'app. La liste se change dans Réglages → Atelier → Tags de commande.
+
 ## Tags Shopify depuis le bac
 
 Quand tu enregistres le bac, la commande Shopify reçoit « Packé par <ton nom> » et, si tout est dans le

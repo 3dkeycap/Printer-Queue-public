@@ -7,7 +7,7 @@ const { migrate } = await import('../src/db/migrate.js');
 const { closeDb, getDb } = await import('../src/db/index.js');
 const { getSettings, updateSettings } = await import('../src/domain/settings.service.js');
 const { ingestOrder } = await import('../src/domain/ingest.js');
-const { getPackingView, savePack, syncShopifyTags } = await import('../src/domain/packing.js');
+const { getPackingView, savePack, syncShopifyTags, setOrderTag, pushShopifyOrderTag } = await import('../src/domain/packing.js');
 const { syncMarketplaceFulfillment } = await import('../src/domain/fulfillment.js');
 const { listParts, getFacets } = await import('../src/domain/parts.service.js');
 
@@ -77,6 +77,49 @@ describe("« J'ai packé la commande »", () => {
       globalThis.fetch = realFetch;
       updateSettings({ 'shopify.accessToken': '' });
     }
+  });
+
+  it('tags de commande : liste des réglages, coché / décoché, poussé dans Shopify', async () => {
+    ingestOrder(makeOrder({ externalId: '7770091', orderNumber: '#4291', items: [{ externalId: 'zz', title: 'Tag order', quantity: 1 }] }));
+    updateSettings({ 'shopify.shopDomain': 'test.myshopify.com', 'shopify.accessToken': 'shpat_test_tags2' });
+    const view = getPackingView({ shopifyId: '7770091' });
+    assert.deepEqual(view.tagChoices, ['To pack', 'Pre packed', 'Started', 'Hold', 'Address', 'Nylon restock']);
+    assert.throws(() => setOrderTag({ shopifyId: '7770091' }, 'Inconnu', true), /Tag inconnu/);
+
+    const calls = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+      calls.push(JSON.parse(options.body));
+      return new Response(JSON.stringify({ data: { tagsAdd: { userErrors: [] }, tagsRemove: { userErrors: [] } } }), { status: 200 });
+    };
+    try {
+      const on = setOrderTag({ shopifyId: '7770091' }, 'hold', true); // insensible à la casse
+      assert.deepEqual(on.orderTags, ['Hold']);
+      assert.deepEqual(await pushShopifyOrderTag(on), { ok: true });
+      assert.match(calls[0].query, /tagsAdd/);
+      assert.deepEqual(calls[0].variables.tags, ['Hold']);
+      const off = setOrderTag({ shopifyId: '7770091' }, 'Hold', false);
+      assert.deepEqual(off.orderTags, []);
+      await pushShopifyOrderTag(off);
+      assert.match(calls[1].query, /tagsRemove/);
+    } finally {
+      globalThis.fetch = realFetch;
+      updateSettings({ 'shopify.accessToken': '' });
+    }
+    // Etsy : seulement dans l'app
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '3919990001', orderNumber: '3919990001', items: [{ externalId: 'ee', title: 'E', quantity: 1 }] }));
+    const etsy = setOrderTag({ etsyId: '3919990001' }, 'To pack', true);
+    assert.deepEqual(etsy.orderTags, ['To pack']);
+    assert.equal(await pushShopifyOrderTag(etsy), null);
+    assert.deepEqual(getPackingView({ etsyId: '3919990001' }).orderTags, ['To pack']);
+  });
+
+  it('« Pre packed » suit le bac complet dans l’app (même sans Shopify)', async () => {
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '3919990002', orderNumber: '3919990002', items: [{ externalId: 'e2', title: 'E2', quantity: 1 }] }));
+    const items = getPackingView({ etsyId: '3919990002' }).items.map((item) => ({ orderItemId: item.id, packed: item.total }));
+    const view = savePack({ etsyId: '3919990002' }, { packer: 'Sam', items });
+    await syncShopifyTags(view);
+    assert.deepEqual(getPackingView({ etsyId: '3919990002' }).orderTags, ['Pre packed']);
   });
 
   it('une commande Etsy ne touche pas Shopify', async () => {

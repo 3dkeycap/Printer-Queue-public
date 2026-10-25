@@ -324,6 +324,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+  // tag de commande (To pack, Hold…) coché / décoché dans la fenêtre : l'app le garde et le pousse dans Shopify
+  if (message?.type === 'order-tag') {
+    appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}/tags`, {
+      method: 'POST',
+      body: { tag: message.tag, on: message.on },
+    }).then(sendResponse);
+    return true;
+  }
   // Etsy : le numéro affiché n'est pas toujours le receipt_id connu de l'app, on essaie chaque identifiant de la ligne
   if (message?.type === 'etsy-find') {
     (async () => {
