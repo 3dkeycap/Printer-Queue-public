@@ -182,18 +182,6 @@ const actions = {
   },
 
   /* ---- inventaire ---- */
-  async createInventoryItem(body) {
-    try {
-      const item = await api.createInventoryItem(body);
-      toast(`« ${item.name} » ajouté : imprime sa carte et colle-la`);
-      await refresh({ silent: true });
-      return item;
-    } catch (error) {
-      toast(error.message, 'err');
-      return null;
-    }
-  },
-
   async inventoryAction(id, run, message) {
     try {
       await run();

@@ -5,6 +5,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 
 ## [Non publié]
 
+### Modifié
+- **Les objets d'inventaire se créent depuis `/inventory/mobile`** (le téléphone) : le formulaire « Nouvel objet » a quitté le tableau de bord, qui garde le code QR, le bouton « Ouvrir la page d'inventaire » et l'impression de ce code. Le code QR (et ses étiquettes imprimables) mène maintenant à `/inventory/mobile` ; `/inventory/new` marche toujours (ouvre le formulaire d'ajout), donc les étiquettes déjà imprimées restent valides. Modifier, signaler, commander et supprimer restent aussi possibles sur l'ordinateur.
+
 ### Ajouté
 - **Unité du minimum** : on peut choisir une unité (rouleaux, bac, boîtes, bouteilles… ou n'importe quel texte) pour la quantité minimale et la quantité à commander : « Scanner à 2 rouleaux », « Minimum 1 bac ». Champ « Unité » dans le formulaire, « Modifier » et la page du téléphone ; elle apparaît sur les deux étiquettes (si l'unité est longue, la petite étiquette réduit le texte ou affiche seulement « 2 rouleaux ») et sur les cartes de l'app.
 - **Étiquette « Ajouter à l'inventaire »** : un code QR imprimable (2×1 po ou grande) à coller dans l'atelier, qui ouvre la page d'ajout du téléphone (`/inventory/add-card`, boutons sur la page Inventaire).

@@ -2,7 +2,6 @@ import { el, fromNow, icon } from '../ui.js';
 import { state } from '../store.js';
 import { downloadCardPng } from '../card-png.js';
 import { toast } from '../ui.js';
-import { photoField } from '../photo.js';
 
 const statusPill = (item) =>
   item.status === 'reorder'
@@ -160,66 +159,6 @@ export const unitsList = () => el('datalist', { id: 'inv-units' }, UNITS.map((va
 /** « 2 rouleaux » : le nombre suivi de l'unité choisie (facultative). */
 const withUnit = (value, unit) => `${value}${unit ? ` ${unit}` : ''}`;
 
-/** Formulaire de création : nom + quantité à laquelle il faut scanner. */
-// ce qui est tapé dans le formulaire survit à tout redessin de la page (rafraîchissement, autre action)
-const createDraft = { name: '', threshold: '2', unit: '', supplier: '', orderQty: '', image: undefined, questions: [], open: false };
-
-const createForm = (actions) => {
-  const name = el('input', { id: 'inv-name', placeholder: 'Ex. Gants nitrile M, IPA 99 %, Filtres résine…', required: true, maxlength: '80', value: createDraft.name, oninput: (event) => { createDraft.name = event.target.value; } });
-  const threshold = el('input', { id: 'inv-threshold', type: 'number', min: '0', value: createDraft.threshold, inputmode: 'numeric', oninput: (event) => { createDraft.threshold = event.target.value; } });
-  const questions = questionsEditor(createDraft.questions, () => { createDraft.questions = questions.value(); });
-  const unit = el('input', { id: 'inv-unit', placeholder: 'rouleaux, bac…', maxlength: '20', list: 'inv-units', value: createDraft.unit, oninput: (event) => { createDraft.unit = event.target.value; } });
-  const supplier = el('input', { id: 'inv-supplier', placeholder: 'Ex. Sticker Mule', maxlength: '80', value: createDraft.supplier, oninput: (event) => { createDraft.supplier = event.target.value; } });
-  const orderQty = el('input', { id: 'inv-orderqty', type: 'number', min: '0', inputmode: 'numeric', placeholder: 'Ex. 4200', value: createDraft.orderQty, oninput: (event) => { createDraft.orderQty = event.target.value; } });
-  const photo = photoField({ initial: createDraft.image, onChange: (value) => { createDraft.image = value; } });
-  const form = el(
-    'form',
-    {
-      class: 'inv-form',
-      onsubmit: async (event) => {
-        event.preventDefault();
-        const button = form.querySelector('button[type=submit]');
-        button.disabled = true;
-        const item = await actions.createInventoryItem({ name: name.value, reorder_at: threshold.value, unit: unit.value, order_qty: orderQty.value, supplier: supplier.value, image: photo.value() ?? undefined, questions: questions.value() });
-        button.disabled = false;
-        if (item) {
-          name.value = '';
-          createDraft.name = '';
-          Object.assign(createDraft, { unit: '', supplier: '', orderQty: '', image: undefined, questions: [] });
-          supplier.value = '';
-          unit.value = '';
-          orderQty.value = '';
-          photo.node.replaceWith(photoField({ onChange: (value) => { createDraft.image = value; } }).node);
-          questions.reset();
-          name.focus();
-        }
-      },
-    },
-    [
-      el('div', { class: 'field inv-grow' }, [el('label', { for: 'inv-name' }, "Nom de l'objet"), name]),
-      el('div', { class: 'field' }, [el('label', { for: 'inv-threshold' }, 'Scanner quand il en reste'), threshold]),
-      el('div', { class: 'field' }, [el('label', { for: 'inv-unit' }, 'Unité'), unit, unitsList()]),
-      el('details', { class: 'inv-grow inv-questions-box', open: createDraft.open, ontoggle: (event) => { createDraft.open = event.currentTarget.open; } }, [
-        el('summary', {}, 'Plus d’options : photo, fournisseur, quantité à commander, questions au scan'),
-        el('p', { class: 'field-hint' }, 'La photo, le fournisseur et la quantité à commander servent à la grande étiquette (facultatifs). Les questions : une seule étiquette, mais la personne qui scanne choisit ce qui manque (couleur de résine, nombre, texte).'),
-        el('div', { class: 'inv-extra' }, [
-          el('div', { class: 'field' }, [el('label', { for: 'inv-supplier' }, 'Commander chez'), supplier]),
-          el('div', { class: 'field' }, [el('label', { for: 'inv-orderqty' }, 'Quantité à commander'), orderQty]),
-          el('div', { class: 'field' }, [el('label', {}, 'Photo'), photo.node]),
-        ]),
-        el('div', { class: 'section-title' }, 'Questions au scan'),
-        questions.node,
-      ]),
-      el('button', { class: 'primary-btn', type: 'submit' }, [icon('plus'), 'Créer la carte']),
-    ],
-  );
-  return el('article', { class: 'panel settings-panel' }, [
-    el('header', { class: 'panel-head' }, [el('h3', {}, 'Nouvel objet')]),
-    el('p', { class: 'sub' }, "On obtient une carte avec le nom, la quantité et un code QR. Imprime-la et colle-la sur l'étagère ou la boîte : quand il n'en reste plus que cette quantité, il suffit de scanner le code avec un téléphone."),
-    form,
-  ]);
-};
-
 const toBuyRow = (item, actions) =>
   el('div', { class: 'inv-buy-row' }, [
     el('div', { class: 'inv-grow' }, [
@@ -268,15 +207,14 @@ export const renderInventory = (root, actions) => {
   const origin = items[0] ? new URL(items[0].scan_url).origin : null;
 
   root.append(
-    createForm(actions),
-    // ajouter des objets en se promenant : la page du téléphone s'ouvre en scannant ce code
+    // on crée les objets depuis le téléphone (/inventory/mobile) : ici seulement le code QR et le bouton pour y aller
     el('article', { class: 'panel settings-panel inv-phone' }, [
-      el('img', { src: '/api/inventory/phone-qr.svg', alt: 'Code QR : ajouter depuis le téléphone', width: '96', height: '96' }),
+      el('img', { src: '/api/inventory/phone-qr.svg', alt: 'Code QR : inventaire sur le téléphone', width: '120', height: '120' }),
       el('div', {}, [
-        el('h3', {}, 'Ajouter depuis le téléphone'),
-        el('p', { class: 'sub' }, 'Scanne ce code avec ton téléphone : un formulaire simple (photo, nom, minimum, fournisseur) pour ajouter un objet en te promenant dans l’atelier. Imprime-le pour le coller dans l’atelier.'),
+        el('h3', {}, 'Créer un objet : depuis le téléphone'),
+        el('p', { class: 'sub' }, 'Les nouveaux objets se créent sur le téléphone (photo, nom, minimum, fournisseur, questions…) : scanne ce code, ou ouvre la page avec le bouton. Imprime ce code pour le coller dans l’atelier.'),
         el('div', { class: 'inv-actions' }, [
-          el('a', { class: 'ghost-btn', href: '/inventory/new', target: '_blank', rel: 'noopener' }, 'Ouvrir la page'),
+          el('a', { class: 'primary-btn', href: '/inventory/mobile', target: '_blank', rel: 'noopener' }, [icon('plus'), 'Ouvrir la page d’inventaire']),
           el('a', { class: 'ghost-btn', title: 'Étiquette 2 × 1 po à coller dans l’atelier', href: '/inventory/add-card?style=small', target: '_blank', rel: 'noopener' }, [icon('receipt'), 'Étiquette 2×1 po']),
           el('a', { class: 'ghost-btn', title: 'Grande étiquette (feuille Lettre)', href: '/inventory/add-card?style=large', target: '_blank', rel: 'noopener' }, [icon('receipt'), 'Grande étiquette']),
         ]),
@@ -293,7 +231,7 @@ export const renderInventory = (root, actions) => {
     ]),
     items.length
       ? el('div', { class: 'inv-grid' }, items.map((item) => itemCard(item, actions)))
-      : el('div', { class: 'empty' }, [icon('box'), el('strong', {}, 'Aucun objet pour l’instant'), 'Crée un premier objet ci-dessus : sa carte avec un code QR est prête à imprimer.']),
+      : el('div', { class: 'empty' }, [icon('box'), el('strong', {}, 'Aucun objet pour l’instant'), 'Crée un premier objet depuis le téléphone (code QR ci-dessus) : sa carte avec un code QR est prête à imprimer.']),
     origin
       ? el('p', { class: 'table-foot' }, `Les codes QR ouvrent ${origin}/r/… — le nom d’hôte se règle dans Réglages → Atelier → Inventaire (le changer rend les cartes déjà imprimées inutilisables).`)
       : null,

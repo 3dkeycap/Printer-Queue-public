@@ -54,7 +54,6 @@ export const api = {
   runs: () => request('/api/sync/runs'),
   sync: (source = 'all') => request(`/api/sync/run?source=${source}`, { method: 'POST' }),
   inventory: () => request('/api/inventory'),
-  createInventoryItem: (body) => request('/api/inventory', { method: 'POST', body }),
   patchInventoryItem: (id, body) => request(`/api/inventory/${id}`, { method: 'PATCH', body }),
   deleteInventoryItem: (id) => request(`/api/inventory/${id}`, { method: 'DELETE' }),
   flagInventoryItem: (id, answers) => request(`/api/inventory/${id}/flag`, { method: 'POST', body: answers ? { answers } : undefined }),
