@@ -64,36 +64,43 @@ inventoryRouter.get('/:id/qr.svg', (req, res) => {
 const esc = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
+// Étiquettes de 2 po × 1 po (50,8 × 25,4 mm), une par page à l'impression : imprimante d'étiquettes.
 const PAGE_CSS = `
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px system-ui, -apple-system, sans-serif; color: #1c2230; background: #eef0f4; }
-  .bar { position: sticky; top: 0; display: flex; gap: 12px; align-items: center; padding: 10px 18px; background: #1c2230; color: #fff; }
+  body { margin: 0; font: 15px system-ui, -apple-system, sans-serif; color: #000; background: #eef0f4; }
+  .bar { position: sticky; top: 0; display: flex; gap: 12px; align-items: center; padding: 10px 18px; background: #1c2230; color: #fff; z-index: 2; }
   .bar button { padding: 8px 14px; border: 0; border-radius: 8px; background: #d9c7a3; color: #1c2230; font: 700 14px system-ui; cursor: pointer; }
   .bar span { opacity: .8; font-size: 13px; }
-  .sheet { display: grid; grid-template-columns: repeat(2, 90mm); gap: 8mm; justify-content: center; padding: 10mm; }
-  .card { width: 90mm; min-height: 62mm; padding: 5mm; background: #fff; border: 0.4mm dashed #8a93a6; border-radius: 3mm; display: grid; grid-template-columns: 1fr 34mm; gap: 4mm; align-items: center; break-inside: avoid; }
-  .card h2 { margin: 0 0 3mm; font-size: 6.2mm; line-height: 1.15; word-break: break-word; }
-  .card p { margin: 0 0 2mm; font-size: 3.6mm; line-height: 1.35; }
-  .card .qty { display: inline-block; padding: 1mm 3mm; margin: 1mm 0 3mm; border-radius: 99px; background: #fff3cd; border: 0.3mm solid #e8d48a; font-weight: 700; font-size: 4.2mm; }
-  .card .url { margin-top: 2mm; font-size: 2.6mm; color: #6a7387; word-break: break-all; }
-  .card svg { width: 34mm; height: 34mm; display: block; }
+  .sheet { display: flex; flex-wrap: wrap; gap: 6mm; justify-content: center; padding: 10mm; }
+  .label { width: 50.8mm; height: 25.4mm; padding: 1.8mm; background: #fff; display: grid; grid-template-columns: 1fr 21.5mm; gap: 1.5mm; align-items: center; overflow: hidden; break-inside: avoid; box-shadow: 0 0 0 0.2mm #c3c9d6; }
+  .label .txt { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1mm; }
+  .label h2 { margin: 0; font-weight: 800; line-height: 1.12; word-break: break-word; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+  .label .qty { align-self: flex-start; padding: 0.3mm 1.2mm; border: 0.25mm solid #000; border-radius: 99px; font-weight: 700; font-size: 2.6mm; line-height: 1.3; white-space: nowrap; }
+  .label svg { width: 21.5mm; height: 21.5mm; display: block; }
   @media print {
+    @page { size: 2in 1in; margin: 0; }
     body { background: #fff; }
     .bar { display: none; }
-    .sheet { padding: 0; gap: 4mm; }
-    .card { border-color: #999; }
-    @page { margin: 10mm; }
+    .sheet { display: block; padding: 0; }
+    .label { box-shadow: none; page-break-after: always; margin: 0; }
   }
 `;
 
+/** Taille du nom selon sa longueur : la place est de 24 × 18 mm environ. */
+const nameSize = (name) => {
+  const length = String(name).length;
+  if (length <= 10) return 4.4;
+  if (length <= 18) return 3.6;
+  if (length <= 30) return 3;
+  if (length <= 48) return 2.5;
+  return 2.2;
+};
+
 const cardHtml = (item) => `
-  <article class="card">
-    <div>
-      <h2>${esc(item.name)}</h2>
-      <div class="qty">Quand il en reste ${esc(item.reorder_at)}</div>
-      <p>👉 <strong>Scanne ce code</strong> avec ton téléphone : ${item.questions.length ? 'choisis ce qui manque et' : ''} l’app note qu’il faut en racheter.</p>
-      ${item.notes ? `<p>${esc(item.notes)}</p>` : ''}
-      <div class="url">${esc(item.scan_url)}</div>
+  <article class="label">
+    <div class="txt">
+      <h2 style="font-size:${nameSize(item.name)}mm">${esc(item.name)}</h2>
+      <div class="qty">Scanner à ${esc(item.reorder_at)}</div>
     </div>
     ${qrSvg(item.scan_url, { cellSize: 8, margin: 1 })}
   </article>`;
@@ -111,9 +118,9 @@ inventoryPagesRouter.get('/cards', (req, res) => {
   // le script d'impression est un fichier à part : la politique de sécurité interdit les scripts en ligne
   res.type('html').send(`<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cartes d’inventaire</title><style>${PAGE_CSS}</style></head>
+<title>Étiquettes d’inventaire</title><style>${PAGE_CSS}</style></head>
 <body>
-  <div class="bar"><button id="print">🖨 Imprimer</button><span>${items.length} carte(s) · découpe le long du pointillé et colle-la sur l’étagère ou la boîte</span></div>
+  <div class="bar"><button id="print">🖨 Imprimer</button><span>${items.length} étiquette(s) de 2 po × 1 po · choisis ce format de papier dans la fenêtre d’impression, sans marges, échelle 100 %</span></div>
   <main class="sheet">${items.map(cardHtml).join('')}</main>
   <script src="/js/print-cards.js"></script>
 </body></html>`);

@@ -146,14 +146,14 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
     assert.ok((await api.json()).items.length >= 5);
   });
 
-  it('carte imprimable : nom, quantité, adresse et QR', async () => {
+  it('étiquette imprimable 2 po × 1 po : nom, quantité et QR', async () => {
     const item = inventory.createItem({ name: 'Rouleau papier', reorder_at: 4 });
     const response = await call(`/inventory/cards?ids=${item.id}`);
     assert.equal(response.status, 200);
     const html = await response.text();
     assert.ok(html.includes('Rouleau papier'));
-    assert.ok(html.includes('Quand il en reste 4'));
-    assert.ok(html.includes(item.scan_url));
+    assert.ok(html.includes('Scanner à 4'));
+    assert.ok(html.includes('size: 2in 1in'), 'page d’impression = une étiquette de 2 po × 1 po');
     assert.ok(html.includes('<svg'));
     assert.ok(!/<script(?![^>]*\ssrc=)/.test(html), 'pas de script en ligne (CSP)');
     const qr = await call(`/api/inventory/${item.id}/qr.svg`);

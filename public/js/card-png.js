@@ -1,9 +1,11 @@
 /*
- * Carte d'inventaire en image PNG (à imprimer ailleurs, à envoyer, à coller dans
- * un document…). Dessinée sur un canvas aux dimensions de la carte imprimée
- * (90 × 62 mm à 300 dpi) : même contenu que la page /inventory/cards.
+ * Étiquette d'inventaire en image PNG (à imprimer sur une imprimante d'étiquettes, à envoyer…).
+ * Dessinée sur un canvas aux dimensions de l'étiquette imprimée (2 po × 1 po, 600 × 300 px à
+ * 300 dpi) : même contenu que la page /inventory/cards.
  */
 const MM = 300 / 25.4; // pixels par millimètre à 300 dpi
+const LABEL_W_MM = 50.8; // 2 po
+const LABEL_H_MM = 25.4; // 1 po
 const px = (mm) => Math.round(mm * MM);
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
 
@@ -46,48 +48,33 @@ const loadImage = (src) =>
     image.src = src;
   });
 
-/** Dessine la carte et renvoie le canvas. */
+/** Dessine l'étiquette (2 po × 1 po) et renvoie le canvas. */
 export const drawCard = async (item) => {
   const qr = await loadImage(`/api/inventory/${item.id}/qr.svg`);
-  const width = px(90);
-  const qrSize = px(34);
-  const pad = px(5);
-  const textWidth = width - pad * 2 - qrSize - px(4);
+  const width = px(LABEL_W_MM);
+  const height = px(LABEL_H_MM);
+  const pad = px(1.8);
+  const qrSize = px(21.5);
+  const textWidth = width - pad * 2 - qrSize - px(1.5);
+  const label = `Scanner à ${item.reorder_at}`;
+  const pillMm = 2.6;
+  const pill = px(4.2);
+  const available = height - pad * 2 - pill - px(1);
 
   const measure = document.createElement('canvas').getContext('2d');
-  // un nom long rétrécit (jusqu'à 3,8 mm) plutôt que d'être coupé ; au pire on garde 5 lignes
-  let nameMm = 6.2;
+  // le nom rétrécit (jusqu'à 2,2 mm) pour tenir dans la hauteur de l'étiquette
+  let nameMm = 4.4;
   let nameLines;
   for (;;) {
     measure.font = `700 ${px(nameMm)}px ${FONT}`;
     nameLines = wrap(measure, item.name, textWidth);
-    if (nameLines.length <= 4 || nameMm <= 3.8) break;
-    nameMm = Math.round((nameMm - 0.4) * 10) / 10;
+    // jamais de mot coupé au milieu tant qu'on peut encore rétrécir
+    const widest = Math.max(...String(item.name).split(/\s+/).map((word) => measure.measureText(word).width));
+    if ((nameLines.length * px(nameMm) * 1.12 <= available && widest <= textWidth) || nameMm <= 2.2) break;
+    nameMm = Math.round((nameMm - 0.2) * 10) / 10;
   }
-  nameLines = nameLines.slice(0, 5);
-  // la pastille rétrécit aussi si le texte est long, sans jamais être écrasé
-  let pillMm = 4.2;
-  const label = `Quand il en reste ${item.reorder_at}`;
-  for (;;) {
-    measure.font = `700 ${px(pillMm)}px ${FONT}`;
-    if (measure.measureText(label).width + px(6) <= textWidth || pillMm <= 2.6) break;
-    pillMm = Math.round((pillMm - 0.2) * 10) / 10;
-  }
-  measure.font = `400 ${px(3.6)}px ${FONT}`;
-  const helpLines = wrap(measure, 'Scanne ce code avec ton téléphone : l’app note toute seule qu’il faut en racheter.', textWidth);
-  const noteLines = item.notes ? wrap(measure, item.notes, textWidth).slice(0, 2) : [];
-
-  const nameLH = px(nameMm) * 1.15;
-  const helpLH = px(3.6) * 1.35;
-  const pill = px(8.2);
-  const urlLines = (() => {
-    measure.font = `400 ${px(2.6)}px ${FONT}`;
-    return wrap(measure, item.scan_url, textWidth);
-  })();
-  const contentHeight =
-    nameLines.length * nameLH + px(2) + pill + px(3) + helpLines.length * helpLH +
-    (noteLines.length ? px(2) + noteLines.length * helpLH : 0) + px(2) + urlLines.length * px(3.2);
-  const height = Math.max(px(62), Math.ceil(contentHeight + pad * 2));
+  const nameLH = px(nameMm) * 1.12;
+  nameLines = nameLines.slice(0, Math.max(1, Math.floor(available / nameLH)));
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -95,45 +82,23 @@ export const drawCard = async (item) => {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
-
-  // cadre en pointillé (ligne de découpe)
-  ctx.strokeStyle = '#8a93a6';
-  ctx.lineWidth = px(0.4);
-  ctx.setLineDash([px(1.6), px(1.2)]);
-  roundRect(ctx, ctx.lineWidth, ctx.lineWidth, width - ctx.lineWidth * 2, height - ctx.lineWidth * 2, px(3));
-  ctx.stroke();
-  ctx.setLineDash([]);
-
   ctx.textBaseline = 'top';
-  let y = Math.max(pad, (height - contentHeight) / 2);
-  ctx.fillStyle = '#1c2230';
+
+  const blockHeight = nameLines.length * nameLH + px(1) + pill;
+  let y = Math.max(pad, (height - blockHeight) / 2);
+  ctx.fillStyle = '#000000';
   ctx.font = `700 ${px(nameMm)}px ${FONT}`;
   for (const line of nameLines) { ctx.fillText(line, pad, y); y += nameLH; }
-  y += px(2);
+  y += px(1);
 
-  // pastille « Quand il en reste N »
+  // pastille « Scanner à N » : en noir et blanc, lisible sur une imprimante d'étiquettes
   ctx.font = `700 ${px(pillMm)}px ${FONT}`;
-  const pillWidth = Math.min(textWidth, ctx.measureText(label).width + px(6));
-  ctx.fillStyle = '#fff3cd';
-  ctx.strokeStyle = '#e8d48a';
-  ctx.lineWidth = px(0.3);
+  const pillWidth = Math.min(textWidth, ctx.measureText(label).width + px(2.4));
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = px(0.25);
   roundRect(ctx, pad, y, pillWidth, pill, pill / 2);
-  ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = '#1c2230';
-  ctx.fillText(label, pad + px(3), y + (pill - px(pillMm)) / 2);
-  y += pill + px(3);
-
-  ctx.font = `400 ${px(3.6)}px ${FONT}`;
-  for (const line of helpLines) { ctx.fillText(line, pad, y); y += helpLH; }
-  if (noteLines.length) {
-    y += px(2);
-    for (const line of noteLines) { ctx.fillText(line, pad, y); y += helpLH; }
-  }
-  y += px(2);
-  ctx.fillStyle = '#6a7387';
-  ctx.font = `400 ${px(2.6)}px ${FONT}`;
-  for (const line of urlLines) { ctx.fillText(line, pad, y); y += px(3.2); }
+  ctx.fillText(label, pad + px(1.2), y + (pill - px(pillMm)) / 2);
 
   // code QR, net (pas de lissage : les modules restent des carrés)
   ctx.imageSmoothingEnabled = false;
@@ -146,14 +111,14 @@ export const drawCard = async (item) => {
 const slug = (text) =>
   String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'objet';
 
-/** Télécharge la carte : carte-<nom>.png */
+/** Télécharge l'étiquette : etiquette-<nom>.png */
 export const downloadCardPng = async (item) => {
   const canvas = await drawCard(item);
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error("L'image n'a pas pu être créée");
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `carte-${slug(item.name)}.png`;
+  link.download = `etiquette-${slug(item.name)}.png`;
   document.body.append(link);
   link.click();
   link.remove();

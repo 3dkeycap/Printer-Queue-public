@@ -80,6 +80,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- **Étiquettes d'inventaire de 2 po × 1 po** (50,8 × 25,4 mm) au lieu des grandes cartes : nom, « Scanner à N »
+  et code QR, en noir et blanc pour une imprimante d'étiquettes. La page d'impression règle le papier
+  (`@page` 2 po × 1 po, une étiquette par page) ; le PNG fait 600 × 300 px (300 dpi). Les codes QR ne
+  changent pas : les cartes déjà imprimées restent valides.
 - L'adresse de l'app dans les codes QR d'inventaire (et dans les liens du webhook de bugs) est par
   défaut **`http://192.168.1.223:8080`** (l'adresse IP de l'app), à la place de `3dkeycap.local`.
   Les cartes déjà imprimées avec l'ancien nom ne marchent plus : les réimprimer (ou remettre
