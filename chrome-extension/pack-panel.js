@@ -373,7 +373,10 @@
     const noteInput = h('textarea', { placeholder: 'Ex. bac 4, la keycap rouge est dans le sac à part…' });
     noteInput.value = order.packNote ?? '';
     panel.append(
-      h('header', {}, [h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×')]),
+      h('header', {}, [
+        h('div', {}, [h('h2', {}, `📦 Bac — commande ${order.number ?? ''}`)]),
+        h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×'),
+      ]),
       h('div', { class: 'body' }, [
         order.cancelledAt ? h('div', { class: 'box note' }, `À savoir : cette commande a été annulée (${fmt(order.cancelledAt)}) : ne la packe pas.`) : null,
         order.shippedAt ? h('div', { class: 'box note' }, `À savoir : cette commande est déjà marquée expédiée (${fmt(order.shippedAt)}).`) : null,

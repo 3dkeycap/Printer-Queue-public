@@ -98,6 +98,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- **Extension 1.8.1** : le titre « 📦 Bac — commande #… » est remis en haut de la fenêtre « J'ai packé ».
 - **Mode simple, « Resin Queue »** : quand les cartes sont classées par couleur, la pastille de couleur de chaque carte
   est masquée (l'en-tête du groupe la donne déjà), de même que le « #1 » en haut à droite (le « ×3 » d'une pile
   reste). La fiche d'une pièce n'affiche plus « Reçue », « SKU » ni « Suivi » (toujours là en mode Avancé).
