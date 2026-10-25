@@ -68,17 +68,40 @@
     if (selected) send({ type: 'link-order', orderNumber: selected.id, customerName: selected.name });
   };
 
+  /**
+   * Identifiants possibles de la commande dans l'app : ceux des liens de la ligne
+   * (le receipt_id Etsy, souvent plus long que le numéro affiché) puis le numéro affiché.
+   */
+  const candidatesOf = (id, row) => {
+    const ids = new Set();
+    for (const anchor of row.querySelectorAll('a[href]')) {
+      for (const match of (anchor.getAttribute('href') ?? '').matchAll(/\d{8,}/g)) ids.add(match[0]);
+    }
+    ids.delete(id);
+    return [...[...ids].slice(0, 7), id];
+  };
+
+  /** Cherche dans l'app laquelle de ces identifiants est une commande Etsy connue. */
+  const resolveKey = async (entry) => {
+    const found = await send({ type: 'etsy-find', ids: entry.candidates });
+    if (selected !== entry || !found?.id) return;
+    entry.key = found.id;
+    if (globalThis.ResinQueuePack?.isOpen() && globalThis.ResinQueuePack.openOrder() !== found.id) globalThis.ResinQueuePack.open(found.id, dock);
+  };
+
   const select = (id, row) => {
     if (selected?.id === id) return;
     if (selected?.row?.isConnected) selected.row.style.outline = selected.previousOutline ?? '';
     const previousOutline = row.style.outline;
     row.style.outline = '3px solid #1f5fd6';
     row.style.outlineOffset = '-3px';
-    selected = { id, row, name: buyerName(row), previousOutline };
+    selected = { id, key: id, row, name: buyerName(row), previousOutline, candidates: candidatesOf(id, row) };
+    const entry = selected;
     // la boîte du bac déjà ouverte passe sur cette commande
     if (globalThis.ResinQueuePack?.isOpen()) globalThis.ResinQueuePack.open(id, dock);
     syncLinkedOrder();
     render();
+    resolveKey(entry);
   };
 
   const openChitChats = async () => {
@@ -153,7 +176,11 @@
       );
       const open = globalThis.ResinQueuePack?.isOpen();
       parts.push(
-        btn(open ? '📦 J’ai packé ▴' : '📦 J’ai packé ▾', 'Indiquer ce qui est dans le bac de cette commande', '#7a4fd0', () => globalThis.ResinQueuePack?.toggle(selected.id, dock), 'border-left:1px solid rgba(255,255,255,.25);'),
+        btn(open ? '📦 J’ai packé ▴' : '📦 J’ai packé ▾', 'Indiquer ce qui est dans le bac de cette commande', '#7a4fd0', async () => {
+          // l'identifiant exact est cherché avant d'ouvrir la boîte (un clic très rapide ne tombe pas sur « inconnue »)
+          if (selected.key === selected.id && selected.candidates.length > 1) await resolveKey(selected);
+          globalThis.ResinQueuePack?.toggle(selected.key, dock);
+        }, 'border-left:1px solid rgba(255,255,255,.25);'),
       );
     }
 

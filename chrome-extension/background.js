@@ -316,6 +316,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}`).then(sendResponse);
     return true;
   }
+  // Etsy : le numéro affiché n'est pas toujours le receipt_id connu de l'app, on essaie chaque identifiant de la ligne
+  if (message?.type === 'etsy-find') {
+    (async () => {
+      for (const id of message.ids ?? []) {
+        const view = await appFetch(`/api/packing/etsy/${encodeURIComponent(id)}`);
+        if (!view?.error) return sendResponse({ id });
+      }
+      sendResponse({ id: null });
+    })();
+    return true;
+  }
   if (message?.type === 'pack-save') {
     appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}`, { method: 'POST', body: message.body }).then(sendResponse);
     return true;

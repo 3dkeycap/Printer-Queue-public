@@ -6,6 +6,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Extension 1.6.4 (Etsy)** : « Commande inconnue de l'app » sur des commandes pourtant synchronisées : le
+  numéro affiché par Etsy (`#4208…`) n'est pas toujours le `receipt_id` que l'app a enregistré. L'extension
+  essaie maintenant chaque identifiant des liens de la ligne avant le numéro affiché, et l'app retrouve aussi
+  une commande par son numéro de commande.
 - **Extension 1.6.3 (Etsy)** : plus de boutons sur chaque commande ; la **même barre sur Shopify** est
   accrochée au bord droit (poignée ⋮⋮, 📦 J'ai packé, 🔗 Link / Live). Elle agit sur la commande
   sélectionnée en cliquant sa ligne (entourée en bleu) ; une seule commande à l'écran = sélectionnée d'office.

@@ -24,8 +24,8 @@ const findOrder = ({ orderId, shopifyId, etsyId }) => {
   const order = orderId
     ? db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(orderId))
     : db
-        .prepare('SELECT * FROM orders WHERE source = ? AND external_id = ?')
-        .get(etsyId ? 'etsy' : 'shopify', String(etsyId ?? shopifyId));
+        .prepare('SELECT * FROM orders WHERE source = ? AND (external_id = ? OR order_number = ?)')
+        .get(etsyId ? 'etsy' : 'shopify', String(etsyId ?? shopifyId), String(etsyId ?? shopifyId));
   if (!order) throw notFound("Commande inconnue de l'app (pas encore synchronisée ?)");
   return order;
 };
