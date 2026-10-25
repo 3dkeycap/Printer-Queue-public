@@ -126,7 +126,8 @@ d'écriture).
 
 Sur la page Inventaire, scanne le code « Ajouter depuis le téléphone » : un formulaire simple s'ouvre
 (photo avec l'appareil, nom, minimum, quantité à commander, fournisseur). Pratique pour faire le tour de
-l'atelier et tout ajouter en marchant ; le téléphone doit être sur le réseau de l'atelier.
+l'atelier et tout ajouter en marchant ; le téléphone doit être sur le réseau de l'atelier. Un bouton imprime ce code
+(« Étiquette 2×1 po » ou « Grande étiquette ») pour le coller dans l'atelier.
 
 ## Inventaire : deux styles d'étiquette
 

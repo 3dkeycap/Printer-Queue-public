@@ -209,6 +209,34 @@ inventoryPagesRouter.get('/cards', (req, res) => {
 </body></html>`);
 });
 
+/**
+ * Étiquette « Ajouter à l'inventaire » : un code QR à coller dans l'atelier qui ouvre la page d'ajout du téléphone.
+ * Mêmes formats que les étiquettes d'objets (?style=small : 2 po × 1 po, ?style=large : 4 par feuille Lettre, ici une seule).
+ */
+inventoryPagesRouter.get('/add-card', (req, res) => {
+  const large = req.query.style === 'large';
+  const url = newItemUrl();
+  const label = large
+    ? `<section class="page"><article class="big">
+         <div class="band"></div>
+         <h2 style="font-size:0.36in">Ajouter à l’inventaire</h2>
+         <div class="facts"><div class="wide"><span class="v">Scanne ce code avec ton téléphone pour ajouter un objet</span></div></div>
+         <div class="media solo">${qrSvg(url, { cellSize: 8, margin: 1 })}</div>
+       </article></section>`
+    : `<main class="sheet"><article class="label">
+         <div class="txt"><h2 style="font-size:3.4mm">Ajouter à l’inventaire</h2><div class="qty">Scanne</div></div>
+         ${qrSvg(url, { cellSize: 8, margin: 1 })}
+       </article></main>`;
+  res.type('html').send(`<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Étiquette : ajouter à l’inventaire</title><style>${large ? LARGE_CSS : PAGE_CSS}</style></head>
+<body>
+  <div class="bar"><button id="print">🖨 Imprimer</button><span>${esc(url)}</span></div>
+  ${label}
+  <script src="/js/print-cards.js"></script>
+</body></html>`);
+});
+
 /* ------------------------------------------- ajouter un objet depuis le téléphone */
 
 const NEW_CSS = `

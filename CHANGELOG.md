@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Étiquette « Ajouter à l'inventaire »** : un code QR imprimable (2×1 po ou grande) à coller dans l'atelier, qui ouvre la page d'ajout du téléphone (`/inventory/add-card`, boutons sur la page Inventaire).
 - **Ajouter un objet d'inventaire depuis le téléphone** : page `/inventory/new` pensée pour le téléphone (nom,
   **photo prise avec l'appareil**, minimum, quantité à commander, fournisseur ; les fournisseurs déjà saisis sont
   proposés). Un code QR sur la page Inventaire l'ouvre ; après l'ajout, « Ajouter un autre objet » et « Voir la

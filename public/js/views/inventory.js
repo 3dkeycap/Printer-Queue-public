@@ -247,8 +247,12 @@ export const renderInventory = (root, actions) => {
       el('img', { src: '/api/inventory/phone-qr.svg', alt: 'Code QR : ajouter depuis le téléphone', width: '96', height: '96' }),
       el('div', {}, [
         el('h3', {}, 'Ajouter depuis le téléphone'),
-        el('p', { class: 'sub' }, 'Scanne ce code avec ton téléphone : un formulaire simple (photo, nom, minimum, fournisseur) pour ajouter un objet en te promenant dans l’atelier.'),
-        el('a', { class: 'ghost-btn', href: '/inventory/new', target: '_blank', rel: 'noopener' }, 'Ouvrir la page'),
+        el('p', { class: 'sub' }, 'Scanne ce code avec ton téléphone : un formulaire simple (photo, nom, minimum, fournisseur) pour ajouter un objet en te promenant dans l’atelier. Imprime-le pour le coller dans l’atelier.'),
+        el('div', { class: 'inv-actions' }, [
+          el('a', { class: 'ghost-btn', href: '/inventory/new', target: '_blank', rel: 'noopener' }, 'Ouvrir la page'),
+          el('a', { class: 'ghost-btn', title: 'Étiquette 2 × 1 po à coller dans l’atelier', href: '/inventory/add-card?style=small', target: '_blank', rel: 'noopener' }, [icon('receipt'), 'Étiquette 2×1 po']),
+          el('a', { class: 'ghost-btn', title: 'Grande étiquette (feuille Lettre)', href: '/inventory/add-card?style=large', target: '_blank', rel: 'noopener' }, [icon('receipt'), 'Grande étiquette']),
+        ]),
       ]),
     ]),
 

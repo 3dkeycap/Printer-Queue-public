@@ -297,4 +297,12 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
     assert.equal(qr.headers.get('content-type').split(';')[0], 'image/svg+xml');
     assert.equal((await call('/inventory/new', { auth: false })).status, 401);
   });
+
+  it('étiquette « Ajouter à l’inventaire » : un QR vers la page du téléphone, en petit et en grand', async () => {
+    const small = await (await call('/inventory/add-card')).text();
+    assert.ok(small.includes('size: 2in 1in') && small.includes('<svg') && small.includes('/inventory/new'));
+    const large = await (await call('/inventory/add-card?style=large')).text();
+    assert.ok(large.includes('size: letter') && large.includes('Ajouter à l’inventaire') && large.includes('<svg'));
+    assert.equal((await call('/inventory/add-card', { auth: false })).status, 401);
+  });
 });
