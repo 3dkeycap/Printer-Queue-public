@@ -12,6 +12,7 @@ import {
   listParts,
   listPrinters,
   setStatus,
+  undoFailure,
   updatePart,
 } from '../domain/parts.service.js';
 
@@ -62,6 +63,14 @@ partsRouter.post(
     if (!status) throw badRequest('`status` is required');
     const result = bulkSetStatus(ids, status, { actor: 'dashboard', note, force });
     res.json(result);
+  }),
+);
+
+/** Ctrl+Z après un échec : voir undoFailure(). */
+partsRouter.post(
+  '/:id/undo-failure',
+  asyncRoute((req, res) => {
+    res.json(undoFailure(req.params.id, { actor: 'dashboard' }));
   }),
 );
 

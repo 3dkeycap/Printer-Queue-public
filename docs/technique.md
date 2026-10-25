@@ -472,6 +472,7 @@ déjà `DONE` et signale l'incohérence dans les logs.
 | `GET` | `/api/colors` · `POST` · `PATCH /api/colors/:key` · `DELETE` | Catalogue de résines, alias, stock en grammes |
 | `GET` | `/api/settings` | Tous les réglages (secrets masqués) + état des connecteurs |
 | `PUT` | `/api/settings` | Enregistre un lot de réglages |
+| `POST` | `/api/parts/:id/undo-failure` | Annule le dernier échec d'une pièce (Ctrl+Z) |
 | `GET` | `/api/failures` | Historique des échecs + taux d'échec par fichier (échecs / (échecs + impressions réussies)) |
 | `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |
 | `POST` | `/api/sync/run?source=all\|shopify\|etsy\|chitchats` | Synchronisation manuelle |
@@ -524,9 +525,14 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 - **Couleurs masquées** : bouton « Couleurs masquées » dans la barre de filtres → coche les
   résines qu'on n'imprime pas ici (ex. Nylon Grey, fait dans une autre usine). Elles
   disparaissent de « À imprimer » (et de son compteur) ; la vue « Tout » les montre toujours.
-- **Regrouper** : bouton dans l'en-tête de chaque colonne, à côté de l'agrandissement. Les
-  pièces identiques (même nom, couleur, variante, UV, commentaire, imprimante) deviennent une
-  carte « ×3 » ; les actions (passer à l'étape suivante, échec) s'appliquent à toute la pile.
+- **Regrouper** : bouton à 3 états dans l'en-tête de chaque colonne (mémorisé par colonne dans
+  `localStorage`, clé `stackMode`) : *Commande* (défaut : une carte par commande, résine, UV, tags
+  et priorité identiques, avec la liste « 2× nom · variante » de ses pièces), *Séparées* (une carte
+  par pièce), *Identiques* (même nom, couleur, variante, UV, tags : « ×3 »). Les actions de la
+  carte (étape suivante, échec) s'appliquent à toute la pile.
+- **Annuler (Ctrl+Z)** : pile de 30 actions en mémoire (déplacements, modifications d'une pièce) ;
+  un échec s'annule côté serveur par `POST /api/parts/:id/undo-failure` (retire l'échec de
+  `print_results`, le tag et le compteur ; refusé si la pièce a bougé depuis).
 - **Kiosque** : `http://<ip>:8080/kiosk` — sans barre latérale, en-tête minimal, cibles
   tactiles agrandies, colonnes qu'on fait défiler au doigt. Pensé pour l'iPad de l'atelier
   (« Ajouter à l'écran d'accueil » pour le plein écran).

@@ -138,3 +138,57 @@ const updatePartComment = async (id, comment) => {
   const { updatePart } = await import('../src/domain/parts.service.js');
   return updatePart(id, { comment });
 };
+
+describe('Ctrl+Z après un échec', async () => {
+  const { undoFailure } = await import('../src/domain/parts.service.js');
+
+  const fresh = async (externalId) => {
+    const { orderId } = ingestOrder(
+      makeOrder({ externalId, orderNumber: `#${externalId}`, items: [{ externalId: `li-${externalId}`, title: `Undo ${externalId}`, quantity: 1 }] }),
+    );
+    return getDb().prepare('SELECT id FROM parts WHERE order_id = ?').get(orderId).id;
+  };
+
+  it('remet la pièce dans son état d\'avant et efface l\'échec (historique, compteur, tag)', async () => {
+    const id = await fresh('9300');
+    setStatus(id, 'PRINTING');
+    setStatus(id, 'FAILED');
+    assert.equal(getPart(id).fail_count, 1);
+
+    const part = undoFailure(id);
+    assert.equal(part.status, 'PRINTING');
+    assert.equal(part.fail_count, 0);
+    assert.equal(part.comment, null);
+    assert.deepEqual(results(id), []);
+    assert.equal(listEvents(id)[0].note, 'Échec annulé (Ctrl+Z)');
+  });
+
+  it('un 2e échec annulé garde le tag du 1er (« A échoué »)', async () => {
+    const id = await fresh('9301');
+    for (let i = 0; i < 2; i += 1) {
+      setStatus(id, 'PRINTING');
+      setStatus(id, 'FAILED');
+    }
+    assert.equal(getPart(id).comment, 'A échoué ×2');
+    assert.equal(undoFailure(id).comment, 'A échoué');
+    assert.deepEqual(results(id), ['failed']);
+  });
+
+  it('annuler un échec survenu depuis « Imprimé » redonne sa réussite', async () => {
+    const id = await fresh('9302');
+    setStatus(id, 'PRINTING');
+    setStatus(id, 'DONE');
+    setStatus(id, 'FAILED');
+    assert.deepEqual(results(id), ['failed']);
+    assert.equal(undoFailure(id).status, 'DONE');
+    assert.deepEqual(results(id), ['success']);
+  });
+
+  it('refuse si la pièce a bougé depuis', async () => {
+    const id = await fresh('9303');
+    setStatus(id, 'PRINTING');
+    setStatus(id, 'FAILED');
+    setStatus(id, 'PRINTING');
+    assert.throws(() => undoFailure(id), /bougé/);
+  });
+});

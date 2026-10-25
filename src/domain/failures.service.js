@@ -93,6 +93,26 @@ export const withFailTag = (comment, count) => {
   return lines.join('\n');
 };
 
+/** Tag d'une pièce après annulation d'un échec : « A échoué ×N-1 », ou plus de tag si N-1 = 0. */
+export const withoutLastFailTag = (comment, count) => {
+  const lines = String(comment ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !FAIL_TAG_RE.test(line));
+  if (count > 0) lines.push(failTag(count));
+  return lines.length ? lines.join('\n') : null;
+};
+
+/** Retire le dernier échec consigné d'une pièce (Ctrl+Z). Renvoie false s'il n'y en a pas. */
+export const removeLastFailure = (db, partId) => {
+  const row = db
+    .prepare(`SELECT id FROM print_results WHERE part_id = ? AND outcome = 'failed' ORDER BY id DESC LIMIT 1`)
+    .get(partId);
+  if (!row) return false;
+  db.prepare('DELETE FROM print_results WHERE id = ?').run(row.id);
+  return true;
+};
+
 /* ------------------------------------------------- fichiers masqués ------- */
 
 const HIDDEN_KEY = 'failures.hiddenFiles';

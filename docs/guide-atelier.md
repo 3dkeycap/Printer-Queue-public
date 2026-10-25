@@ -25,6 +25,13 @@ Une pièce avance de gauche à droite :
 - ou **glisse la carte** dans la colonne d'à côté ;
 - **touche la carte** pour voir ses détails (commande, notes du client, historique).
 
+## Annuler une erreur (Ctrl+Z)
+
+Une carte déplacée par erreur ? Le bouton **Annuler** (en haut) ou **Ctrl+Z** (Cmd+Z sur Mac)
+défait la dernière action, puis la précédente, jusqu'à 30 actions : déplacements de cartes,
+échecs (l'échec disparaît aussi de la page *Échecs*) et modifications d'une pièce. La liste
+d'actions est vidée quand on recharge la page.
+
 ## Quand l'impression rate
 
 Appuie sur le **triangle rouge** de la carte. La pièce retourne tout de suite dans
@@ -39,7 +46,11 @@ ratent le plus souvent.
 - **En retard** : les commandes qui attendent depuis trop longtemps (badge rouge sur la carte).
 - **Recherche** : un nom de pièce, un numéro de commande ou un client. La touche `/` y va
   directement.
-- **Regrouper** (en haut d'une colonne) : fusionne les pièces identiques en une carte « ×3 ».
+- **Regrouper** (en haut de chaque colonne) : le bouton change la façon de ranger les cartes à
+  chaque clic. **Commande** (par défaut) : une carte par commande, avec la liste de ses pièces ;
+  **Séparées** : une carte par pièce ; **Identiques** : les pièces identiques fusionnées en
+  « ×3 ». Les boutons d'une carte regroupée agissent sur toutes ses pièces.
+- La **couleur de la résine** entoure toute la carte (pas seulement un trait sur le côté).
 - **Agrandir** (icône des quatre coins) : une seule colonne en grille, pour tout voir d'un coup.
 
 ## Tags

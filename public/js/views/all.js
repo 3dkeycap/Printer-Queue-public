@@ -64,6 +64,8 @@ const row = (part, actions) => {
   return el(
     'tr',
     {
+      dataset: { colored: '' },
+      style: { '--card-color': part.color_hex },
       class: [state.selection.has(part.id) ? 'is-selected' : '', open ? 'is-open-shop' : ''].filter(Boolean).join(' '),
       onclick: () => actions.openPart(part.id),
     },

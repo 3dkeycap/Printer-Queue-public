@@ -6,6 +6,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Annuler (Ctrl+Z)** et bouton « Annuler » : défait les déplacements de cartes, les échecs
+  (retirés aussi de la page Échecs) et les modifications d'une pièce, jusqu'à 30 actions.
+- Bouton **Regrouper** à 3 états par colonne : *Commande* (défaut, une carte par commande avec la
+  liste de ses pièces), *Séparées*, *Identiques*.
 - La **variante** s'affiche sur les cartes (aussi en mode Simple et au kiosque), sous le nom de la pièce.
 - Extension Chrome 1.4.0 : **mode démo** dans ses réglages — une fausse admin Shopify et un faux
   Chit Chats pour tester le bouton Chit Chats, le bac « J'ai packé » et le lien live sans toucher
@@ -16,6 +20,8 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Modifié
+- La couleur de la résine **entoure toute la carte** (et la ligne du tableau « Tout ») au lieu
+  d'un simple trait sur le côté.
 - Plus aucun affichage **Chit Chats** dans l'app (cartes, fiche, tableau « Tout »). Les réglages
   Chit Chats et l'extension Chrome restent.
 - Un tag tapé sur une pièce n'est plus ajouté à la liste globale des suggestions.

@@ -15,6 +15,7 @@ docker compose up -d --build        # puis http://localhost:8080
 Aucun fichier `.env` nécessaire : clés Shopify / Etsy / Chit Chats, listes et résines se
 règlent dans **Réglages** (stockés dans la base).
 
+- **Adresse de l'atelier** : `http://3dkeycap.local/`.
 - **iPad / écran d'atelier** : `http://<ip>:8080/kiosk` (toujours en mode Simple, plein écran).
 - **Mettre à jour** : Réglages → Mises à jour → *Mettre à jour* (sauvegarde la base, installe,
   revient en arrière si ça ne démarre pas). Détails dans la documentation technique.

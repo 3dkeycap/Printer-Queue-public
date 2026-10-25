@@ -7,7 +7,7 @@ import { placeholderImages, realImage } from './images.js';
 import { chitchatsShipUrl } from './presence.js';
 import { getSettings } from './settings.service.js';
 import { ACTIVE_STATUSES, canTransition, isStatus } from './statuses.js';
-import { recordTransition, withFailTag } from './failures.service.js';
+import { recordTransition, removeLastFailure, withFailTag, withoutLastFailTag } from './failures.service.js';
 
 const SORTS = {
   smart: 'p.priority DESC, o.is_priority DESC, COALESCE(o.placed_at, o.created_at) ASC, p.id ASC',
@@ -370,6 +370,42 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
   });
   apply();
 
+  return getPart(part.id);
+};
+
+/**
+ * Ctrl+Z après un clic sur Échec : la pièce reprend l'état d'avant (celui du
+ * dernier « X → Échec » de son historique), l'échec disparaît de la page
+ * « Échecs », le compteur et le tag « A échoué ×N » reviennent en arrière.
+ * Refusé si la pièce a bougé depuis (on ne défait pas à l'aveugle).
+ */
+export const undoFailure = (id, { actor = 'dashboard' } = {}) => {
+  const db = getDb();
+  const part = db.prepare('SELECT * FROM parts WHERE id = ?').get(Number(id));
+  if (!part) throw notFound(`Part ${id} not found`);
+
+  const events = db
+    .prepare('SELECT id, from_status, to_status FROM part_events WHERE part_id = ? ORDER BY id DESC LIMIT 2')
+    .all(part.id);
+  const [back, fail] = events;
+  const undoable =
+    part.status === 'TO_PRINT' && part.fail_count > 0 && back?.from_status === 'FAILED' && back?.to_status === 'TO_PRINT' &&
+    fail?.to_status === 'FAILED';
+  if (!undoable) throw conflict("Cette pièce a bougé depuis son échec : rien à annuler", { part: part.id });
+
+  const ts = nowIso();
+  db.transaction(() => {
+    removeLastFailure(db, part.id);
+    db.prepare('DELETE FROM part_events WHERE id IN (?, ?)').run(back.id, fail.id);
+    // un « Imprimé » défait par cet échec redevient une réussite
+    if (fail.from_status === 'DONE') recordTransition(db, part, 'PRINTING', 'DONE', { actor, at: ts });
+    db.prepare(
+      `UPDATE parts SET status = ?, status_changed_at = ?, updated_at = ?, fail_count = fail_count - 1, comment = ?,
+                        printed_at = CASE WHEN ? = 'DONE' THEN ? ELSE printed_at END
+       WHERE id = ?`,
+    ).run(fail.from_status, ts, ts, withoutLastFailTag(part.comment, part.fail_count - 1), fail.from_status, ts, part.id);
+    recordEvent(db, { partId: part.id, from: 'TO_PRINT', to: fail.from_status, actor, note: 'Échec annulé (Ctrl+Z)' });
+  })();
   return getPart(part.id);
 };
 

@@ -9,7 +9,9 @@ import {
   isSimple,
   isKiosk,
   queryParams,
+  STACK_MODES,
   savePrefs,
+  stackModeOf,
   state,
   THEMES,
   statusMeta,
@@ -53,12 +55,59 @@ const dom = {
 
 /* --------------------------------------------------------------- actions - */
 
+/* ------------------------------------------------- annuler (Ctrl+Z) ------- */
+
+// Les dernières actions de cette session (déplacements de pièces, modifications) ;
+// elles ne survivent pas à un rechargement de la page.
+const UNDO_MAX = 30;
+const undoStack = [];
+
+const updateUndoButton = () => {
+  const button = document.getElementById('undo-btn');
+  if (!button) return;
+  const last = undoStack.at(-1);
+  button.disabled = !last;
+  button.title = last ? `Annuler : ${last.label} (Ctrl+Z)` : 'Rien à annuler';
+};
+
+const pushUndo = (entry) => {
+  undoStack.push(entry);
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  updateUndoButton();
+};
+
 const actions = {
   nextStatus: (status) => NEXT_STATUS[status] ?? null,
+
+  /** Défait la dernière action (déplacement de pièces ou modification), puis la précédente… */
+  async undo() {
+    const entry = undoStack.pop();
+    updateUndoButton();
+    if (!entry) return toast('Rien à annuler');
+    try {
+      if (entry.kind === 'move') {
+        if (entry.to === 'FAILED') {
+          // l'échec disparaît aussi de la page « Échecs »
+          for (const item of entry.items) await api.undoFailure(item.id);
+        } else {
+          const byStatus = new Map();
+          for (const item of entry.items) byStatus.set(item.status, [...(byStatus.get(item.status) ?? []), item.id]);
+          for (const [status, ids] of byStatus) await api.bulkStatus(ids, status, { force: true });
+        }
+      } else {
+        await api.patchPart(entry.id, entry.previous);
+      }
+      toast(`Annulé : ${entry.label}`);
+      await refresh({ silent: true });
+    } catch (error) {
+      toast(error.message, 'err');
+    }
+  },
 
   async move(ids, status, options = {}) {
     // optimiste : on repeint tout de suite, on réconcilie ensuite
     const snapshot = state.parts.map((part) => ({ ...part }));
+    const before = snapshot.filter((part) => ids.includes(part.id)).map((part) => ({ id: part.id, status: part.status }));
     // un échec retourne directement dans « À imprimer » (et est consigné dans « Échecs »)
     const shownStatus = status === 'FAILED' ? 'TO_PRINT' : status;
     for (const part of state.parts) {
@@ -67,10 +116,21 @@ const actions = {
     render();
 
     try {
+      let done = ids;
       if (ids.length === 1) await api.setStatus(ids[0], status, options);
       else {
         const result = await api.bulkStatus(ids, status, options);
         if (result.errors?.length) toast(`${result.errors.length} transition(s) refusée(s)`, 'err');
+        done = (result.updated ?? []).map((part) => part.id);
+      }
+      const items = before.filter((item) => done.includes(item.id) && item.status !== status);
+      if (items.length) {
+        pushUndo({
+          kind: 'move',
+          to: status,
+          items,
+          label: status === 'FAILED' ? `${items.length} échec(s)` : `${items.length} pièce(s) → ${statusMeta(status).labelFr}`,
+        });
       }
       toast(
         status === 'FAILED'
@@ -87,8 +147,13 @@ const actions = {
   },
 
   async patchPart(id, patch, { silent = false } = {}) {
+    // valeurs d'avant, pour pouvoir annuler (seulement les champs que la liste connaît)
+    const known = state.parts.find((part) => part.id === id);
+    const previous = {};
+    if (known) for (const key of Object.keys(patch)) if (key in known) previous[key] = known[key] ?? null;
     try {
       await api.patchPart(id, patch);
+      if (Object.keys(previous).length) pushUndo({ kind: 'patch', id, previous, label: 'modification de la pièce' });
       await refresh({ silent: true });
       if (!silent) toast('Pièce mise à jour');
     } catch (error) {
@@ -285,9 +350,10 @@ const actions = {
     }
   },
 
-  toggleStack(status) {
-    if (state.stacked.has(status)) state.stacked.delete(status);
-    else state.stacked.add(status);
+  /** « Regrouper » : par commande → une par une → identiques → par commande… */
+  cycleStack(status) {
+    const next = STACK_MODES[(STACK_MODES.indexOf(stackModeOf(status)) + 1) % STACK_MODES.length];
+    state.stackMode[status] = next;
     savePrefs();
     render();
   },
@@ -860,7 +926,15 @@ const bindEvents = () => {
   });
   document.getElementById('tutorial-btn').addEventListener('click', () => startTutorial());
 
+  document.getElementById('undo-btn')?.addEventListener('click', () => actions.undo());
   document.addEventListener('keydown', (event) => {
+    // Ctrl/Cmd+Z : annuler la dernière action (sauf dans un champ de saisie, qui garde son propre « annuler »)
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'z') {
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      event.preventDefault();
+      actions.undo();
+      return;
+    }
     if (event.key === 'Escape') {
       closeDrawer();
       if (state.selection.size) actions.toggleSelectAll(false);

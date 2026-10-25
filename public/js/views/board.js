@@ -1,6 +1,6 @@
 import { attachImagePreview, el, icon, swatch } from '../ui.js';
 import { commentList } from '../comment-select.js';
-import { effectiveGroupBy, groupParts, orderAge, presenceFor, state, statusMeta } from '../store.js';
+import { effectiveGroupBy, groupParts, orderAge, presenceFor, state, stackModeOf, statusMeta } from '../store.js';
 
 const SOURCE_LABEL = { shopify: 'Shopify', etsy: 'Etsy', manual: 'Interne' };
 
@@ -21,11 +21,40 @@ const stackParts = (parts) => {
   return [...stacks.values()];
 };
 
+/**
+ * Regroupe les pièces d'une même commande (même résine, UV, tags et priorité) en
+ * une carte, même si ce ne sont pas les mêmes pièces : « Commande — 3 pièces » avec
+ * la liste de ce qu'il y a à imprimer. Les boutons de la carte agissent sur toutes.
+ */
+const orderStacks = (parts) => {
+  const stacks = new Map();
+  for (const part of parts) {
+    const key = [part.order_id, part.color_key, part.uv, part.comment, part.priority]
+      .map((value) => String(value ?? ''))
+      .join('|');
+    if (!stacks.has(key)) stacks.set(key, []);
+    stacks.get(key).push(part);
+  }
+  return [...stacks.values()];
+};
+
+/** Lignes « 2× nom · variante » d'une pile (une seule ligne quand les pièces sont identiques). */
+const stackLines = (stack) => {
+  const lines = new Map();
+  for (const part of stack) {
+    const key = `${part.name}|${variantLabelOf(part)}`;
+    if (!lines.has(key)) lines.set(key, { name: part.name, variant: variantLabelOf(part), count: 0 });
+    lines.get(key).count += 1;
+  }
+  return [...lines.values()];
+};
+
 /** Variante de la pièce, sans le « Default Title » que Shopify met quand il n'y en a pas. */
-const variantLabel = (part) => {
+const variantLabelOf = (part) => {
   const value = String(part.variant_title ?? '').trim();
   return value && !/^default title$/i.test(value) ? value : '';
 };
+const variantLabel = variantLabelOf;
 
 const buildCard = (stack, actions) => {
   const [part] = stack;
@@ -38,6 +67,9 @@ const buildCard = (stack, actions) => {
   const packedBy = [...new Set(stack.filter((item) => item.packed_by).map((item) => item.packed_by))];
   const missing = stack.find((item) => !item.packed_at && item.pack?.missing)?.pack?.missing ?? null;
   const next = actions.nextStatus(part.status);
+  const lines = stackLines(stack);
+  const multi = lines.length > 1; // plusieurs pièces différentes d'une même commande
+  const orderCount = new Set(stack.map((item) => item.order_id)).size;
   const card = el(
     'article',
     {
@@ -48,20 +80,32 @@ const buildCard = (stack, actions) => {
     },
     [
       el('div', { class: 'card-top' }, [
-        el('div', { class: 'card-title' }, part.name),
+        el('div', { class: 'card-title' }, multi ? `Commande · ${count} pièces` : part.name),
         count > 1
-          ? el('span', { class: 'card-unit card-stack', title: `${count} pièces identiques regroupées` }, `×${count}`)
+          ? el('span', { class: 'card-unit card-stack', title: `${count} pièces regroupées` }, `×${count}`)
           : el('span', { class: 'card-unit' }, `#${part.unit_index}`),
       ]),
       // la variante (taille, finition…) compte pour imprimer : visible aussi en mode simple
-      variantLabel(part) && el('div', { class: 'card-variant', title: variantLabel(part) }, variantLabel(part)),
+      multi
+        ? el(
+            'ul',
+            { class: 'card-lines' },
+            lines.map((line) =>
+              el('li', {}, [
+                el('strong', {}, `${line.count}×`),
+                ` ${line.name}`,
+                line.variant && el('span', { class: 'card-line-variant' }, line.variant),
+              ]),
+            ),
+          )
+        : variantLabel(part) && el('div', { class: 'card-variant', title: variantLabel(part) }, variantLabel(part)),
       el('div', { class: 'card-meta' }, [
         part.status !== 'SHIPPED' &&
           el('span', { class: `tag age age-${age.level}${age.level === 'late' ? '' : ' adv'}`, title: `Commande reçue il y a ${age.days} jour(s)` }, [icon('inbox'), `${age.days} j`]),
         el('span', { class: 'tag' }, [swatch(part.color_hex), part.color_name]),
         part.uv && el('span', { class: 'tag uv adv' }, [icon('uv'), `UV ${part.uv}`]),
         el('span', { class: `tag src-${part.source} adv` }, SOURCE_LABEL[part.source] ?? part.source),
-        el('span', { class: 'tag adv' }, count > 1 ? `${new Set(stack.map((item) => item.order_id)).size} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
+        el('span', { class: 'tag adv' }, orderCount > 1 ? `${orderCount} commande(s)` : (part.order_number ?? `#${part.order_id}`)),
         (part.priority || part.order_priority) && el('span', { class: 'tag rush adv' }, [icon('bolt'), 'Rush']),
         part.image_url && attachImagePreview(el('span', { class: 'tag' }, [icon('image'), 'Photo']), part.image_url),
       ]),
@@ -80,7 +124,7 @@ const buildCard = (stack, actions) => {
       part.comment &&
         el('div', { class: 'card-comments' }, commentList(part).map((comment) => el('span', { class: 'comment-tag' }, [icon('note'), comment]))),
       el('div', { class: 'card-foot' }, [
-        el('span', { class: 'who adv' }, count > 1 ? '—' : (part.customer_name ?? '—')),
+        el('span', { class: 'who adv' }, orderCount > 1 ? '—' : (part.customer_name ?? '—')),
         el('div', { class: 'card-actions' }, [
           part.status !== 'FAILED' &&
             part.status !== 'TO_PRINT' &&
@@ -147,9 +191,15 @@ const buildCard = (stack, actions) => {
   return card;
 };
 
+const STACK_LABEL = {
+  order: { short: 'Commande', title: 'une carte par commande (les pièces d\u2019une même commande ensemble)' },
+  none: { short: 'Séparées', title: 'une carte par pièce' },
+  identical: { short: 'Identiques', title: 'les pièces identiques fusionnées (ex. 3× MX Tilters Adapters)' },
+};
+
 const buildColumn = (status, parts, actions, { focused }) => {
   const meta = statusMeta(status);
-  const stacked = state.stacked.has(status);
+  const stackMode = stackModeOf(status);
   const body = el('div', { class: `column-body${focused ? ' is-grid' : ''}` });
 
   if (!parts.length) {
@@ -165,7 +215,8 @@ const buildColumn = (status, parts, actions, { focused }) => {
           ]),
         );
       }
-      const stacks = stacked ? stackParts(group.items) : group.items.map((part) => [part]);
+      const stacks =
+        stackMode === 'order' ? orderStacks(group.items) : stackMode === 'identical' ? stackParts(group.items) : group.items.map((part) => [part]);
       for (const stack of stacks) body.append(buildCard(stack, actions));
     }
   }
@@ -181,14 +232,14 @@ const buildColumn = (status, parts, actions, { focused }) => {
         el(
           'button',
           {
-            class: `mini-btn column-stack-btn${stacked ? ' is-on' : ''}`,
-            title: stacked ? 'Dégrouper les pièces identiques' : 'Regrouper les pièces identiques (ex. 3× MX Tilters Adapters)',
+            class: `mini-btn column-stack-btn${stackMode === 'none' ? '' : ' is-on'}`,
+            title: `Regroupement : ${STACK_LABEL[stackMode].title}. Clique pour changer (par commande → une par une → identiques).`,
             onclick: (event) => {
               event.stopPropagation();
-              actions.toggleStack(status);
+              actions.cycleStack(status);
             },
           },
-          [icon('layers'), 'Regrouper'],
+          [icon('layers'), STACK_LABEL[stackMode].short],
         ),
         el(
           'button',

@@ -313,27 +313,30 @@ select.select:focus { outline: none; border-color: var(--accent-soft); }
 .group-head .count { margin-left: auto; font-size: 11px; }
 
 .card {
-  position: relative; padding: 11px 12px 10px; border: 1px solid var(--line); border-radius: var(--radius);
+  position: relative; padding: 11px 12px 10px; border: 2px solid color-mix(in srgb, var(--card-color, var(--line)) 82%, var(--text)); border-radius: var(--radius);
   background: var(--surface); box-shadow: var(--shadow-sm); cursor: grab;
   transition: transform 0.14s, box-shadow 0.16s, border-color 0.16s, opacity 0.16s;
 }
-.card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 99px; background: var(--card-color, transparent); }
-.card:hover { border-color: var(--line-strong); box-shadow: var(--shadow); transform: translateY(-1px); }
-.card.is-selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.card.is-selected { box-shadow: 0 0 0 2px var(--accent); }
 .card.is-dragging { opacity: 0.45; cursor: grabbing; }
-.card.is-rush { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.card.is-rush { box-shadow: 0 0 0 1px color-mix(in srgb, var(--warn) 70%, transparent); }
 .card-top { display: flex; align-items: flex-start; gap: 8px; }
-.card-title { font-size: 13px; font-weight: 550; line-height: 1.3; letter-spacing: -0.01em; padding-left: 8px; }
+.card-title { font-size: 13px; font-weight: 550; line-height: 1.3; letter-spacing: -0.01em; }
 .card-unit { margin-left: auto; font-size: 10.5px; color: var(--muted); font-family: var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
-.card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-left: 8px; }
+.card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
 .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-soft); background: var(--surface-2); border: 1px solid var(--line); padding: 1px 7px; border-radius: 6px; white-space: nowrap; }
 .tag.src-shopify { color: #8fbf8a; } .tag.src-etsy { color: #e0975c; } .tag.src-manual { color: var(--muted); }
 :is([data-theme="light"], [data-theme="blue"], [data-theme="lavender"]) .tag.src-shopify { color: #3f6b3a; }
 :is([data-theme="light"], [data-theme="blue"], [data-theme="lavender"]) .tag.src-etsy { color: #9a5a1c; }
 .tag.rush { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
-.card-foot { display: flex; align-items: center; gap: 6px; margin-top: 9px; padding-left: 8px; }
+.card-foot { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
 .card-foot .who { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-variant { padding-left: 8px; margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--text-soft); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.card-lines { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.3; }
+.card-lines li { min-width: 0; word-break: break-word; }
+.card-lines strong { font-variant-numeric: tabular-nums; }
+.card-line-variant { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); }
+.card-variant { margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--text-soft); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
 html.kiosk .card-variant { font-size: 13.5px; }
 .card-actions { margin-left: auto; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
 .card:hover .card-actions, .card:focus-within .card-actions { opacity: 1; }
@@ -363,6 +366,9 @@ table.grid td { padding: 9px 12px; border-bottom: 1px solid color-mix(in srgb, v
 tr.is-muted { opacity: 0.55; }
 .failures-summary .chip { margin-left: 8px; }
 .rate-colors { display: flex; flex-wrap: wrap; gap: 4px; }
+/* « Tout » : la couleur de la résine entoure aussi la ligne (comme la carte du tableau) */
+html .column-stack-btn { white-space: nowrap; }
+table.grid tbody tr[data-colored] { outline: 2px solid color-mix(in srgb, var(--card-color) 82%, var(--text)); outline-offset: -2px; }
 table.grid tbody tr:hover { background: var(--surface-2); }
 table.grid tr.is-selected { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 table.grid tr.group-row td { background: var(--surface-3); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-soft); }
@@ -461,7 +467,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .tag.uv { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
 :is([data-theme="light"], [data-theme="blue"], [data-theme="lavender"]) .tag.uv { color: #7a5c14; border-color: #d3c08d; }
 .card-comment {
-  display: flex; align-items: center; gap: 6px; margin-top: 8px; margin-left: 8px;
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
   padding: 5px 8px; border-radius: var(--radius-sm); font-size: 11.5px;
   background: color-mix(in srgb, var(--accent) 9%, var(--surface-2)); color: var(--text-soft);
   border: 1px dashed color-mix(in srgb, var(--accent) 30%, var(--line));
@@ -643,7 +649,7 @@ html.kiosk .savebar { left: 12px; right: 12px; }
 .drawer-links .ghost-btn { text-decoration: none; }
 
 /* ------------------------------------------- ouvert sur Shopify (extension) - */
-.card.is-open-shop { border-color: color-mix(in srgb, var(--ok) 60%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 45%, transparent); }
+.card.is-open-shop { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 70%, transparent); }
 .card-open-shop {
   display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin: 8px 0 0 8px; padding: 6px 8px; border-radius: 8px;
   font-size: 12px; color: var(--text); background: color-mix(in srgb, var(--ok) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ok) 35%, var(--line));
@@ -676,7 +682,7 @@ html.kiosk .card-open-shop .open-cc { min-height: 38px; }
   background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); color: var(--text-soft);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
 }
-.card-comments { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0 8px; }
+.card-comments { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0; }
 .card-comments .comment-tag { padding: 1px 8px; font-size: 11px; }
 .card-comments .comment-tag .icon { width: 12px; height: 12px; }
 .comment-add { height: 28px; padding: 0 8px; border-radius: 99px; border: 1px dashed var(--line-strong); background: var(--surface); color: var(--muted); font-size: 12px; }
@@ -742,7 +748,7 @@ html.kiosk .card-note { font-size: 13px; -webkit-line-clamp: 5; }
 
 /* ------------------------------------------------- mode simple / avancé ---- */
 html.mode-simple .adv { display: none !important; }
-html.mode-simple .card.is-rush { border-color: var(--line); }
+html.mode-simple .card.is-rush { box-shadow: var(--shadow-sm); }
 .mode-toggle button { height: 30px; }
 /* bouton « Plein écran » : kiosque seulement */
 .kiosk-only { display: none; }

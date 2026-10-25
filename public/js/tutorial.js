@@ -40,8 +40,8 @@ const STEPS = [
   },
   {
     selector: '.column-stack-btn',
-    title: 'Regrouper',
-    text: "Si tu as 3 pièces identiques, ce bouton les met dans une seule carte « ×3 ». Un clic de plus pour les séparer.",
+    title: 'Regrouper les cartes',
+    text: "Ce bouton change la façon de ranger la colonne, à chaque clic : « Commande » (une carte par commande, avec la liste de ses pièces), « Séparées » (une carte par pièce) ou « Identiques » (les pièces identiques fusionnées en « ×3 »). Tu peux annuler une erreur avec le bouton « Annuler » ou Ctrl+Z.",
   },
   {
     selector: '#fullscreen-btn',

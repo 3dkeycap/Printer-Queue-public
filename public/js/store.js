@@ -31,7 +31,11 @@ export const state = {
   // simple : vue épurée (pas d'UV, de Rush, de provenance, de n° de commande…) — c'est le mode par défaut
   // le kiosque est toujours en simple (et ne touche pas au choix mémorisé du bureau)
   mode: isKiosk || prefs.mode !== 'advanced' ? 'simple' : 'advanced',
-  stacked: new Set(prefs.stacked ?? []), // colonnes où les pièces identiques sont regroupées
+  // regroupement des cartes, par colonne : 'order' (par commande, défaut) | 'none' (une par une) | 'identical' (pièces identiques)
+  stackMode: {
+    ...Object.fromEntries((prefs.stacked ?? []).map((status) => [status, 'identical'])), // ancien réglage : colonnes « regroupées »
+    ...(prefs.stackMode ?? {}),
+  },
   filters: {
     q: '',
     colors: new Set(),
@@ -60,7 +64,7 @@ export const state = {
 
 export const savePrefs = () => {
   const { groupBy, sort, theme } = state;
-  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, mode: isKiosk ? prefs.mode : state.mode, stacked: [...state.stacked] }));
+  localStorage.setItem(PERSIST_KEY, JSON.stringify({ groupBy, sort, theme, mode: isKiosk ? prefs.mode : state.mode, stackMode: state.stackMode }));
 };
 
 
@@ -94,6 +98,10 @@ export const queryParams = () => ({
 });
 
 export const isSimple = () => state.mode === 'simple';
+
+/** Les trois états du bouton « Regrouper », dans l'ordre où un clic les fait défiler. */
+export const STACK_MODES = ['order', 'none', 'identical'];
+export const stackModeOf = (status) => (STACK_MODES.includes(state.stackMode[status]) ? state.stackMode[status] : 'order');
 
 /** Regroupement réellement appliqué : pas de groupe UV en mode simple. */
 export const effectiveGroupBy = () => (isSimple() && state.groupBy === 'uv' ? 'color' : state.groupBy);
