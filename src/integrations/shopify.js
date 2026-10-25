@@ -1,6 +1,7 @@
 import { requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
 import { getSettings } from '../domain/settings.service.js';
+import { boundedMap } from '../lib/boundedCache.js';
 
 const log = createLogger('shopify');
 
@@ -33,7 +34,7 @@ export const normalizeLineItem = (lineItem) => {
  *     premier refus (403), on arrête de l'appeler pour la durée du process.
  * Best-effort : une erreur ne bloque jamais la synchro.
  */
-const productImageCache = new Map();
+const productImageCache = boundedMap();
 let productsApiForbidden = false;
 
 const graphqlUrl = (settings) =>

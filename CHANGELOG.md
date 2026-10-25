@@ -43,6 +43,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Mémoire du serveur** : les caches de photos (Shopify, Etsy) et des essais de récupération d'images
+  grossissaient sans limite tant que l'app tournait ; ils sont plafonnés à 5000 entrées. (Mesuré :
+  ni les routes de l'API ni la synchro simulée ne montrent d'autre fuite ; l'interface reste stable
+  après des centaines de rafraîchissements.)
 - Les **commandes annulées** (Shopify : `cancelled_at`, Etsy : reçu « canceled ») quittent
   « À imprimer » et ses compteurs. Une commande déjà annulée à son arrivée ne crée aucune pièce ;
   une commande annulée après coup (webhook ou synchro, qui vérifie toutes les commandes ouvertes)

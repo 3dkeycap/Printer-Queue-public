@@ -3,6 +3,7 @@ import { ApiError, requestJson } from '../lib/http.js';
 import { createLogger } from '../lib/logger.js';
 import { getSettings, updateSettings } from '../domain/settings.service.js';
 import { detectEtsyShop, ensureFreshEtsyToken, etsyApiKeyHeader } from './etsyOAuth.js';
+import { boundedMap } from '../lib/boundedCache.js';
 
 const log = createLogger('etsy');
 
@@ -37,7 +38,7 @@ export const normalizeTransaction = (transaction) => {
 
 // `${listingId}:${listingImageId}` -> URL de la photo (ou null). En mémoire
 // pour la durée de vie du process, même logique que côté Shopify.
-const listingImageCache = new Map();
+const listingImageCache = boundedMap();
 
 /** Photo d'une annonce Etsy. Best-effort : une erreur ne bloque jamais la synchro. */
 export const fetchListingImage = async (listingId, listingImageId, settings) => {

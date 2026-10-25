@@ -2,11 +2,12 @@ import { getDb, nowIso } from '../db/index.js';
 import { createLogger } from '../lib/logger.js';
 import { fetchLineItemImages, isConfigured } from '../integrations/shopify.js';
 import { getSettings } from './settings.service.js';
+import { boundedMap } from '../lib/boundedCache.js';
 
 const log = createLogger('shopify:images');
 
 // commandes déjà tentées sans résultat : on ne redemande pas à chaque cycle
-const tried = new Map(); // externalId -> timestamp
+const tried = boundedMap(); // externalId -> timestamp
 const RETRY_AFTER_MS = 6 * 60 * 60 * 1000;
 
 /**
