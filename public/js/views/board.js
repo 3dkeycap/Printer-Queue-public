@@ -21,6 +21,12 @@ const stackParts = (parts) => {
   return [...stacks.values()];
 };
 
+/** Variante de la pièce, sans le « Default Title » que Shopify met quand il n'y en a pas. */
+const variantLabel = (part) => {
+  const value = String(part.variant_title ?? '').trim();
+  return value && !/^default title$/i.test(value) ? value : '';
+};
+
 const buildCard = (stack, actions) => {
   const [part] = stack;
   const ids = stack.map((item) => item.id);
@@ -47,6 +53,8 @@ const buildCard = (stack, actions) => {
           ? el('span', { class: 'card-unit card-stack', title: `${count} pièces identiques regroupées` }, `×${count}`)
           : el('span', { class: 'card-unit' }, `#${part.unit_index}`),
       ]),
+      // la variante (taille, finition…) compte pour imprimer : visible aussi en mode simple
+      variantLabel(part) && el('div', { class: 'card-variant', title: variantLabel(part) }, variantLabel(part)),
       el('div', { class: 'card-meta' }, [
         part.status !== 'SHIPPED' &&
           el('span', { class: `tag age age-${age.level}${age.level === 'late' ? '' : ' adv'}`, title: `Commande reçue il y a ${age.days} jour(s)` }, [icon('inbox'), `${age.days} j`]),

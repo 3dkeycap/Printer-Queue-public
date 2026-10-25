@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- La **variante** s'affiche sur les cartes (aussi en mode Simple et au kiosque), sous le nom de la pièce.
 - Extension Chrome 1.4.0 : **mode démo** dans ses réglages — une fausse admin Shopify et un faux
   Chit Chats pour tester le bouton Chit Chats, le bac « J'ai packé » et le lien live sans toucher
   aux vraies boutiques.
