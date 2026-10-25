@@ -17,7 +17,24 @@ const TABS = [
   { key: 'maj', label: 'Mises à jour', icon: 'save', desc: "Installer la dernière version de l'application." },
 ];
 
-let activeTab = 'atelier';
+// l'onglet ouvert survit à un rechargement de la page (F5)
+const TAB_KEY = 'rpq.settingsTab';
+const readTab = () => {
+  try {
+    return sessionStorage.getItem(TAB_KEY) || 'atelier';
+  } catch {
+    return 'atelier';
+  }
+};
+let activeTab = readTab();
+
+// des modifications pas encore enregistrées : le navigateur demande confirmation avant de recharger
+let unsaved = false;
+window.addEventListener('beforeunload', (event) => {
+  if (!unsaved) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
 
 const CRON_PRESETS = [
   ['*/5 * * * *', 'Toutes les 5 minutes'],
@@ -99,6 +116,9 @@ const colorChecklist = (definition, setValue) => {
 
 /** Construit le champ correspondant au type de réglage. */
 const field = (definition, draft, touch, overrides = {}) => {
+  // une modification pas encore enregistrée reste affichée quand la vue se redessine (changement d'onglet…)
+  const drafted = definition.key in draft;
+  if (drafted) definition = { ...definition, value: draft[definition.key] };
   const id = `set-${definition.key}`;
   const set = (value) => {
     draft[definition.key] = value;
@@ -130,7 +150,7 @@ const field = (definition, draft, touch, overrides = {}) => {
     input = el('input', {
       id,
       type: definition.type === 'secret' ? 'password' : definition.type === 'number' ? 'number' : 'text',
-      value: definition.type === 'secret' ? '' : definition.value ?? '',
+      value: definition.type === 'secret' ? (drafted ? definition.value ?? '' : '') : definition.value ?? '',
       autocomplete: 'off',
       placeholder:
         definition.type === 'secret'
@@ -203,13 +223,21 @@ const statusPill = (connector) =>
 /** Barre d'enregistrement collée en bas : visible seulement s'il y a des changements. */
 const makeSaveBar = (draft, actions) => {
   const count = el('span', { class: 'savebar-count' });
+  const clearDraft = () => {
+    for (const key of Object.keys(draft)) delete draft[key];
+  };
   const save = el('button', { class: 'primary-btn', onclick: async (event) => {
     const button = event.currentTarget;
     button.disabled = true;
-    await actions.saveSettings({ ...draft });
+    // le brouillon est vidé avant l'envoi (la vue se redessine) et remis si l'enregistrement échoue
+    const patch = { ...draft };
+    clearDraft();
+    const ok = await actions.saveSettings(patch);
+    if (ok === false) Object.assign(draft, patch);
+    unsaved = Object.keys(draft).length > 0;
     button.disabled = false;
   } }, [icon('save'), 'Enregistrer']);
-  const cancel = el('button', { class: 'ghost-btn', onclick: () => actions.refreshView() }, 'Annuler');
+  const cancel = el('button', { class: 'ghost-btn', onclick: () => { clearDraft(); unsaved = false; actions.refreshView(); } }, 'Annuler');
   const bar = el('div', { class: 'savebar', hidden: true }, [
     el('span', { class: 'dot' }),
     count,
@@ -219,6 +247,7 @@ const makeSaveBar = (draft, actions) => {
   ]);
   const touch = () => {
     const n = Object.keys(draft).length;
+    unsaved = n > 0;
     bar.hidden = n === 0;
     count.textContent = n === 1 ? '1 modification non enregistrée' : `${n} modifications non enregistrées`;
   };
@@ -906,9 +935,13 @@ const runRow = (run) =>
     el('td', { class: 'cell-sub' }, run.message ?? ''),
   ]);
 
+// les modifications pas encore enregistrées survivent au changement d'onglet et aux redessins de la vue
+const sharedDraft = {};
+
 export const renderIntegrations = (root, actions) => {
-  const draft = {};
+  const draft = sharedDraft;
   const { bar, touch } = makeSaveBar(draft, actions);
+  touch();
 
   const tabs = el(
     'nav',
@@ -921,6 +954,11 @@ export const renderIntegrations = (root, actions) => {
           role: 'tab',
           onclick: () => {
             activeTab = tab.key;
+            try {
+              sessionStorage.setItem(TAB_KEY, tab.key);
+            } catch {
+              /* stockage indisponible : sans importance */
+            }
             actions.refreshView();
           },
         },

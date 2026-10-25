@@ -315,8 +315,10 @@ const actions = {
       state.meta = await api.meta();
       toast('Réglages enregistrés');
       render();
+      return true;
     } catch (error) {
       toast(error.message, 'err');
+      return false;
     }
   },
 
@@ -832,6 +834,17 @@ const restoreScroll = (saved) => {
 // plusieurs puces, rafraîchissement automatique) ne doit pas écraser la plus récente
 let refreshSeq = 0;
 
+/*
+ * Le rafraîchissement automatique redessine toute la vue : il ne doit jamais effacer ce que la
+ * personne est en train de faire (texte tapé et pas encore envoyé, fenêtre ouverte, liste ouverte).
+ */
+const isEditing = () => {
+  if (document.querySelector('dialog[open]')) return true;
+  const active = document.activeElement;
+  if (active && dom.view.contains(active) && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return true;
+  return [...dom.view.querySelectorAll('textarea, input:not([type]), input[type=text], input[type=search]')].some((node) => node.value.trim() !== '');
+};
+
 const refresh = async ({ silent = false } = {}) => {
   const seq = ++refreshSeq;
   if (!silent) state.loading = true;
@@ -1031,14 +1044,14 @@ const bindEvents = () => {
   // « ouvert sur Shopify » change vite : on suit plus souvent que le reste
   let presenceKey = '';
   setInterval(async () => {
-    if (document.visibilityState !== 'visible' || state.view === 'integrations') return;
+    if (document.visibilityState !== 'visible' || state.view === 'integrations' || isEditing()) return;
     try {
       const { items } = await api.presence();
       const key = JSON.stringify(items);
       if (key === presenceKey) return;
       presenceKey = key;
       state.presence = items;
-      if (!state.selection.size) render();
+      if (!state.selection.size && !isEditing()) render();
     } catch {
       /* hors ligne : on réessaie au prochain tour */
     }
@@ -1046,7 +1059,7 @@ const bindEvents = () => {
 
   // le worker importe en arrière-plan : on rafraîchit sans déranger l'opérateur
   setInterval(() => {
-    if (document.visibilityState === 'visible' && !state.selection.size && state.view !== 'integrations') {
+    if (document.visibilityState === 'visible' && !state.selection.size && state.view !== 'integrations' && !isEditing()) {
       refresh({ silent: true });
     }
   }, 30000);
