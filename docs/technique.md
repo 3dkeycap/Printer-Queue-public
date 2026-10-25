@@ -456,6 +456,8 @@ déjà `DONE` et signale l'incohérence dans les logs.
 
 ## 6. API REST
 
+L'onglet **Réglages → API** (`public/js/views/api-docs.js`) affiche des recettes curl / PowerShell / n8n construites sur l'adresse de la page. Pas de jeton : seul le mot de passe optionnel (Basic) protège l'API.
+
 | Méthode | Route | Description |
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check (utilisé par Docker) |

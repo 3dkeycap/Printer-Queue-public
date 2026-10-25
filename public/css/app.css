@@ -827,3 +827,15 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .inv-rule { margin: 0; font-size: 13px; color: var(--text-soft); }
 .inv-qr { align-self: center; background: #fff; padding: 6px; border-radius: 8px; border: 1px solid var(--line); }
 .inv-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+/* Onglet Réglages → API */
+.api-formats { display: flex; gap: 6px; flex-wrap: wrap; }
+.api-format { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; }
+.api-format.active { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 25%, transparent); font-weight: 550; }
+.api-recipe { border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 12px; }
+.api-recipe-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.api-recipe-head .ghost-btn { margin-left: auto; }
+.api-method { font: 700 11px var(--mono); padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--text) 8%, transparent); }
+.api-method.m-post { color: var(--warn); }
+.api-method.m-get { color: var(--ok); }
+.api-code { margin: 8px 0 0; padding: 10px; overflow: auto; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--text) 4%, transparent); font: 12px/1.5 var(--mono); white-space: pre; user-select: all; }

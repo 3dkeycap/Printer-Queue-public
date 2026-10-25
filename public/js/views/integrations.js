@@ -1,6 +1,7 @@
 import { el, formatDate, fromNow, icon, swatch, toast } from '../ui.js';
 import { THEMES, state } from '../store.js';
 import { api } from '../api.js';
+import { apiTab } from './api-docs.js';
 
 /* ==========================================================================
    Page « Réglages » : un onglet par thème, un seul bouton Enregistrer.
@@ -12,6 +13,7 @@ const TABS = [
   { key: 'boutiques', label: 'Boutiques', icon: 'plug', desc: 'Connexion à Shopify, Etsy et Chit Chats.' },
   { key: 'synchro', label: 'Synchronisation', icon: 'refresh', desc: 'À quelle fréquence on va chercher les commandes.' },
   { key: 'apparence', label: 'Apparence & aide', icon: 'sun', desc: 'Thème, tutoriel et mode kiosque iPad.' },
+  { key: 'api', label: 'API', icon: 'plug', desc: 'Piloter l’app depuis un script ou n8n (réseau local, sans jeton).' },
   { key: 'maj', label: 'Mises à jour', icon: 'save', desc: "Installer la dernière version de l'application." },
 ];
 
@@ -934,6 +936,7 @@ export const renderIntegrations = (root, actions) => {
     boutiques: () => tabBoutiques(draft, touch, actions),
     synchro: () => tabSynchro(draft, touch, actions),
     apparence: () => tabApparence(actions),
+    api: () => apiTab(section),
     maj: () => tabMaj(draft, touch),
   }[current.key]();
 

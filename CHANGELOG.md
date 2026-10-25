@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Ajouté
+- **Réglages → API** : des exemples prêts à copier (liste des pièces, changement de statut, commandes,
+  chiffres, synchro) en **curl**, **Windows (PowerShell)** et **n8n** (nœud « HTTP Request » à coller dans
+  le canvas). Aucun jeton : l'API est ouverte sur le réseau local (mot de passe de l'app si elle en a un).
 - **Webhook HTTP « nouveau bug »** : à chaque bug signalé avec la coccinelle, l'app appelle en
   **POST** (JSON) l'adresse réglée dans Réglages → Mises à jour (un résumé dans `text` / `content`,
   compatible Slack et Discord, et le détail dans `bug` avec des liens vers le rapport et la capture).
