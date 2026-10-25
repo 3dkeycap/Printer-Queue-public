@@ -167,9 +167,18 @@
     button.title = `Ouvrir ${info.orderNumber ?? 'la commande'} sur Chit Chats (le numéro est copié)`;
     button.style.cssText =
       'all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px 10px 11px;background:#1f5fd6;color:#fff;';
-    button.innerHTML = `<span style="width:8px;height:8px;border-radius:99px;background:${appDot}"></span>`;
-    button.append(`Chit Chats ${info.orderNumber ?? ''}`.trim());
-    button.addEventListener('click', () => openChitChats(info));
+    const isLive = Boolean(mine && link.state === 'live');
+    if (isLive) {
+      // lien actif : plus de bouton « Chit Chats », juste un petit point vert devant le numéro de commande (cliquer coupe le lien)
+      button.title = `Lien Chit Chats actif : ${info.orderNumber ?? 'la commande'} s’affiche dans l’onglet lié (cliquer pour couper)`;
+      button.innerHTML = '<span style="width:9px;height:9px;border-radius:99px;background:#3ccf7a;box-shadow:0 0 0 2px rgba(60,207,122,.35)"></span>';
+      button.append(info.orderNumber ?? '');
+      button.addEventListener('click', () => send({ type: 'link-stop' }));
+    } else {
+      button.innerHTML = `<span style="width:8px;height:8px;border-radius:99px;background:${appDot}"></span>`;
+      button.append(`Chit Chats ${info.orderNumber ?? ''}`.trim());
+      button.addEventListener('click', () => openChitChats(info));
+    }
 
     // glisser verticalement, position mémorisée (en % de la hauteur)
     grip.addEventListener('pointerdown', (event) => {
@@ -202,17 +211,9 @@
       return node;
     };
 
-    if (mine && link.state === 'live') {
-      const live = document.createElement('span');
-      live.textContent = '● Live';
-      live.title = "Chaque commande ouverte ici s'affiche dans l'onglet Chit Chats lié";
-      live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;';
-      // « Stop live » est remplacé par « Bug » (signalement d'un bug dans l'app) ; cliquer « ● Live » coupe le lien
-      live.style.cursor = 'pointer';
-      live.title = "Lien actif : chaque commande ouverte ici s'affiche dans l'onglet Chit Chats lié (cliquer pour couper)";
-      live.addEventListener('click', () => send({ type: 'link-stop' }));
+    if (isLive) {
+      // lien actif : « Bug » ouvre le signalement d'un bug dans l'app (le lien se coupe en cliquant le point vert)
       linkPart.append(
-        live,
         linkButton('🐞 Bug', 'Signaler un bug (ouvre l’app sur la fenêtre de signalement)', '#b43a3a', async () => {
           const result = await send({ type: 'open-bugs' });
           if (result && !result.ok && result.error) alert(result.error);

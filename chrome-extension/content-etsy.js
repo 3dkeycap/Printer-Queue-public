@@ -171,7 +171,16 @@
       parts.push(hint);
     } else {
       const label = `${selected.name ?? ''} #${selected.id}`.trim();
-      parts.push(
+      const live = mine() && linkStatus.link?.state === 'live';
+      if (live) {
+        // lien actif : plus de bouton « Chit Chats », un petit point vert devant le numéro (cliquer coupe le lien)
+        const dot = btn(`● #${selected.id}`, `Lien Chit Chats actif : ${label} (cliquer pour couper)`, '#1f5fd6', () => send({ type: 'link-stop' }), 'padding:10px 12px;');
+        dot.firstChild.textContent = '';
+        const point = document.createElement('span');
+        point.style.cssText = 'width:9px;height:9px;border-radius:99px;background:#3ccf7a;box-shadow:0 0 0 2px rgba(60,207,122,.35)';
+        dot.append(point, `#${selected.id}`);
+        parts.push(dot);
+      } else parts.push(
         btn(`Chit Chats ${selected.name ?? '#' + selected.id}`, `Ouvrir ${label} sur Chit Chats (cherché par le nom de l’acheteur)`, '#1f5fd6', openChitChats, 'padding:10px 14px 10px 11px;'),
       );
       const open = globalThis.ResinQueuePack?.isOpen();
@@ -189,14 +198,8 @@
     const linkPart = document.createElement('span');
     linkPart.style.cssText = 'display:flex;align-items:stretch;border-left:1px solid rgba(255,255,255,.25);';
     if (mine() && link.state === 'live') {
-      const live = document.createElement('span');
-      live.textContent = '● Live';
-      live.title = 'Chaque commande sélectionnée ici s’affiche dans l’onglet Chit Chats lié (cliquer pour couper)';
-      live.style.cssText = 'display:flex;align-items:center;padding:0 10px;background:#167a43;color:#d6ffe6;cursor:pointer;';
-      live.addEventListener('click', () => send({ type: 'link-stop' }));
       // « Stop live » est remplacé par « Bug » (signalement d'un bug dans l'app)
       linkPart.append(
-        live,
         btn('🐞 Bug', 'Signaler un bug (ouvre l’app sur la fenêtre de signalement)', '#b43a3a', async () => {
           const result = await send({ type: 'open-bugs' });
           if (result && !result.ok && result.error) alert(result.error);

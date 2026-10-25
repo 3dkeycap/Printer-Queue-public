@@ -98,6 +98,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- **Extension 1.8.0 : moins de bruit au quotidien.** Les tags de commande sont dans une **liste déroulante** (cases à
+  cocher) et le message « Ajouté dans Shopify aussi » a disparu (seule une panne est signalée). Quand le lien live
+  est actif, le bouton « Chit Chats » et le libellé « ● Live » laissent place à un **petit point vert devant le numéro
+  de commande** (cliquer le coupe), avec « 🐞 Bug » à côté. Dans la fenêtre du bac : plus de titre « 📦 Bac — commande
+  … », plus d'image ni de variante sur les articles.
 - **Étiquettes d'inventaire de 2 po × 1 po** (50,8 × 25,4 mm) au lieu des grandes cartes : nom, « Scanner à N »
   et code QR, en noir et blanc pour une imprimante d'étiquettes. La page d'impression règle le papier
   (`@page` 2 po × 1 po, une étiquette par page) ; le PNG fait 600 × 300 px (300 dpi). Les codes QR ne

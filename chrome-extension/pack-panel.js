@@ -36,7 +36,7 @@
     .note .l { color: #7a6a45; font-size: 11.5px; margin-top: 6px; }
     .bad { background: #fdecec; border-color: #f0b7b7; color: #8f2424; }
     .hist { font-size: 12px; color: #33415c; display: flex; flex-direction: column; gap: 4px; }
-    .item { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #eef1f6; }
+    .item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #eef1f6; }
     .item:first-of-type { border-top: 0; }
     .thumb { width: 44px; height: 44px; border-radius: 8px; background: #eef2f8 center/cover no-repeat; }
     .title { font-weight: 600; overflow-wrap: anywhere; }
@@ -48,7 +48,7 @@
     .qty span { min-width: 46px; text-align: center; font-weight: 700; font-size: 14px; }
     .qty span.full { color: #1c7c45; }
     .qty span.partial { color: #b4532a; }
-    .reason { grid-column: 2 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+    .reason { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
     select, input { font: inherit; padding: 6px 8px; border: 1px solid #ccd5e5; border-radius: 8px; background: #fff; color: #14213d; min-width: 0; }
     .reason select { flex: 1 1 150px; }
     .reason input { flex: 1 1 150px; }
@@ -66,10 +66,15 @@
     .msg.hint, .msg.warn { color: #7a4b00; background: #fff7e6; border: 1px solid #f0d49a; border-radius: 8px; padding: 8px 10px; }
     .msg:empty { display: none; }
     .need { border-color: #e0a030 !important; box-shadow: 0 0 0 3px #ffe9b8; }
-    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tagbtn { padding: 5px 10px; border: 1px solid #ccd5e5; border-radius: 999px; background: #fff; color: #14213d; font: 600 12.5px system-ui, sans-serif; cursor: pointer; }
-    .tagbtn.on { background: #1f5fd6; border-color: #1f5fd6; color: #fff; }
-    .tagbtn[disabled] { opacity: .55; cursor: default; }
+    .dd { position: relative; }
+    .ddbtn { width: 100%; text-align: left; padding: 8px 10px; border: 1px solid #ccd5e5; border-radius: 8px; background: #fff; color: #14213d; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+    .ddmenu { margin-top: 4px; border: 1px solid #ccd5e5; border-radius: 8px; background: #fff; overflow: hidden; }
+    .ddmenu[hidden] { display: none; }
+    .ddopt { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px 10px; border: 0; background: #fff; color: #14213d; font: 13px system-ui, sans-serif; cursor: pointer; text-align: left; }
+    .ddopt:hover { background: #f3f6fb; }
+    .ddopt::before { content: ''; width: 14px; height: 14px; border: 1.5px solid #9aa8c4; border-radius: 4px; flex: none; }
+    .ddopt.on::before { background: #1f5fd6; border-color: #1f5fd6; box-shadow: inset 0 0 0 2px #fff; }
+    .ddopt[disabled] { opacity: .55; cursor: default; }
     .empty { color: #5b6a86; padding: 20px 0; text-align: center; }
   `;
 
@@ -141,29 +146,42 @@
       .map(([status, count]) => `${count} ${STATUS_LABEL[status] ?? status}`)
       .join(', ');
 
-  /** Tags de la commande : un bouton par tag, coché = ajouté (aux tags Shopify aussi). */
+  /** Tags de la commande : une liste déroulante, un clic coche / décoche (aussi dans les tags Shopify). */
   const tagsBox = (orderExternalId, view) => {
     const active = new Set(view.orderTags ?? []);
     const note = h('div', { class: 'meta' }, '');
-    const row = h('div', { class: 'tags' });
-    const box = h('div', { class: 'box' }, [h('h3', {}, 'Tags de la commande'), row, note]);
+    const toggle = h('button', { class: 'ddbtn', type: 'button' });
+    const menu = h('div', { class: 'ddmenu', hidden: true });
+    const paintLabel = () => {
+      toggle.textContent = `${active.size ? [...active].join(', ') : 'Tags'} ▾`;
+    };
     for (const tag of view.tagChoices) {
-      const button = h('button', { class: `tagbtn${active.has(tag) ? ' on' : ''}`, type: 'button' }, tag);
-      button.addEventListener('click', async () => {
-        const on = !button.classList.contains('on');
-        button.disabled = true;
+      const option = h('button', { class: 'ddopt', type: 'button' }, tag);
+      const mark = () => option.classList.toggle('on', active.has(tag));
+      mark();
+      option.addEventListener('click', async () => {
+        const on = !active.has(tag);
+        option.disabled = true;
         const result = await send({ type: 'order-tag', orderExternalId, tag, on });
-        button.disabled = false;
+        option.disabled = false;
         if (result?.error) {
           note.textContent = `Tag non enregistré : ${result.error}`;
           return;
         }
-        button.classList.toggle('on', on);
-        note.textContent = result.shopifyTags?.error ? `Enregistré ici, mais pas dans Shopify : ${result.shopifyTags.error}` : result.shopifyTags?.ok ? 'Ajouté dans Shopify aussi.' : '';
+        if (on) active.add(tag);
+        else active.delete(tag);
+        mark();
+        paintLabel();
+        // seule une vraie panne est signalée (pas de confirmation à chaque clic)
+        note.textContent = result.shopifyTags?.error ? `Enregistré ici, mais pas dans Shopify : ${result.shopifyTags.error}` : '';
       });
-      row.append(button);
+      menu.append(option);
     }
-    return box;
+    toggle.addEventListener('click', () => {
+      menu.hidden = !menu.hidden;
+    });
+    paintLabel();
+    return h('div', { class: 'dd' }, [toggle, menu, note]);
   };
 
   const render = async (orderExternalId, view, flash) => {
@@ -259,11 +277,9 @@
       paint();
       return [
         h('div', { class: 'item' }, [
-          h('div', { class: 'thumb', style: item.image ? `background-image:url("${item.image.replace(/"/g, '%22')}")` : '' }),
           h('div', {}, [
             h('div', { class: 'title' }, item.title),
             h('div', { class: 'meta' }, [
-              item.variant ? h('span', { class: 'tag' }, item.variant) : null,
               item.notPrinted ? h('span', { class: 'tag stock' }, 'en stock') : null,
               statusText(item),
             ]),
@@ -357,10 +373,7 @@
     const noteInput = h('textarea', { placeholder: 'Ex. bac 4, la keycap rouge est dans le sac à part…' });
     noteInput.value = order.packNote ?? '';
     panel.append(
-      h('header', {}, [
-        h('div', {}, [h('h2', {}, `📦 Bac — commande ${order.number ?? ''}`)]),
-        h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×'),
-      ]),
+      h('header', {}, [h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×')]),
       h('div', { class: 'body' }, [
         order.cancelledAt ? h('div', { class: 'box note' }, `À savoir : cette commande a été annulée (${fmt(order.cancelledAt)}) : ne la packe pas.`) : null,
         order.shippedAt ? h('div', { class: 'box note' }, `À savoir : cette commande est déjà marquée expédiée (${fmt(order.shippedAt)}).`) : null,
