@@ -255,6 +255,16 @@ const NEW_CSS = `
   .snap input { display: none; }
   .send { width: 100%; margin-top: 22px; padding: 15px; border: 0; border-radius: 14px; background: #1f5fd6; color: #fff; font: 700 18px system-ui; cursor: pointer; }
   .send[disabled] { opacity: .6; }
+  select { width: 100%; padding: 13px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; background: #fff; }
+  .qbox { margin-top: 18px; border-top: 1px solid #e3e8f1; padding-top: 12px; }
+  .qbox summary { font-weight: 700; cursor: pointer; }
+  .q { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; padding: 12px; border: 1px solid #d5dbe8; border-radius: 12px; }
+  .qchoice { display: flex; flex-direction: column; gap: 8px; }
+  .qchoice[hidden], .qchoice input[hidden] { display: none; }
+  .chk { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; }
+  .chk input { width: 20px; height: 20px; }
+  .qadd, .qdel { padding: 12px; border: 0; border-radius: 12px; background: #e8ecf4; color: #1c2230; font: 700 15px system-ui; cursor: pointer; }
+  .qdel { background: transparent; color: #a02828; font-weight: 600; padding: 4px; }
   .err { color: #a02828; font-size: 15px; min-height: 1.2em; margin: 12px 0 0; }
   .done { text-align: center; }
   .done .big { font-size: 56px; }
