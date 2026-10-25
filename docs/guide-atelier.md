@@ -80,7 +80,7 @@ Onglet **Inventaire** (mode Avancé). Pour chaque chose qu'on rachète (gants, a
 4. Celui qui commande voit la liste **À racheter** dans l'onglet ; une fois commandé, il clique
    **Commandé** (l'objet repasse à OK).
 
-Le code QR ouvre `http://3dkeycap.local/…` (le nom d'hôte se change dans Réglages → Atelier →
+Le code QR ouvre `http://192.168.1.223:8080/…` (l'adresse se change dans Réglages → Atelier →
 Inventaire) : pas besoin de se connecter. Si quelqu'un scanne deux
 fois, rien n'est doublé (c'est juste noté).
 

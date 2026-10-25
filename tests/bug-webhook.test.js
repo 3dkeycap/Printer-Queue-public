@@ -66,7 +66,7 @@ describe('Webhook HTTP « nouveau bug »', () => {
     assert.equal(call.body.bug.id, bug.id);
     assert.equal(call.body.bug.reporter, 'Marin');
     assert.equal(call.body.bug.version, 'dev'); // la version du serveur (config.buildId) prime sur celle du navigateur
-    assert.equal(call.body.bug.links.report_markdown, `http://3dkeycap.local/api/bugs/${bug.id}/claude.md`);
+    assert.equal(call.body.bug.links.report_markdown, `http://192.168.1.223:8080/api/bugs/${bug.id}/claude.md`);
     assert.equal(call.body.bug.links.screenshot, null);
     assert.ok(await waitFor(() => lastBugWebhook()?.ok === true));
     assert.equal(lastBugWebhook().bugId, bug.id);
@@ -75,7 +75,7 @@ describe('Webhook HTTP « nouveau bug »', () => {
   it('la capture d\'écran n\'est jamais dans le corps : seulement un lien', () => {
     const payload = bugWebhookPayload({ id: 5, description: 'x', screenshot: 'data:image/png;base64,AAAA', created_at: 'now' });
     assert.equal(payload.bug.has_screenshot, true);
-    assert.equal(payload.bug.links.screenshot, 'http://3dkeycap.local/api/bugs/5/screenshot');
+    assert.equal(payload.bug.links.screenshot, 'http://192.168.1.223:8080/api/bugs/5/screenshot');
     assert.ok(!JSON.stringify(payload).includes('AAAA'));
   });
 

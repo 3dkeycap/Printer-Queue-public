@@ -45,6 +45,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
 
 ### Modifié
+- L'adresse de l'app dans les codes QR d'inventaire (et dans les liens du webhook de bugs) est par
+  défaut **`http://192.168.1.223:8080`** (l'adresse IP de l'app), à la place de `3dkeycap.local`.
+  Les cartes déjà imprimées avec l'ancien nom ne marchent plus : les réimprimer (ou remettre
+  l'ancien nom dans Réglages → Atelier → Inventaire).
 - L'application s'appelle maintenant **3D Keycap Lab** (menu, titre de l'onglet, kiosque installé,
   signalements de bug) et sa page principale **Resin Queue** (ex. « À imprimer »). Les trois
   colonnes gardent leurs noms « À imprimer », « En impression », « Imprimé » (ce sont des statuts).

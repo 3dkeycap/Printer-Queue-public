@@ -133,9 +133,9 @@ export const DEFINITIONS = [
     group: 'inventory',
     label: "Nom d'hôte de l'app (codes QR)",
     type: 'text',
-    placeholder: '3dkeycap.local',
-    hint: "Le nom que les téléphones de l'atelier tapent pour ouvrir l'app (ex. 3dkeycap.local, ou 192.168.1.50:8080). Il est écrit dans les codes QR : le changer rend inutilisables les cartes déjà imprimées.",
-    fallback: () => '3dkeycap.local',
+    placeholder: '192.168.1.223:8080',
+    hint: "L'adresse que les téléphones de l'atelier tapent pour ouvrir l'app (ex. 192.168.1.223:8080, ou un nom comme 3dkeycap.local). Il est écrit dans les codes QR : le changer rend inutilisables les cartes déjà imprimées.",
+    fallback: () => '192.168.1.223:8080',
   },
 
   // --- Production ---------------------------------------------------------

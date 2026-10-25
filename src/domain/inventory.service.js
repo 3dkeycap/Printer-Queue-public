@@ -10,11 +10,11 @@ import { getSettings } from './settings.service.js';
  * « à racheter » ; une fois commandé, on le remet à « ok ».
  */
 
-export const DEFAULT_HOST = 'http://3dkeycap.local';
+export const DEFAULT_HOST = 'http://192.168.1.223:8080';
 
 /**
  * Nom d'hôte saisi dans les réglages -> adresse de base des codes QR.
- * « 3dkeycap.local », « 3dkeycap.local:8080 » ou « http://192.168.1.50:8080/ » sont acceptés :
+ * « 192.168.1.223:8080 », « 3dkeycap.local » ou « http://192.168.1.223:8080/ » sont acceptés :
  * sans schéma on met http:// (l'atelier est en HTTP sur le réseau local).
  */
 export const normalizeBaseUrl = (value) => {

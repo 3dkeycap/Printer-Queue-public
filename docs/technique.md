@@ -511,7 +511,7 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 
 Tables `inventory_items` (nom, seuil `reorder_at`, `token` secret, `status` ok/reorder, `flagged_at`,
 `scan_count`, `ordered_at`) et `inventory_events`. Le code QR encode
-`<inventory.scanUrl>/r/<token>` (défaut `http://3dkeycap.local`), généré en SVG côté serveur
+`<inventory.scanUrl>/r/<token>` (défaut `http://192.168.1.223:8080`), généré en SVG côté serveur
 (`src/lib/qr.js`, dépendance `qrcode-generator`). `/r/…` est exempté du mot de passe du dashboard
 (le jeton est le secret) ; ouvrir l'adresse ne modifie rien (les aperçus de lien et antivirus la
 visitent), seul le `POST` du script `public/js/scan.js` signale. Un 2e scan d'un objet déjà « à
