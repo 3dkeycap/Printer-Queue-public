@@ -122,12 +122,12 @@ Quand tu enregistres le bac, la commande Shopify reçoit « Packé par <ton nom>
 bac, « Pre packed ». Première fois seulement : Réglages → Boutiques → reconnecter Shopify (autorisation
 d'écriture).
 
-## Inventaire : ajouter depuis le téléphone
+## Inventaire : tout faire depuis le téléphone
 
 Sur la page Inventaire, scanne le code « Ajouter depuis le téléphone » : un formulaire simple s'ouvre
 (photo avec l'appareil, nom, minimum, quantité à commander, fournisseur, et les questions posées au scan :
 couleurs de résine, liste de choix, nombre ou texte). Pratique pour faire le tour de
-l'atelier et tout ajouter en marchant ; le téléphone doit être sur le réseau de l'atelier. Un bouton imprime ce code
+l'atelier et tout ajouter en marchant ; le téléphone doit être sur le réseau de l'atelier. L'onglet « Objets » liste tout l'inventaire : on ouvre un objet pour le modifier, le signaler « à racheter » (avec les questions), le marquer « commandé », le supprimer ou récupérer son étiquette en image. Un bouton imprime ce code
 (« Étiquette 2×1 po » ou « Grande étiquette ») pour le coller dans l'atelier.
 
 ## Inventaire : deux styles d'étiquette

@@ -244,21 +244,33 @@ inventoryPagesRouter.get('/add-card', (req, res) => {
 
 const NEW_CSS = `
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100dvh; padding: 16px; font: 17px system-ui, -apple-system, sans-serif; color: #1c2230; background: #eef0f4; }
-  main { width: min(480px, 100%); margin: 0 auto; background: #fff; border-radius: 18px; padding: 22px 18px 26px; box-shadow: 0 18px 50px -24px rgba(20,30,60,.4); }
-  h1 { margin: 0 0 4px; font-size: 22px; }
-  .sub { margin: 0 0 16px; color: #5a6479; font-size: 15px; }
-  label { display: block; margin: 14px 0 6px; font-weight: 700; font-size: 15px; }
+  body { margin: 0; min-height: 100dvh; padding: 12px; font: 17px system-ui, -apple-system, sans-serif; color: #1c2230; background: #eef0f4; }
+  main { width: min(480px, 100%); margin: 0 auto; background: #fff; border-radius: 18px; padding: 14px 16px 26px; box-shadow: 0 18px 50px -24px rgba(20,30,60,.4); }
+  h1 { margin: 6px 0 4px; font-size: 22px; overflow-wrap: anywhere; }
+  h2 { font-size: 18px; margin: 8px 0; }
+  .sub { margin: 0 0 14px; color: #5a6479; font-size: 15px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .tabs button { flex: 1; padding: 12px; border: 2px solid #d5dbe8; border-radius: 12px; background: #fff; font: 700 16px system-ui; color: #1c2230; cursor: pointer; }
+  .tabs button.on { background: #1f5fd6; border-color: #1f5fd6; color: #fff; }
+  .f { margin-top: 12px; }
+  label { display: block; margin: 0 0 6px; font-weight: 700; font-size: 15px; }
   .opt { font-weight: 400; color: #7b859a; }
-  input[type=text], input[type=number] { width: 100%; padding: 13px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; background: #fff; }
+  input[type=text], input[type=number], select { width: 100%; padding: 13px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; background: #fff; }
   .photo { display: flex; gap: 12px; align-items: center; }
   .photo img { width: 84px; height: 84px; object-fit: cover; border-radius: 12px; border: 1px solid #d5dbe8; }
   .photo img[hidden] { display: none; }
   .snap { display: inline-block; padding: 13px 16px; border-radius: 12px; background: #e8ecf4; font-weight: 700; cursor: pointer; }
   .snap input { display: none; }
-  .send { width: 100%; margin-top: 22px; padding: 15px; border: 0; border-radius: 14px; background: #1f5fd6; color: #fff; font: 700 18px system-ui; cursor: pointer; }
-  .send[disabled] { opacity: .6; }
-  select { width: 100%; padding: 13px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; background: #fff; }
+  .send, .big { display: block; width: 100%; margin-top: 12px; padding: 15px; border: 0; border-radius: 14px; background: #1f5fd6; color: #fff; font: 700 17px system-ui; text-align: center; text-decoration: none; cursor: pointer; }
+  .send { margin-top: 22px; font-size: 18px; }
+  .big.soft { background: #e8ecf4; color: #1c2230; }
+  .big.warn { background: #d97706; }
+  .send[disabled], .big[disabled] { opacity: .6; }
+  .link { display: block; margin: 14px auto 0; padding: 8px; border: 0; background: none; color: #1f5fd6; font: 600 15px system-ui; cursor: pointer; }
+  .link.danger { color: #a02828; }
+  .err { color: #a02828; font-size: 15px; min-height: 1.2em; margin: 12px 0 0; }
+  .ok { color: #16663a; font-size: 15px; font-weight: 600; margin: 8px 0 0; min-height: 1em; }
+  .hero { width: 100%; max-height: 240px; object-fit: cover; border-radius: 14px; margin-bottom: 8px; }
   .qbox { margin-top: 18px; border-top: 1px solid #e3e8f1; padding-top: 12px; }
   .qbox summary { font-weight: 700; cursor: pointer; }
   .q { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; padding: 12px; border: 1px solid #d5dbe8; border-radius: 12px; }
@@ -268,19 +280,38 @@ const NEW_CSS = `
   .chk input { width: 20px; height: 20px; }
   .qadd, .qdel { padding: 12px; border: 0; border-radius: 12px; background: #e8ecf4; color: #1c2230; font: 700 15px system-ui; cursor: pointer; }
   .qdel { background: transparent; color: #a02828; font-weight: 600; padding: 4px; }
-  .err { color: #a02828; font-size: 15px; min-height: 1.2em; margin: 12px 0 0; }
+  .items { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; padding: 12px 14px; border: 2px solid #d5dbe8; border-radius: 14px; background: #fff; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .item.reorder { border-color: #d97706; background: #fff8ec; }
+  .item strong { font-size: 18px; overflow-wrap: anywhere; }
+  .pill { padding: 2px 10px; border-radius: 999px; background: #e3f6ea; color: #16663a; font-size: 13px; font-weight: 700; }
+  .reorder .pill { background: #ffe9c4; color: #8a4b0c; }
+  .answers { margin: 4px 0 8px; }
+  .answer { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; margin-top: 6px; }
+  .ans { display: inline-flex; flex-direction: column; padding: 4px 12px 6px; border-radius: 10px; background: #fff0d4; border: 1px solid #e8b25a; line-height: 1.15; }
+  .ans small { font-size: 11px; color: #7b6a45; }
+  .ans strong { font-size: 18px; font-weight: 800; }
+  .when { color: #7b859a; font-size: 12px; }
+  fieldset { border: 0; margin: 0 0 14px; padding: 0; }
+  legend { display: block; margin-bottom: 8px; font-weight: 700; font-size: 16px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opts .opt { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 2px solid #d5dbe8; border-radius: 12px; background: #fff; font-size: 16px; color: #1c2230; font-weight: 400; cursor: pointer; }
+  .opts .opt:has(input:checked) { border-color: #1f5fd6; background: #eaf1ff; }
+  .opts .opt input { width: 18px; height: 18px; }
   .done { text-align: center; }
-  .done .big { font-size: 56px; }
-  .done a, .done button { display: block; width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: 12px; background: #e8ecf4; color: #1c2230; font: 700 16px system-ui; text-decoration: none; cursor: pointer; }
+  .bigicon { font-size: 56px; }
 `;
 
-inventoryPagesRouter.get('/new', (req, res) => {
-  const suppliers = [...new Set(listItems().map((item) => item.supplier).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+const mobilePage = (start) => (req, res) => {
   res.type('html').send(`<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Ajouter à l’inventaire</title><style>${NEW_CSS}</style></head>
-<body data-suppliers="${esc(JSON.stringify(suppliers))}"><main id="box"></main><script type="module" src="/js/inventory-new.js"></script></body></html>`);
-});
+<meta name="robots" content="noindex"><title>Inventaire</title><style>${NEW_CSS}</style></head>
+<body data-start="${start}"><main id="box"></main><script type="module" src="/js/inventory-mobile.js"></script></body></html>`);
+};
+
+/** Inventaire sur le téléphone : /inventory/new (ouvre le formulaire d'ajout) et /inventory/mobile (la liste). */
+inventoryPagesRouter.get('/new', mobilePage('add'));
+inventoryPagesRouter.get('/mobile', mobilePage('list'));
 
 /* ---------------------------------------------- scan d'un code QR (public, téléphone) */
 

@@ -287,11 +287,11 @@ describe('Inventaire : cartes et codes QR « à racheter »', () => {
     });
   });
 
-  it('page « ajouter depuis le téléphone » : formulaire, fournisseurs connus, code QR, mot de passe demandé', async () => {
+  it('page du téléphone : ajout, liste, code QR, mot de passe demandé', async () => {
     inventory.createItem({ name: 'Pour fournisseur', reorder_at: 1, supplier: 'Fournisseur Test' });
     const html = await (await call('/inventory/new')).text();
-    assert.ok(html.includes('/js/inventory-new.js'));
-    assert.ok(html.includes('Fournisseur Test'), 'les fournisseurs déjà saisis sont proposés');
+    assert.ok(html.includes('/js/inventory-mobile.js') && html.includes('data-start="add"'));
+    assert.ok((await (await call('/inventory/mobile')).text()).includes('data-start="list"'), 'la liste des objets est sur /inventory/mobile');
     assert.ok(!/<script(?![^>]*\ssrc=)/.test(html), 'pas de script en ligne (CSP)');
     const qr = await call('/api/inventory/phone-qr.svg');
     assert.equal(qr.headers.get('content-type').split(';')[0], 'image/svg+xml');
