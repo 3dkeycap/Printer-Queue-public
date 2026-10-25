@@ -119,12 +119,17 @@ export const fetchFulfilledOrders = async (ids, settings = getSettings()) => {
     url.searchParams.set('ids', list.slice(i, i + 250).join(','));
     url.searchParams.set('status', 'any');
     url.searchParams.set('limit', '250');
-    url.searchParams.set('fields', 'id,fulfillment_status,fulfillments');
+    url.searchParams.set('fields', 'id,fulfillment_status,fulfillments,cancelled_at');
     const payload = await requestJson(url.toString(), {
       headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'] },
       retries: 1,
     });
     for (const order of payload?.orders ?? []) {
+      // annulée dans Shopify : elle doit quitter la file (même si elle n'a jamais été « traitée »)
+      if (order.cancelled_at) {
+        fulfilled.push({ id: String(order.id), cancelled: true, cancelledAt: order.cancelled_at });
+        continue;
+      }
       if (order.fulfillment_status !== 'fulfilled') continue;
       const last = (order.fulfillments ?? []).at(-1) ?? {};
       fulfilled.push({ id: String(order.id), trackingNumber: last.tracking_number ?? null, carrier: last.tracking_company ?? null });
@@ -149,6 +154,7 @@ export const normalizeOrder = (order) => ({
   currency: order.currency ?? 'CAD',
   isPriority: (order.tags ?? '').toLowerCase().includes('rush'),
   note: order.note ?? null,
+  cancelledAt: order.cancelled_at ?? null,
   items: (order.line_items ?? [])
     .filter((item) => item.requires_shipping !== false)
     .map(normalizeLineItem),

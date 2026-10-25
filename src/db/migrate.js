@@ -173,6 +173,9 @@ export const migrate = () => {
   // bases créées avant l'ajout des colonnes UV / commentaire
   addColumnIfMissing(db, 'parts', 'uv', 'TEXT');
   addColumnIfMissing(db, 'parts', 'comment', 'TEXT');
+  // commandes annulées (Shopify / Etsy) : retirées de « À imprimer » mais gardées dans « Tout »
+  addColumnIfMissing(db, 'orders', 'cancelled_at', 'TEXT');
+  addColumnIfMissing(db, 'parts', 'cancelled', 'INTEGER NOT NULL DEFAULT 0');
   addColumnIfMissing(db, 'order_items', 'image_url', 'TEXT');
   // import automatique des commandes dans Chit Chats : résultat et raison d'un échec
   addColumnIfMissing(db, 'orders', 'chitchats_import_status', 'TEXT');

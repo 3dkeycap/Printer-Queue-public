@@ -120,6 +120,13 @@ export const openDrawer = async (partId, actions) => {
           ])
         : null,
 
+      part.cancelled
+        ? el('div', { class: 'buyer-box pack-note-box' }, [
+            el('div', { class: 'buyer-title' }, [icon('alert'), 'Commande annulée']),
+            el('div', { class: 'buyer-line' }, el('div', {}, "Annulée dans la boutique : cette pièce n'est plus dans « À imprimer » (elle reste ici pour l'historique).")),
+          ])
+        : null,
+
       part.buyer_details?.length
         ? el('div', { class: 'buyer-box' }, [
             el('div', { class: 'buyer-title' }, [icon('note'), 'Note / personnalisation du client']),

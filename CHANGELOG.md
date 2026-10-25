@@ -19,6 +19,14 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - `CLAUDE.md` (règles du projet), `docs/guide-atelier.md`, `docs/technique.md`.
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
+### Corrigé
+- Les **commandes annulées** (Shopify : `cancelled_at`, Etsy : reçu « canceled ») quittent
+  « À imprimer » et ses compteurs. Une commande déjà annulée à son arrivée ne crée aucune pièce ;
+  une commande annulée après coup (webhook ou synchro, qui vérifie toutes les commandes ouvertes)
+  voit ses pièces retirées de la file, mais gardées dans « Tout » avec l'étiquette « Annulée »
+  (les pièces déjà expédiées ne bougent pas). Elle n'est plus importée dans Chit Chats ni marquée
+  expédiée. Extension 1.4.2 : la boîte « J'ai packé » prévient « cette commande a été annulée ».
+
 ### Modifié
 - Extension Chrome 1.4.1, boîte « J'ai packé » : plus de **rouge** pour ce qui n'est qu'une étape à
   compléter (nom pas choisi, raison d'une pièce manquante, bac commencé) — rappel aimable en ambre,

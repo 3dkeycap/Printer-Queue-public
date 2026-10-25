@@ -330,6 +330,7 @@
         h('button', { class: 'x', onclick: userClose, title: 'Fermer' }, '×'),
       ]),
       h('div', { class: 'body' }, [
+        order.cancelledAt ? h('div', { class: 'box note' }, `À savoir : cette commande a été annulée (${fmt(order.cancelledAt)}) : ne la packe pas.`) : null,
         order.shippedAt ? h('div', { class: 'box note' }, `À savoir : cette commande est déjà marquée expédiée (${fmt(order.shippedAt)}).`) : null,
         h('div', { class: 'box' }, [
           h('h3', {}, 'Mis dans le bac'),

@@ -234,7 +234,7 @@ export const linkExistingShipments = async (client, { pages = 5 } = {}) => {
   const open = db
     .prepare(
       `SELECT id, order_number, external_id FROM orders
-        WHERE source IN ('shopify', 'etsy') AND chitchats_shipment_id IS NULL`,
+        WHERE source IN ('shopify', 'etsy') AND chitchats_shipment_id IS NULL AND cancelled_at IS NULL`,
     )
     .all();
   if (!open.length) return 0;
@@ -337,6 +337,7 @@ const pendingOrders = (settings, onlyOrderId) => {
       `SELECT * FROM orders
         WHERE source IN ('shopify', 'etsy')
           AND shipped_at IS NULL
+          AND cancelled_at IS NULL
           AND chitchats_shipment_id IS NULL
           AND COALESCE(placed_at, created_at) >= ?
           AND EXISTS (SELECT 1 FROM parts p WHERE p.order_id = orders.id AND p.status <> 'SHIPPED')

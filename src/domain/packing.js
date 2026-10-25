@@ -73,6 +73,7 @@ export const getPackingView = (where) => {
       customer: order.customer_name,
       placedAt: order.placed_at,
       shippedAt: order.shipped_at,
+      cancelledAt: order.cancelled_at ?? null,
       chitchats: order.chitchats_shipment_id ? 'true' : order.chitchats_import_status === 'error' ? 'failed' : 'false',
       chitchatsError: order.chitchats_import_error,
       packNote: order.pack_note ?? '',

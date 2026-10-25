@@ -72,6 +72,9 @@ export const attachListingImages = async (orders, settings) => {
   return orders;
 };
 
+/** Reçu Etsy annulé (statut « canceled ») ? */
+export const isCancelledReceipt = (receipt) => /^cancel/i.test(String(receipt?.status ?? ''));
+
 /** Etsy receipt -> normalised order. */
 export const normalizeReceipt = (receipt) => ({
   source: 'etsy',
@@ -87,6 +90,9 @@ export const normalizeReceipt = (receipt) => ({
   currency: receipt.grandtotal?.currency_code ?? 'CAD',
   isPriority: false,
   note: receipt.message_from_buyer ?? null,
+  cancelledAt: isCancelledReceipt(receipt)
+    ? new Date(Number(receipt.updated_timestamp ?? 0) * 1000 || Date.now()).toISOString()
+    : null,
   items: (receipt.transactions ?? []).map(normalizeTransaction),
   raw: receipt,
 });
@@ -200,4 +206,33 @@ export const fetchShippedReceipts = async ({ since } = {}) => {
     if (receipts.length < 100) break;
   }
   return shipped;
+};
+
+/**
+ * Reçus Etsy annulés depuis `since` (une commande annulée n'est plus « expédiée »
+ * ni « à expédier » : on lit donc tous les reçus récents et on garde les annulés).
+ * Renvoie [{ id, cancelled: true }].
+ */
+export const fetchCancelledReceipts = async ({ since } = {}) => {
+  const settings = getSettings();
+  if (!settings['etsy.enabled'] || !isConfigured(settings) || !hasSharedSecret(settings)) return [];
+  await ensureFreshEtsyToken();
+  const fresh = getSettings();
+  const cancelled = [];
+  for (let offset = 0; offset < 500; offset += 100) {
+    const url = new URL(`${config.etsy.apiBase}/shops/${fresh['etsy.shopId']}/receipts`);
+    url.searchParams.set('limit', '100');
+    url.searchParams.set('offset', String(offset));
+    if (since) url.searchParams.set('min_created', String(Math.floor(new Date(since).getTime() / 1000)));
+    const payload = await requestJson(url.toString(), {
+      headers: { 'x-api-key': etsyApiKeyHeader(fresh), Authorization: `Bearer ${fresh['etsy.accessToken']}` },
+      retries: 1,
+    });
+    const receipts = payload?.results ?? [];
+    for (const receipt of receipts) {
+      if (isCancelledReceipt(receipt)) cancelled.push({ id: String(receipt.receipt_id), cancelled: true });
+    }
+    if (receipts.length < 100) break;
+  }
+  return cancelled;
 };

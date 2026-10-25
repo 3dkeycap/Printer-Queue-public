@@ -329,6 +329,7 @@ select.select:focus { outline: none; border-color: var(--accent-soft); }
 .tag.src-shopify { color: #8fbf8a; } .tag.src-etsy { color: #e0975c; } .tag.src-manual { color: var(--muted); }
 :is([data-theme="light"], [data-theme="blue"], [data-theme="lavender"]) .tag.src-shopify { color: #3f6b3a; }
 :is([data-theme="light"], [data-theme="blue"], [data-theme="lavender"]) .tag.src-etsy { color: #9a5a1c; }
+.tag.cancelled { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
 .tag.rush { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
 .card-foot { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
 .card-foot .who { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -51,8 +51,9 @@ const buildFilters = (query = {}) => {
 
   // couleurs que l'atelier n'imprime pas : absentes du tableau « À imprimer »
   if (query.scope === 'board') {
-    // pas imprimé ici (article en stock, supplément) : seulement dans « Tout »
+    // pas imprimé ici (article en stock, supplément) ou commande annulée : seulement dans « Tout »
     where.push('p.not_printed = 0');
+    where.push('p.cancelled = 0');
     const hidden = hiddenColorKeys();
     if (hidden.length) {
       where.push(`p.color_key NOT IN (${hidden.map((_, i) => `@hidden${i}`).join(', ')})`);
@@ -140,7 +141,7 @@ export const listParts = (query = {}) => {
   const rows = db
     .prepare(
       `SELECT p.id, p.order_id, p.order_item_id, p.unit_index, p.name, p.sku, p.variant_title,
-              p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count, p.not_printed,
+              p.color_key, p.status, p.priority, p.printer, p.uv, p.comment, p.notes, p.fail_count, p.not_printed, p.cancelled,
               p.packed_at, p.packed_by,
               p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
@@ -230,6 +231,7 @@ export const getFacets = (query = {}) => {
 const hydrate = (row) => ({
   ...row,
   not_printed: Boolean(row.not_printed),
+  cancelled: Boolean(row.cancelled),
   priority: Boolean(row.priority),
   order_priority: Boolean(row.order_priority),
 });

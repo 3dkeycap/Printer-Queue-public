@@ -1,5 +1,6 @@
 import { getDb, nowIso } from '../db/index.js';
 import { createLogger } from '../lib/logger.js';
+import { cancelOrder } from './cancellation.js';
 import { applyColorRules, listColors, parseColorRules, resolveItemColorKey } from './colors.js';
 import { matchesAnyKeyword, purgeNonPrintableParts } from './addons.js';
 import { getSettings } from './settings.service.js';
@@ -100,10 +101,10 @@ export const ingestOrder = (order) => {
         .prepare(
           `INSERT INTO orders (source, external_id, order_number, customer_name, customer_email,
                                shipping_country, placed_at, total_price, currency, is_priority,
-                               note, raw_payload, created_at, updated_at)
+                               note, raw_payload, cancelled_at, created_at, updated_at)
            VALUES (@source, @externalId, @orderNumber, @customerName, @customerEmail,
                    @shippingCountry, @placedAt, @totalPrice, @currency, @isPriority,
-                   @note, @raw, @ts, @ts)`,
+                   @note, @raw, @cancelledAt, @ts, @ts)`,
         )
         .run({
           source: order.source,
@@ -118,10 +119,18 @@ export const ingestOrder = (order) => {
           isPriority: order.isPriority ? 1 : 0,
           note: order.note ?? null,
           raw: order.raw ? JSON.stringify(order.raw) : null,
+          cancelledAt: order.cancelledAt ?? null,
           ts,
         });
       orderId = Number(info.lastInsertRowid);
       orderCreated = true;
+    }
+
+    // Commande annulée : aucune pièce à créer (et celles qui existent sortent de la file).
+    // On n'annule jamais « à l'envers » : une commande déjà marquée annulée le reste.
+    if (order.cancelledAt || existing?.cancelled_at) {
+      if (existing) cancelOrder(orderId, { at: order.cancelledAt ?? existing.cancelled_at, db });
+      return { orderId, orderCreated, partsCreated: 0, partsUpdated: 0, cancelled: true };
     }
 
     let partsCreated = 0;

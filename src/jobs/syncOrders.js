@@ -34,6 +34,7 @@ export const syncMessage = (source, summary = {}, fulfillment = {}, images = {})
     plural(summary.partsCreated ?? 0, 'pièce créée', 'pièces créées'),
   ];
   if (fulfillment.shipped) parts.push(`${plural(fulfillment.shipped, 'traitée', 'traitées')} dans ${shop} → expédiée${fulfillment.shipped > 1 ? 's' : ''}`);
+  if (fulfillment.cancelled) parts.push(`${plural(fulfillment.cancelled, 'annulée', 'annulées')} dans ${shop} → retirée${fulfillment.cancelled > 1 ? 's' : ''} de la file`);
   if (fulfillment.error) parts.push(`suivi des expéditions ${shop} en échec : ${fulfillment.error}`);
   if (images.updated) parts.push(plural(images.updated, 'photo ajoutée', 'photos ajoutées'));
   return parts.join(' · ');

@@ -39,6 +39,13 @@ Appuie sur le **triangle rouge** de la carte. La pièce retourne tout de suite d
 L'échec est gardé : il compte dans la page **Échecs** (mode Avancé), qui montre quels fichiers
 ratent le plus souvent.
 
+## Commande annulée
+
+Quand un client annule sa commande (Shopify ou Etsy), ses cartes **disparaissent toutes seules**
+de « À imprimer » à la synchro suivante (au plus 5 minutes). Elles restent dans la page **Tout**
+(mode Avancé) avec l'étiquette rouge « Annulée », pour l'historique. Si tu as déjà emballé une
+pièce de cette commande, la boîte « J'ai packé » de l'extension te prévient qu'elle est annulée.
+
 ## Trouver ce qu'on cherche
 
 - **Couleur** : touche une couleur pour ne voir que cette résine — pratique pour remplir un

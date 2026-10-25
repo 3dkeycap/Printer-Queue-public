@@ -83,7 +83,10 @@ const row = (part, actions) => {
         el('div', { class: 'cell-name' }, part.name),
         // mode simple : la colonne Commande est cachée, le badge « Ouvert sur Shopify » vient ici
         open ? el('div', { class: 'simple-only' }, openBadge(open)) : null,
-        part.not_printed || (state.meta?.hiddenColors ?? []).includes(part.color_key)
+        part.cancelled
+          ? el('span', { class: 'tag cancelled', title: 'Commande annulée dans la boutique : retirée de « À imprimer »' }, 'Annulée')
+          : null,
+        !part.cancelled && (part.not_printed || (state.meta?.hiddenColors ?? []).includes(part.color_key))
           ? el('span', { class: 'tag not-printed', title: "Expédié d'ici mais pas imprimé ici (article en stock, supplément, autre usine) : absent de « À imprimer »" }, 'Pas imprimé ici')
           : null,
         el('div', { class: 'cell-sub' }, [part.sku, part.variant_title].filter(Boolean).join(' · ') || '—'),

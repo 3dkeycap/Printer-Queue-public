@@ -503,6 +503,16 @@ Le fichier complet et commenté : [`src/db/schema.sql`](src/db/schema.sql).
 
 ---
 
+### Commandes annulées
+
+`orders.cancelled_at` + `parts.cancelled` (migration `addColumnIfMissing`). Détection :
+Shopify `cancelled_at` (commande reçue par la synchro/webhook, ou lue par
+`fetchFulfilledOrders` pour toutes les commandes ouvertes), Etsy statut `canceled`
+(`fetchCancelledReceipts`). `cancelOrder()` (`src/domain/cancellation.js`) pose le drapeau sur les
+pièces non expédiées ; `scope=board` et les compteurs filtrent `p.cancelled = 0`, la vue « Tout »
+les garde. Une commande annulée n'est plus importée dans Chit Chats ni interrogée par la synchro
+d'expéditions.
+
 ## 8. Exploitation
 
 * **Sauvegarde** : `docker compose exec app node scripts/backup.js` (fichier dans
