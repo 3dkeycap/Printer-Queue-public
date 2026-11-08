@@ -157,7 +157,8 @@ export const buildShipment = (order, items, settings = getSettings()) => {
           description: String(item.title).slice(0, 100),
           value_amount: Number(item.unit_price ?? 0).toFixed(2),
           currency_code: currency,
-          origin_country: 'CA',
+          // pays de fabrication : Canada pour l'atelier, Hong Kong pour le nylon, Chine pour les switchs
+          origin_country: manufacturerFor(item).countryCode,
           // Chit Chats l'exige dès que l'origine est le Canada (« hs_tariff_code required for origin_country CA »)
           hs_tariff_code: clean(settings['chitchats.hsTariffCode']) || undefined,
         }))
@@ -425,6 +426,25 @@ export const importOrdersToChitChats = async ({ trigger = 'cron', orderId = null
   return { status: 'success', orders: orders.length, ...counts, message };
 };
 
+/*
+ * Fabricants (« Manufacturer Details », exigés par Chit Chats pour l'envoi DDP aux États-Unis). Par défaut l'atelier
+ * au Québec ; les pièces en nylon viennent de JLC PCB (Hong Kong) et les switchs de Dongguan Gaote (Chine).
+ */
+export const MANUFACTURERS = {
+  quebec: { contact: 'Innov3d inc.', address1: '441 rue saint georges', address2: '', city: 'la Prairie', postalCode: 'J5R2N1', country: 'Canada', countryCode: 'CA', province: 'Quebec (QC)' },
+  hongkong: { contact: 'JiaLiChuang (HongKong) Co., Limited', address1: 'Unit 21, 28/F', address2: 'Metropole Square', city: 'Hong Kong', postalCode: '', country: 'Hong Kong', countryCode: 'HK', province: '' },
+  dongguan: { contact: 'Dongguan Gaote Electronics Co, Ltd.', address1: 'Building 1, No. 1 , Tangxia Town', address2: 'Zhenxingwei Industrial Zone', city: 'Dongguan', postalCode: '523710', country: 'China', countryCode: 'CN', province: 'Guangdong (GD)' },
+};
+
+/** Le fabricant d'un article : nylon (couleur, titre ou variante) -> Hong Kong ; switchs (pas les « switch covers ») -> Dongguan. */
+export const manufacturerFor = (item) => {
+  const text = [item.title, item.variant_title, item.sku, item.color_key, item.color_name].filter(Boolean).join(' ').toLowerCase();
+  if (/\bnylon\b/.test(text)) return { key: 'hongkong', ...MANUFACTURERS.hongkong };
+  const title = String(item.title ?? '').toLowerCase();
+  if (/\bswitch(es)?\b/.test(title) && !/\bcovers?\b/.test(title)) return { key: 'dongguan', ...MANUFACTURERS.dongguan };
+  return { key: 'quebec', ...MANUFACTURERS.quebec };
+};
+
 // pays de l'Union européenne : Etsy y perçoit la TVA (IOSS) et Chit Chats demande la « Customs Tax Reference Number »
 export const EU_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
 
@@ -467,7 +487,12 @@ export const customsFor = (ref, { name } = {}) => {
   }
   const country = String(order.shipping_country || extractAddress(order.source, raw)?.country_code || '').toUpperCase() || null;
   const eu = EU_COUNTRIES.includes(country);
-  const items = db.prepare('SELECT title, sku, variant_title, quantity, unit_price FROM order_items WHERE order_id = ? ORDER BY id').all(order.id);
+  const items = db
+    .prepare(
+      `SELECT i.title, i.sku, i.variant_title, i.quantity, i.unit_price, i.color_key, c.name AS color_name
+         FROM order_items i LEFT JOIN resin_colors c ON c.key = i.color_key WHERE i.order_id = ? ORDER BY i.id`,
+    )
+    .all(order.id);
   return {
     orderNumber: String(order.order_number ?? order.external_id).replace(/^#/, ''),
     source: order.source,
@@ -476,6 +501,6 @@ export const customsFor = (ref, { name } = {}) => {
     ioss: order.source === 'etsy' && eu ? String(settings['etsy.iossNumber'] ?? '').trim() || null : null,
     hsCode: String(settings['chitchats.hsTariffCode'] ?? '').trim() || null,
     originCountry: 'Canada',
-    items: items.map((item) => ({ title: item.title, sku: item.sku ?? null, variant: item.variant_title ?? null, quantity: item.quantity, unitValue: item.unit_price })),
+    items: items.map((item) => ({ title: item.title, sku: item.sku ?? null, variant: item.variant_title ?? null, quantity: item.quantity, unitValue: item.unit_price, manufacturer: manufacturerFor(item) })),
   };
 };

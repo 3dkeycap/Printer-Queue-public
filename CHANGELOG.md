@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.12.0 : « Manufacturer Details » remplis dans Chit Chats.** Pour chaque article, le fabricant (exigé pour l'envoi DDP
+  aux États-Unis) : **Innov3d inc.** (441 rue saint georges, la Prairie, J5R2N1, Québec) par défaut ; **JiaLiChuang (HongKong) Co.,
+  Limited** (Unit 21, 28/F, Metropole Square, Hong Kong) pour les pièces en **nylon** ; **Dongguan Gaote Electronics Co, Ltd.**
+  (Building 1, No. 1, Tangxia Town, Zhenxingwei Industrial Zone, Dongguan 523710, Guangdong, Chine) pour les **switchs** (pas les
+  « switch covers »). Le **pays d'origine** de l'article suit son fabricant (Canada, Hong Kong, Chine), dans le formulaire comme dans
+  l'import de l'app. Toujours : seulement les champs vides.
 - **Dans le bac = imprimée, toujours.** Enregistrer le bac passait déjà les pièces en « Imprimé ». Maintenant, une pièce du bac
   remise à imprimer (échec, retour en arrière à la main) **sort du bac** (plus de « Dans le bac » dans « À imprimer ») ; Ctrl+Z
   sur cet échec la remet en « Imprimé » **et** dans le bac, avec le nom de qui l'avait packée. Réparation unique au démarrage de

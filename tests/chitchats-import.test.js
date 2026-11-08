@@ -153,6 +153,15 @@ describe('compléter le formulaire Chit Chats (extension)', () => {
     assert.equal(shop.source, 'shopify');
     assert.equal(shop.ioss, null, 'IOSS d’Etsy seulement pour les commandes Etsy');
     assert.equal(customsFor('inconnue'), null);
+    // fabricant : nylon -> Hong Kong, switchs -> Dongguan, le reste -> l'atelier au Québec (« switch covers » = atelier)
+    const { manufacturerFor } = await import('../src/domain/chitchatsImport.js');
+    assert.equal(manufacturerFor({ title: 'Keycap', color_key: 'nylon-grey' }).key, 'hongkong');
+    assert.equal(manufacturerFor({ title: 'Artisan', variant_title: 'Material & Color Nylon (Black)' }).key, 'hongkong');
+    assert.equal(manufacturerFor({ title: 'Gateron Switches (10 pack)' }).key, 'dongguan');
+    assert.equal(manufacturerFor({ title: 'Mechanical Keyboard Switch Covers' }).key, 'quebec');
+    assert.equal(manufacturerFor({ title: 'MX Tilters Adapters (10 Pack)' }).key, 'quebec');
+    assert.equal(manufacturerFor({ title: 'X' }).contact, 'Innov3d inc.');
+    assert.equal(de.items[0].manufacturer.key, 'quebec');
     // page de recherche de Chit Chats : retrouvée par le nom de l'acheteur (commande pas encore expédiée)
     ingestOrder(makeOrder({ source: 'etsy', externalId: '4217424516', orderNumber: '4217424516', customerName: 'Alison Thompson', shippingCountry: 'US' }));
     assert.equal(customsFor('', { name: 'alison thompson' }).orderNumber, '4217424516');

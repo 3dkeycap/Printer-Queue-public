@@ -118,7 +118,8 @@ Première fois seulement : Réglages → Boutiques → Etsy → « Reconnecter v
 ## Envoi Chit Chats : champs complétés tout seuls
 
 Quand tu ouvres un envoi dans Chit Chats, l'extension remplit les champs vides : numéro IOSS d'Etsy dans « Customs Tax Reference
-Number » (commandes Etsy vers l'Europe seulement), code HS, pays d'origine (Canada), description et SKU des articles. Ce qui est
+Number » (commandes Etsy vers l'Europe seulement), code HS, pays d'origine, fabricant (« Manufacturer Details » : Innov3d au
+Québec, JLC PCB à Hong Kong pour le nylon, Dongguan Gaote pour les switchs), description et SKU des articles. Ce qui est
 déjà rempli n'est pas touché. Vérifie, puis enregistre dans Chit Chats.
 
 ## Étiquette VAT (Etsy)

@@ -150,18 +150,20 @@
   const norm = (text) => String(text ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 
   /** Champs dont l'étiquette (ou le texte indicatif) commence par `label`, dans l'ordre de la page. */
-  const fieldsByLabel = (label) => {
+  const fieldsByLabel = (label, root = document, { exact = false } = {}) => {
     const wanted = norm(label);
     const found = [];
-    for (const element of document.querySelectorAll('label')) {
-      if (!norm(element.textContent).startsWith(wanted)) continue;
+    for (const element of root.querySelectorAll('label')) {
+      const text = norm(element.textContent);
+      if (exact ? text !== wanted : !text.startsWith(wanted)) continue;
       const control =
         (element.htmlFor && document.getElementById(element.htmlFor)) ||
         element.parentElement?.querySelector('input, select, textarea');
       if (control && !found.includes(control)) found.push(control);
     }
-    for (const control of document.querySelectorAll('input[placeholder], textarea[placeholder]')) {
-      if (norm(control.placeholder).startsWith(wanted) && !found.includes(control)) found.push(control);
+    for (const control of root.querySelectorAll('input[placeholder], textarea[placeholder]')) {
+      const hint = norm(control.placeholder);
+      if ((exact ? hint === wanted : hint.startsWith(wanted)) && !found.includes(control)) found.push(control);
     }
     return found;
   };
@@ -190,7 +192,7 @@
     control.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     setValue(control, text);
     await new Promise((resolve) => setTimeout(resolve, 400));
-    const option = [...document.querySelectorAll('[role="option"], li')].find((entry) => norm(entry.textContent) === norm(text));
+    const option = [...document.querySelectorAll('[role="option"], li')].find((entry) => norm(entry.textContent) === norm(text) || norm(entry.textContent).startsWith(norm(text)));
     if (!option) return false;
     option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     option.click();
@@ -200,7 +202,7 @@
   /** Liste déroulante classique : choisit l'option dont le texte est `text` (si rien n'est choisi). */
   const fillSelect = (control, text) => {
     if (!(control instanceof HTMLSelectElement) || !isEmpty(control)) return false;
-    const option = [...control.options].find((entry) => norm(entry.textContent) === norm(text) || norm(entry.value) === norm(text));
+    const option = [...control.options].find((entry) => norm(entry.textContent) === norm(text) || norm(entry.value) === norm(text) || norm(entry.textContent).startsWith(norm(text)));
     if (!option) return false;
     setValue(control, option.value);
     return true;
@@ -234,6 +236,56 @@
     return /\bOrder\b\s{0,8}[^\d\s]{0,3}\s{0,4}#?(\d{6,})/.exec(text)?.[1] ?? null;
   };
 
+  /*
+   * « Manufacturer Details » de chaque article (Contact, adresse, ville, code postal, pays, province / état). Chaque article
+   * est un bloc de la page qui contient UN « HS Code » et son propre « Contact » : on remplit dans ce bloc seulement.
+   * Fabricant selon l'article (voir manufacturerFor côté app) ; si le nombre de blocs ne correspond pas aux articles,
+   * on ne remplit que si tous les articles ont le même fabricant.
+   */
+  const itemBlocks = () =>
+    fieldsByLabel('HS Code').map((hs) => {
+      let node = hs.parentElement;
+      while (node && node !== document.body) {
+        if (fieldsByLabel('Contact', node).length && fieldsByLabel('HS Code', node).length === 1) return node;
+        if (fieldsByLabel('HS Code', node).length > 1) return null;
+        node = node.parentElement;
+      }
+      return null;
+    });
+
+  const fillChoice = async (control, text) => {
+    if (!control || !text) return false;
+    if (control instanceof HTMLSelectElement) return fillSelect(control, text);
+    return fillCombo(control, text);
+  };
+
+  const fillManufacturers = async (items) => {
+    const blocks = itemBlocks();
+    if (!blocks.length || blocks.some((block) => !block)) return 0;
+    const same = items.every((item) => item.manufacturer?.key === items[0]?.manufacturer?.key);
+    if (blocks.length !== items.length && !same) return 0;
+    let done = 0;
+    for (const [index, block] of blocks.entries()) {
+      const maker = (blocks.length === items.length ? items[index] : items[0])?.manufacturer;
+      if (!maker) continue;
+      const one = (label, exact = false) => fieldsByLabel(label, block, { exact })[0];
+      let changed = false;
+      changed = fillText(one('Contact'), maker.contact) || changed;
+      changed = fillText(one('Address Line 1'), maker.address1) || changed;
+      changed = fillText(one('Address Line 2'), maker.address2) || changed;
+      changed = fillText(one('City', true), maker.city) || changed;
+      changed = fillText(one('Postal Code'), maker.postalCode) || changed;
+      // le pays d'abord : la liste des provinces / états en dépend
+      changed = (await fillChoice(one('Country', true), maker.country)) || changed;
+      if (maker.province) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        changed = (await fillChoice(one('Province', true) ?? one('State', true), maker.province)) || changed;
+      }
+      if (changed) done += 1;
+    }
+    return done;
+  };
+
   let doneFor = null;
   const complete = async ({ force = false } = {}) => {
     // pas un formulaire d'envoi (aucun champ « HS Code ») : rien à faire
@@ -259,9 +311,14 @@
     const count = (label, fill) => fieldsByLabel(label).reduce((n, control, index) => n + (fill(control, index) ? 1 : 0), 0);
     const hs = count('HS Code', (control) => fillText(control, data.hsCode));
     if (hs) filled.push(`code HS ×${hs}`);
-    let origin = count('Origin Country', (control) => fillSelect(control, data.originCountry));
-    for (const control of fieldsByLabel('Origin Country')) {
-      if (control instanceof HTMLInputElement && (await fillCombo(control, data.originCountry))) origin += 1;
+    // pays d'origine = pays du fabricant de l'article (Canada, Hong Kong pour le nylon, Chine pour les switchs)
+    const origins = fieldsByLabel('Origin Country');
+    const sameMaker = data.items.every((item) => item.manufacturer?.key === data.items[0]?.manufacturer?.key);
+    let origin = 0;
+    for (const [index, control] of origins.entries()) {
+      const item = origins.length === data.items.length ? data.items[index] : sameMaker ? data.items[0] : null;
+      const country = item?.manufacturer?.country ?? (data.items.length ? null : data.originCountry);
+      if (country && (await fillChoice(control, country))) origin += 1;
     }
     if (origin) filled.push(`pays d'origine ×${origin}`);
     // description et identifiant produit : seulement quand chaque ligne de Chit Chats correspond à un article de la commande
@@ -277,6 +334,8 @@
         if (pid) filled.push(`identifiant produit ×${pid}`);
       }
     }
+    const makers = await fillManufacturers(data.items);
+    if (makers) filled.push(`fabricant ×${makers}`);
     if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);
     else if (force) say(`Resin Queue : rien à compléter pour ${data.orderNumber} (les champs sont déjà remplis, ou pas reconnus).`, 'warn');
   };
