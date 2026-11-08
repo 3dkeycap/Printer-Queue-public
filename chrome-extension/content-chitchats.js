@@ -144,7 +144,7 @@
    * L'import d'une commande (par l'app, ou l'import Etsy / Shopify de Chit Chats) laisse des champs vides. On ne
    * remplit QUE les champs vides, avec ce que l'app sait de la commande (recherchée par « Order ID ») :
    *   - Customs Tax Reference Number : numéro IOSS d'Etsy, seulement pour une commande Etsy vers l'Union européenne ;
-   *   - HS Code de chaque article ; Origin Country (Canada) ; Description ; identifiant produit (SKU).
+   *   - HS Code de chaque article ; Origin Country (Canada) ; Description ; identifiant produit (SKU, sinon la description).
    * Jamais d'écrasement d'une valeur déjà saisie.
    */
   const norm = (text) => String(text ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -562,11 +562,20 @@
         const desc = count('Description', (control, index) => fillText(control, data.items[index]?.title));
         if (desc) filled.push(`description ×${desc}`);
       }
-      if (fieldsByLabel('Manufacturer product').length === rows) {
-        const pid = count('Manufacturer product', (control, index) => fillText(control, data.items[index]?.sku));
-        if (pid) filled.push(`identifiant produit ×${pid}`);
-      }
     }
+    // « Manufacturer product / model ID » est OBLIGATOIRE pour l'Union européenne : le SKU de l'article quand il y en a
+    // un, sinon (la plupart de nos produits n'ont pas de SKU) la description de la ligne, déjà sur la page
+    let pid = 0;
+    for (const [index, hsControl] of fieldsByLabel('HS Code').entries()) {
+      const block = blockWith(hsControl, 'Manufacturer product');
+      const control = block && fieldsByLabel('Manufacturer product', block)[0];
+      if (!control) continue;
+      const item = rows === data.items.length ? data.items[index] : null;
+      const description = fieldsByLabel('Description', block).map((field) => String(field.value ?? '').trim()).find(Boolean);
+      const value = item?.sku || description || item?.title || (data.items.length === 1 ? data.items[0].title : '');
+      if (fillText(control, String(value).slice(0, 50).trim())) pid += 1;
+    }
+    if (pid) filled.push(`identifiant produit ×${pid}`);
     const weights = await setItemWeights();
     if (weights) filled.push(`poids 1 g ×${weights}`);
     const makers = await fillManufacturers(data.items);

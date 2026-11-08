@@ -180,6 +180,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
   dans la console de la page (extension 1.15.1).
 - **Extension 1.15.2** : la fenêtre des commentaires Shopify revient **à chaque ouverture** de la commande ; « Vu ✓ » ne fait
   que la fermer (avant, elle ne revenait qu’à un nouveau commentaire).
+- **Extension 1.15.3 : « Manufacturer product / model ID » rempli** (obligatoire pour les envois vers l’Union européenne) :
+  le SKU de l’article, sinon — la plupart de nos produits n’en ont pas — la description de la ligne. Un identifiant déjà saisi
+  n’est pas remplacé.
 - **Import Chit Chats : « hs_tariff_code required for origin_country CA »** : chaque article du détail douanier envoyé à
   Chit Chats porte maintenant le **code tarifaire 8473305100** (réglage modifiable : Réglages → Boutiques → Chit Chats →
   options avancées → « Code tarifaire douanier (HS) »). Les commandes déjà en erreur sont réessayées à la prochaine
