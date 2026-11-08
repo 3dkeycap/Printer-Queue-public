@@ -153,6 +153,16 @@ describe('compléter le formulaire Chit Chats (extension)', () => {
     assert.equal(shop.source, 'shopify');
     assert.equal(shop.ioss, null, 'IOSS d’Etsy seulement pour les commandes Etsy');
     assert.equal(customsFor('inconnue'), null);
+    // Etsy vers l'Europe : une seule ligne « 3DK » (quantité totale, valeur des produits, devise de la commande, Québec)
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '4212304298', orderNumber: '4212304298', shippingCountry: 'FR', currency: 'CAD', totalPrice: 99,
+      items: [{ externalId: 'v1', title: 'DSA Keycaps', quantity: 2, unitPrice: 16.2 }, { externalId: 'v2', title: 'Nylon keycap', quantity: 1, unitPrice: 12.6 }] }));
+    assert.deepEqual(customsFor('4212304298').vatGroup, {
+      description: 'Keyboard keycaps', sku: '3DK', quantity: 3, total: 45, unitValue: 15, currency: 'CAD',
+      manufacturer: { key: 'quebec', ...(await import('../src/domain/chitchatsImport.js')).MANUFACTURERS.quebec },
+    });
+    assert.equal(de.vatGroup.quantity, 1);
+    assert.equal(customsFor('4212304297').vatGroup, null, 'hors Europe : lignes normales');
+    assert.equal(shop.vatGroup, null, 'Shopify vers l’Europe : lignes normales');
     // fabricant : nylon -> Hong Kong, switchs -> Dongguan, le reste -> l'atelier au Québec (« switch covers » = atelier)
     const { manufacturerFor } = await import('../src/domain/chitchatsImport.js');
     assert.equal(manufacturerFor({ title: 'Keycap', color_key: 'nylon-grey' }).key, 'hongkong');

@@ -508,6 +508,63 @@
     return done;
   };
 
+  /*
+   * Commande Etsy vers l'Europe (IOSS) : UNE seule ligne de douane pour toute la commande (demande de l'atelier). On
+   * supprime les autres lignes avec la corbeille de Chit Chats (comme une personne), puis on écrit sur celle qui reste
+   * « Keyboard keycaps », SKU et identifiant « 3DK », la quantité totale et la valeur des produits (voir vatGroupFor côté
+   * app). Ici on remplace les valeurs déjà là : c'est le but. Si une ligne ne part pas, on s'arrête (rien n'est enregistré).
+   */
+  const visibleRows = () => fieldsByLabel('HS Code').filter(visible);
+  const removeButton = (block) =>
+    block.querySelector('.js-remove-shipment-item') ??
+    [...block.querySelectorAll('button, a')].find((button) => button.querySelector('.fa-trash') || /^(remove|delete|supprimer)$/i.test(String(button.getAttribute('aria-label') ?? button.textContent).trim()));
+  const overwrite = (control, value) => {
+    if (!control || control.disabled || value === null || value === undefined) return false;
+    if (String(control.value ?? '') === String(value)) return true;
+    setValue(control, String(value));
+    return true;
+  };
+  const chooseOption = async (control, value) => {
+    if (!(control instanceof HTMLSelectElement) || control.disabled || !value) return false;
+    const option = [...control.options].find((entry) => norm(entry.value) === norm(value) || norm(entry.textContent) === norm(value) || norm(entry.textContent).startsWith(`${norm(value)} `));
+    if (!option) return false;
+    if (control.value === option.value) return true;
+    setValue(control, option.value);
+    const rendered = control.parentElement?.querySelector('.select2-selection__rendered');
+    if (!rendered || norm(rendered.textContent).includes(norm(option.textContent))) return true;
+    const result = await pickInWidget(control, option.textContent.trim());
+    if (!result.ok) widgetProblems.push(result);
+    return result.ok;
+  };
+  const groupForVat = async (group) => {
+    const blocks = itemBlocks();
+    if (!blocks.length || blocks.some((block) => !block)) return { ok: false, why: 'lignes de la Description non reconnues' };
+    for (const block of blocks.slice(1).reverse()) {
+      if (!visible(block)) continue;
+      const button = removeButton(block);
+      if (!button) return { ok: false, why: 'corbeille d’une ligne introuvable' };
+      button.click();
+      await sleep(200);
+    }
+    for (let attempt = 0; attempt < 20 && visibleRows().length > 1; attempt += 1) await sleep(150);
+    if (visibleRows().length !== 1) return { ok: false, why: `${visibleRows().length} lignes restent après la suppression` };
+    const block = itemBlocks().find((entry) => entry && visible(entry));
+    if (!block) return { ok: false, why: 'ligne restante non reconnue' };
+    const one = (label, exact = false) => fieldsByLabel(label, block, { exact }).find((control) => !control.disabled);
+    const wrong = [];
+    if (!overwrite(one('Description'), group.description)) wrong.push('description');
+    overwrite(one('SKU'), group.sku);
+    overwrite(one('Manufacturer product'), group.sku);
+    if (!overwrite(one('Quantity'), group.quantity)) wrong.push('quantité');
+    // quantité et valeur unitaire d'abord : Chit Chats recalcule le total à partir d'elles ; on écrit le total en dernier
+    if (!overwrite(one('Unit Value'), group.unitValue)) wrong.push('valeur unitaire');
+    await sleep(100);
+    overwrite(one('Total', true), group.total);
+    if (group.currency && !(await chooseOption(one('Currency'), group.currency))) wrong.push(`devise ${group.currency}`);
+    if (wrong.length) return { ok: false, why: `champ(s) non trouvé(s) : ${wrong.join(', ')}` };
+    return { ok: true, label: `1 ligne VAT : ${group.quantity} produits, ${group.total} ${group.currency ?? ''}`.trim() };
+  };
+
   let doneFor = null;
   let widgetProblems = [];
   const complete = async ({ force = false } = {}) => {
@@ -540,6 +597,18 @@
     }
     widgetProblems = [];
     const filled = [];
+    if (data.vatGroup) {
+      const grouped = await groupForVat(data.vatGroup);
+      if (!grouped.ok) {
+        setStep('description', 'warn', `regroupement VAT impossible (${grouped.why})`);
+        say(`Commande Etsy vers l’Europe : je n’ai pas pu tout mettre sur une seule ligne (${grouped.why}). Fais-le à la main, puis « Save and continue ».`, 'warn');
+        flow.descDone = true;
+        return;
+      }
+      filled.push(grouped.label);
+      // la suite (code HS, pays d'origine, fabricant, poids) travaille sur cette seule ligne : fabricant au Québec
+      data.items = [{ title: data.vatGroup.description, sku: data.vatGroup.sku, quantity: data.vatGroup.quantity, unitValue: data.vatGroup.unitValue, manufacturer: data.vatGroup.manufacturer }];
+    }
     if (data.ioss && fieldsByLabel('Customs Tax Reference Number').some((control) => fillText(control, data.ioss))) filled.push(`IOSS ${data.ioss}`);
     const count = (label, fill) => fieldsByLabel(label).reduce((n, control, index) => n + (fill(control, index) ? 1 : 0), 0);
     const hs = count('HS Code', (control) => fillText(control, data.hsCode));
@@ -692,10 +761,17 @@
         <div data-mini style="font-size:13px"></div>
         <div data-steps></div>
         <div data-form></div>
-        <div data-msg style="margin-top:6px;font-size:13px"></div>`;
+        <div data-msg style="margin-top:6px;font-size:13px"></div>
+        <label data-auto style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:8px;font:600 11px system-ui;color:#5b6a86;cursor:pointer">
+          <span style="padding:1px 6px;border-radius:6px;background:#fff1c9;color:#8a6414;font-weight:800;letter-spacing:.04em">BETA</span>
+          Auto <input type="checkbox" checked style="margin:0;cursor:pointer" /></label>`;
       // la fenêtre de Chit Chats reprend le curseur : on garde nos événements (sinon impossible de taper)
       for (const type of ['focusin', 'focus', 'keydown', 'keypress', 'keyup', 'mousedown', 'click']) panel.addEventListener(type, (event) => event.stopPropagation());
       panel.querySelector('[data-rerun]').addEventListener('click', () => rerun().catch((error) => say(error.message, 'warn')));
+      // même réglage que l'interrupteur de la fenêtre de l'extension : décoché = plus rien d'automatique (le panneau part)
+      panel.querySelector('[data-auto] input').addEventListener('change', (event) => {
+        if (!event.target.checked) chrome.storage.sync.set({ ccAuto: false });
+      });
       document.documentElement.append(panel);
     }
     if (orderLabel) panel.querySelector('[data-order]').textContent = orderLabel;

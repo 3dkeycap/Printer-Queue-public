@@ -448,6 +448,31 @@ export const manufacturerFor = (item) => {
 // pays de l'Union européenne : Etsy y perçoit la TVA (IOSS) et Chit Chats demande la « Customs Tax Reference Number »
 export const EU_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
 
+/*
+ * Commande Etsy vers l'Union européenne (IOSS, étiquette VAT) : sur Chit Chats, une SEULE ligne de douane pour toute la
+ * commande (demande de l'atelier) : « Keyboard keycaps », SKU et identifiant produit « 3DK », quantité = nombre total de
+ * produits, Total = valeur des produits seulement (sans livraison ni taxes), dans la devise de la commande, fabricant
+ * Innov3d au Québec. L'extension supprime les autres lignes et remplit celle-ci.
+ */
+export const VAT_GROUP_DESCRIPTION = 'Keyboard keycaps';
+export const VAT_GROUP_SKU = '3DK';
+const vatGroupFor = (order, eu, items) => {
+  if (order.source !== 'etsy' || !eu || !items.length) return null;
+  const quantity = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  const total = Math.round(items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price) || 0), 0) * 100) / 100;
+  if (!(quantity > 0) || !(total > 0)) return null;
+  return {
+    description: VAT_GROUP_DESCRIPTION,
+    sku: VAT_GROUP_SKU,
+    quantity,
+    total,
+    // valeur unitaire telle que quantité × valeur = total (Chit Chats accepte les décimales)
+    unitValue: Math.round((total / quantity) * 10000) / 10000,
+    currency: order.currency ? String(order.currency).toUpperCase() : null,
+    manufacturer: { key: 'quebec', ...MANUFACTURERS.quebec },
+  };
+};
+
 /**
  * Ce qui manque souvent sur un envoi Chit Chats importé (par l'app ou par l'import Etsy / Shopify de Chit Chats) :
  * l'extension complète le formulaire de Chit Chats avec ça. Recherche par le numéro de commande affiché dans
@@ -502,5 +527,6 @@ export const customsFor = (ref, { name } = {}) => {
     hsCode: String(settings['chitchats.hsTariffCode'] ?? '').trim() || null,
     originCountry: 'Canada',
     items: items.map((item) => ({ title: item.title, sku: item.sku ?? null, variant: item.variant_title ?? null, quantity: item.quantity, unitValue: item.unit_price, manufacturer: manufacturerFor(item) })),
+    vatGroup: vatGroupFor(order, eu, items),
   };
 };

@@ -130,8 +130,13 @@ En ouvrant un envoi (« Edit Shipment »), un **petit panneau Resin Queue** (à 
 Description), **Enveloppe** (il demande la taille — **Petite** déjà choisie, sinon moyenne ou grosse + hauteur — et le poids),
 **Livraison** (la moins chère, assurance Chit Chats décochée). **Le paiement (« Pay for Shipment ») reste à toi**, après
 vérification ; ensuite, la fenêtre « Print Postage » lance l’impression toute seule. « Je fais à la main » arrête l’automatisme
-pour cet envoi, « ↻ Relancer » le reprend. Pour tout couper : icône de l’extension → interrupteur **« Automatisation Chit Chats »**
-en haut.
+pour cet envoi, « ↻ Relancer » le reprend. Pour tout couper : la case **« Auto »** (marquée BETA) en bas à droite du panneau, ou icône de l’extension → interrupteur
+**« Automatisation Chit Chats »** en haut (c’est le même réglage ; on le rallume depuis l’icône).
+
+**Commandes Etsy vers l’Europe (VAT / IOSS)** : la Description est réduite à **une seule ligne** — les autres lignes sont
+supprimées (corbeille), et celle qui reste devient « Keyboard keycaps », SKU et « Manufacturer product / model ID » **3DK**,
+quantité = nombre total de produits, Total = valeur des produits (sans livraison ni taxes) dans la devise de la commande,
+fabricant Innov3d au Québec. Si une ligne ne veut pas partir, le panneau le dit et rien n’est enregistré : fais-le à la main.
 
 ## Étiquette VAT (Etsy)
 

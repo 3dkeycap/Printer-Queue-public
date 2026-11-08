@@ -86,6 +86,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - **Les objets d'inventaire se créent depuis `/inventory/mobile`** (le téléphone) : le formulaire « Nouvel objet » a quitté le tableau de bord, qui garde le code QR, le bouton « Ouvrir la page d'inventaire » et l'impression de ce code. Le code QR (et ses étiquettes imprimables) mène maintenant à `/inventory/mobile` ; `/inventory/new` marche toujours (ouvre le formulaire d'ajout), donc les étiquettes déjà imprimées restent valides. Modifier, signaler, commander et supprimer restent aussi possibles sur l'ordinateur.
 
 ### Ajouté
+- **Extension 1.17.0 (beta) : une seule ligne de douane pour les commandes Etsy vers l’Europe.** Sur la Description Chit Chats
+  d’une commande Etsy livrée dans l’Union européenne (IOSS), les autres lignes sont supprimées et la ligne restante devient
+  « Keyboard keycaps », SKU et identifiant produit « 3DK », quantité = nombre total de produits, Total = valeur des produits
+  (sans livraison ni taxes) dans la devise de la commande, fabricant au Québec ; puis l’envoi continue comme d’habitude.
+  Le panneau a, en bas à droite, une étiquette **BETA** et une case **« Auto »** qui coupe toute l’automatisation (même
+  réglage que l’interrupteur de la fenêtre de l’extension). `GET /api/packing/customs` renvoie `vatGroup`.
 - **Extension 1.16.0 : l’étiquette VAT d’Etsy s’imprime directement avec QZ Tray.** 🏷 VAT envoie l’étiquette 2 × 1 po
   à l’imprimante d’étiquettes choisie dans les options de l’extension (« Impression directe (QZ Tray) » : chercher les
   imprimantes, choisir, imprimer un test), sans fenêtre d’impression ni fichier. Les demandes à QZ Tray sont signées par l’app
