@@ -149,7 +149,7 @@ sur une commande annulée ou déjà expédiée.
 ## Commentaires de l'équipe (Shopify)
 
 Une commande Shopify qui a des commentaires de l'équipe (en bas, dans « Timeline ») les montre dans une grande fenêtre dès
-qu'on l'ouvre, avec les photos. « Vu ✓ » la ferme ; elle revient seulement s'il y a un nouveau commentaire.
+qu'on l'ouvre, avec les photos. « Vu ✓ » la ferme ; elle revient **à chaque ouverture** de la commande, même déjà vue.
 
 ## Tags de commande (To pack, Hold…)
 

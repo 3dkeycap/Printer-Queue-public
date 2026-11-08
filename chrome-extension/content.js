@@ -138,7 +138,7 @@
   /*
    * Les commentaires de l'équipe (fil « Timeline » en bas de la commande Shopify : « replacement reason: damaged package » +
    * photo…) passent facilement inaperçus. À l'ouverture d'une commande qui en a, une fenêtre bien visible les montre ; « Vu »
-   * la ferme jusqu'au prochain nouveau commentaire de cette commande.
+   * la ferme ; elle revient à chaque ouverture de la commande.
    */
   let commentsBox = null;
   let commentsFor = null;
@@ -162,8 +162,6 @@
     // sans fenêtre, il faut pouvoir savoir pourquoi (console de la page : F12)
     if (result?.error) console.warn('Resin Queue · commentaires Shopify :', result.error);
     if (!comments.length || orderIdFromPath() !== orderId) return;
-    const { seenComments = {} } = await chrome.storage.local.get('seenComments');
-    if (seenComments[orderId] === comments[0].id) return;
 
     commentsBox = document.createElement('div');
     commentsBox.setAttribute('data-resin-queue', '');
@@ -203,11 +201,8 @@
     ok.type = 'button';
     ok.textContent = 'Vu ✓';
     ok.style.cssText = 'all:unset;display:block;margin:6px 0 0 auto;padding:10px 18px;border-radius:10px;background:#1f5fd6;color:#fff;font:700 15px system-ui;cursor:pointer;';
-    ok.addEventListener('click', async () => {
-      const { seenComments: seen = {} } = await chrome.storage.local.get('seenComments');
-      await chrome.storage.local.set({ seenComments: { ...seen, [orderId]: comments[0].id } });
-      closeComments();
-    });
+    // « Vu » ferme seulement : la fenêtre revient à chaque ouverture de la commande (tout le monde doit la voir)
+    ok.addEventListener('click', closeComments);
     commentsBox.append(ok);
     document.documentElement.append(commentsBox);
   };
