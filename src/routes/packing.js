@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncRoute } from '../lib/errors.js';
-import { PACKED_TAG, addPacker, addPartsToOrder, getPackingView, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
+import { PACKED_TAG, addPacker, addPartsToOrder, getPackingView, getVatLabel, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
 
 export const packingRouter = Router();
 
@@ -69,3 +69,11 @@ const addPartsRoute = (key) =>
 packingRouter.post('/shopify/:id/parts', addPartsRoute('shopifyId'));
 packingRouter.post('/etsy/:id/parts', addPartsRoute('etsyId'));
 packingRouter.post('/orders/:id/parts', addPartsRoute('orderId'));
+
+/** Données de l'étiquette VAT (le PNG est dessiné par l'extension). */
+packingRouter.get('/etsy/:id/vat', (req, res) => {
+  res.json(getVatLabel({ etsyId: req.params.id }));
+});
+packingRouter.get('/orders/:id/vat', (req, res) => {
+  res.json(getVatLabel({ orderId: req.params.id }));
+});

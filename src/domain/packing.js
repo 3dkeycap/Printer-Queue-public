@@ -366,3 +366,35 @@ export const addPartsToOrder = (where, { name, variant, quantity = 1, adder } = 
   log.info('parts added to order', { orderId: order.id, name: title, quantity: qty, by: who });
   return { view: getPackingView({ orderId: order.id }), unpacked, order: { source: order.source, externalId: order.external_id } };
 };
+
+const moneyOf = (money) => {
+  if (!money || money.amount === undefined || money.amount === null) return null;
+  const value = Number(money.amount) / Number(money.divisor || 100);
+  return Number.isFinite(value) ? { value, currency: money.currency_code ?? null } : null;
+};
+
+/**
+ * Ce qu'il faut écrire sur l'étiquette VAT d'une commande Etsy (douane / TVA à la main) : numéro, pays, total payé et VAT.
+ * Lu dans le reçu Etsy gardé par la synchro (`total_vat_cost`, `grandtotal`) ; null quand Etsy n'a pas donné le montant.
+ */
+export const getVatLabel = (where) => {
+  const order = findOrder(where);
+  if (order.source !== 'etsy') throw badRequest('L’étiquette VAT ne concerne que les commandes Etsy');
+  let receipt = null;
+  try {
+    receipt = order.raw_payload ? JSON.parse(order.raw_payload) : null;
+  } catch {
+    receipt = null;
+  }
+  const total = moneyOf(receipt?.grandtotal) ?? (order.total_price ? { value: Number(order.total_price), currency: order.currency } : null);
+  const vat = moneyOf(receipt?.total_vat_cost);
+  const currency = total?.currency ?? vat?.currency ?? order.currency ?? null;
+  return {
+    orderNumber: order.order_number ?? String(order.external_id),
+    customer: order.customer_name ?? null,
+    country: order.shipping_country ?? receipt?.country_iso ?? null,
+    currency,
+    total: total ? total.value.toFixed(2) : null,
+    vat: vat ? vat.value.toFixed(2) : null,
+  };
+};

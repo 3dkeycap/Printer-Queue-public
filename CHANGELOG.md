@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.10.0 : étiquette VAT (Etsy).** Sur la barre Etsy, « 🏷 VAT » télécharge en PNG (2 po × 1 po, 600 × 300 px) une étiquette avec
+  le numéro de commande, le pays, la **VAT** et le **total payé** de la commande, lus dans le reçu Etsy : plus rien à écrire à la main sur le
+  colis. Si Etsy ne donne pas de montant de VAT, la case affiche « — » (avec un avertissement). API : `GET /api/packing/etsy/:id/vat`.
 - **Extension 1.9.1** : la **variante** de chaque article est de nouveau affichée dans la fenêtre « J'ai packé » (l'image reste retirée).
 - **Extension 1.9.0 : ajouter des pièces à la commande sans passer par l'app.** Dans la fenêtre « J'ai packé » (Shopify et Etsy),
   « ➕ Ajouter une pièce à la commande » : nom, variante / couleur (facultative), quantité (1 à 20). Les pièces rejoignent

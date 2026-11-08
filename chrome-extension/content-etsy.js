@@ -116,6 +116,50 @@
     window.open(info.chitchatsUrl, '_blank', 'noopener');
   };
 
+
+  /*
+   * Étiquette VAT 2 po × 1 po (600 × 300 px à 300 dpi) en PNG : numéro de commande, pays, VAT et total payé,
+   * lus dans la commande Etsy par l'app, pour ne plus l'écrire à la main sur le colis.
+   */
+  const drawVatLabel = (data) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 300;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 600, 300);
+    ctx.fillStyle = '#000000';
+    ctx.textBaseline = 'top';
+    const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    ctx.font = `700 34px ${FONT}`;
+    ctx.fillText(`#${data.orderNumber}${data.country ? `  ·  ${data.country}` : ''}`, 24, 20);
+    const money = (value) => (value === null || value === undefined ? '—' : `${value} ${data.currency ?? ''}`.trim());
+    ctx.font = `800 86px ${FONT}`;
+    ctx.fillText(`VAT ${money(data.vat)}`, 24, 78);
+    ctx.font = `600 52px ${FONT}`;
+    ctx.fillText(`Total ${money(data.total)}`, 24, 192);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, 596, 296);
+    return canvas;
+  };
+
+  const downloadVatLabel = async () => {
+    if (!selected) return;
+    const data = await send({ type: 'order-vat', orderExternalId: selected.key });
+    if (!data || data.error) {
+      alert(`Étiquette VAT impossible : ${data?.error ?? 'pas de réponse de l’app'}`);
+      return;
+    }
+    if (data.vat === null) alert('Etsy n’a pas donné de montant de VAT pour cette commande : la case VAT affichera « — ».');
+    const link = document.createElement('a');
+    link.href = drawVatLabel(data).toDataURL('image/png');
+    link.download = `vat-${data.orderNumber}.png`;
+    document.documentElement.append(link);
+    link.click();
+    link.remove();
+  };
+
   const removeDock = () => {
     dock?.remove();
     dock = null;
@@ -183,6 +227,10 @@
       } else parts.push(
         btn(`Chit Chats ${selected.name ?? '#' + selected.id}`, `Ouvrir ${label} sur Chit Chats (cherché par le nom de l’acheteur)`, '#1f5fd6', openChitChats, 'padding:10px 14px 10px 11px;'),
       );
+      parts.push(btn('🏷 VAT', 'Télécharger l’étiquette VAT (2 × 1 po, PNG) : VAT et total de la commande', '#2f7a4f', async () => {
+        if (selected.key === selected.id && selected.candidates.length > 1) await resolveKey(selected);
+        downloadVatLabel();
+      }, 'border-left:1px solid rgba(255,255,255,.25);'));
       const open = globalThis.ResinQueuePack?.isOpen();
       parts.push(
         btn(open ? '📦 J’ai packé ▴' : '📦 J’ai packé ▾', 'Indiquer ce qui est dans le bac de cette commande', '#7a4fd0', async () => {

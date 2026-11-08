@@ -115,6 +115,11 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 Quand une commande Etsy part avec Chit Chats, le numéro de suivi est envoyé à Etsy tout seul : plus rien à copier-coller.
 Première fois seulement : Réglages → Boutiques → Etsy → « Reconnecter via OAuth » (autorisation d'écriture).
 
+## Étiquette VAT (Etsy)
+
+Sur Etsy, clique la commande puis **🏷 VAT** dans la barre : une image 2 × 1 po avec le numéro, le pays, la VAT et le total payé se
+télécharge, prête à imprimer et coller sur le colis (plus besoin d'écrire la VAT à la main).
+
 ## Ajouter une pièce à une commande (extension)
 
 Une pièce oubliée ou un supplément : dans la fenêtre « J'ai packé », « ➕ Ajouter une pièce à la commande » (nom, variante,

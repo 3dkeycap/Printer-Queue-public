@@ -7,7 +7,7 @@ const { migrate } = await import('../src/db/migrate.js');
 const { closeDb, getDb } = await import('../src/db/index.js');
 const { getSettings, updateSettings } = await import('../src/domain/settings.service.js');
 const { ingestOrder } = await import('../src/domain/ingest.js');
-const { getPackingView, savePack, syncShopifyTags, setOrderTag, pushShopifyOrderTag, addPartsToOrder } = await import('../src/domain/packing.js');
+const { getPackingView, savePack, syncShopifyTags, setOrderTag, pushShopifyOrderTag, addPartsToOrder, getVatLabel } = await import('../src/domain/packing.js');
 const { syncMarketplaceFulfillment } = await import('../src/domain/fulfillment.js');
 const { listParts, getFacets } = await import('../src/domain/parts.service.js');
 
@@ -155,6 +155,22 @@ describe("« J'ai packé la commande »", () => {
     // commande expédiée ou annulée : refusé
     getDb().prepare('UPDATE orders SET shipped_at = ? WHERE id = ?').run(new Date().toISOString(), orderId);
     assert.throws(() => addPartsToOrder({ shopifyId: '7770095' }, { name: 'Trop tard' }), /déjà expédiée/);
+  });
+
+  it('étiquette VAT : total et VAT lus dans le reçu Etsy, vides quand Etsy ne les donne pas', () => {
+    ingestOrder(makeOrder({
+      source: 'etsy', externalId: '3917770001', orderNumber: '3917770001', shippingCountry: 'DE', totalPrice: 45, currency: 'EUR',
+      raw: { receipt_id: 3917770001, grandtotal: { amount: 4500, divisor: 100, currency_code: 'EUR' }, total_vat_cost: { amount: 718, divisor: 100, currency_code: 'EUR' } },
+      items: [{ externalId: 'v1', title: 'Keycap', quantity: 1 }],
+    }));
+    assert.deepEqual(getVatLabel({ etsyId: '3917770001' }), { orderNumber: '3917770001', customer: 'Alex Tremblay', country: 'DE', currency: 'EUR', total: '45.00', vat: '7.18' });
+
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '3917770002', orderNumber: '3917770002', totalPrice: 20, currency: 'CAD', raw: { receipt_id: 3917770002 }, items: [{ externalId: 'v2', title: 'K', quantity: 1 }] }));
+    const noVat = getVatLabel({ etsyId: '3917770002' });
+    assert.equal(noVat.vat, null);
+    assert.equal(noVat.total, '20.00', 'sans reçu détaillé, le total vient de la commande');
+
+    assert.throws(() => getVatLabel({ shopifyId: '7770001' }), /Etsy/);
   });
 
   it('une commande Etsy ne touche pas Shopify', async () => {
