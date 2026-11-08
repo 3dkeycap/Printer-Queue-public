@@ -209,7 +209,7 @@
   };
 
   let toast = null;
-  const say = (text, tone = 'ok') => {
+  const say = (text, tone = 'ok', diagnostic = null) => {
     toast?.remove();
     toast = document.createElement('div');
     toast.setAttribute('data-resin-queue', '');
@@ -218,8 +218,25 @@
       'position:fixed;right:16px;bottom:16px;z-index:2147483646;max-width:420px;padding:10px 14px;border-radius:10px;' +
       `font:600 13px system-ui,-apple-system,sans-serif;color:#fff;background:${tone === 'ok' ? '#167a43' : '#8a6414'};` +
       'box-shadow:0 10px 30px -10px rgba(20,30,60,.5);';
+    if (diagnostic) {
+      // ce que la page contient vraiment, à coller dans la conversation pour corriger
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.textContent = 'Copier le diagnostic';
+      copy.style.cssText = 'all:unset;display:block;margin-top:8px;padding:6px 10px;border-radius:8px;background:#fff;color:#8a6414;cursor:pointer;';
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(diagnostic);
+          copy.textContent = 'Copié ✓ (colle-le dans la conversation)';
+        } catch {
+          copy.textContent = 'Copie impossible';
+        }
+      });
+      toast.append(copy);
+    }
+    const shown = toast;
     document.documentElement.append(toast);
-    setTimeout(() => toast?.remove(), 7000);
+    setTimeout(() => shown.remove(), diagnostic ? 60000 : 7000);
   };
 
   /*
@@ -263,45 +280,106 @@
     isEmpty(control) || /^(select|choose|choisir|--)/.test(norm(control.selectedOptions?.[0]?.textContent ?? ''));
 
   /*
-   * Liste « à la Select2 » (Province sur Chit Chats) : la vraie <select> est cachée et une fausse liste avec une zone de
-   * recherche s'affiche par-dessus. Changer la valeur cachée ne suffit pas : on fait comme une personne — ouvrir la liste,
-   * taper le nom, cliquer l'option.
+   * Liste à recherche de Chit Chats (Province) : la vraie <select> est cachée et une liste dessinée par la page s'affiche
+   * à sa place. Changer la valeur cachée ne suffit pas : on fait comme une personne — ouvrir la liste, taper le nom,
+   * cliquer l'option (sinon Entrée) — puis on VÉRIFIE que la liste affiche bien le choix. Sinon : échec + diagnostic.
    */
-  const pickInWidget = async (select, text) => {
+  const widgetTrigger = (select) => {
     const field = select.closest('.select2-container')?.parentElement ?? select.parentElement;
-    let trigger = null;
-    for (let node = field, depth = 0; node && depth < 3 && !trigger; node = node.parentElement, depth += 1) {
-      trigger = [...node.querySelectorAll('.select2-selection, [role="combobox"], [aria-haspopup="listbox"]')].find((element) => element !== select && visible(element));
+    for (let node = field, depth = 0; node && depth < 3; node = node.parentElement, depth += 1) {
+      const trigger = [...node.querySelectorAll('.select2-selection, .choices, .choices__inner, .bootstrap-select > button, [role="combobox"], [aria-haspopup="listbox"], [aria-haspopup="true"]')]
+        .find((element) => element !== select && visible(element));
+      if (trigger) return trigger;
     }
-    if (!trigger) return false;
-    for (const type of ['mousedown', 'mouseup', 'click']) trigger.dispatchEvent(new MouseEvent(type, { bubbles: true }));
-    await sleep(250);
-    const search = [...document.querySelectorAll('.select2-search__field, .select2-container--open input, [role="listbox"] input, input[type="search"]')].find(visible) ??
-      (document.activeElement instanceof HTMLInputElement && document.activeElement !== select ? document.activeElement : null);
+    return null;
+  };
+  const shownText = (trigger) => norm(`${trigger.textContent} ${trigger.value ?? ''}`);
+  /** La liste affiche-t-elle encore « Province » / « Choisir… » (rien de choisi) ? */
+  const widgetEmpty = (trigger) => !shownText(trigger) || /^(province|state|select|choose|choisir|--)/.test(shownText(trigger));
+
+  const press = (target, key, keyCode) => {
+    for (const type of ['keydown', 'keypress', 'keyup']) {
+      target.dispatchEvent(new KeyboardEvent(type, { bubbles: true, cancelable: true, key, code: key, keyCode, which: keyCode }));
+    }
+  };
+  const mouse = (target, types) => {
+    for (const type of types) {
+      const Ctor = type.startsWith('pointer') ? PointerEvent : MouseEvent;
+      target.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true, view: window, button: 0 }));
+    }
+  };
+
+  const pickInWidget = async (select, label) => {
+    const name = label.split(' (')[0];
+    const trigger = widgetTrigger(select);
+    const diag = (why, extra = []) =>
+      [`Resin Queue ${chrome.runtime.getManifest().version} — province « ${label} » non choisie : ${why}`, `select : ${select.outerHTML.slice(0, 300)}`, ...extra].join('\n\n');
+    if (!trigger) return { ok: false, why: 'liste introuvable', diagnostic: diag('liste visible introuvable', [`parent : ${select.parentElement?.outerHTML.slice(0, 1200)}`]) };
+    const done = () => shownText(trigger).includes(norm(name));
+    if (done()) return { ok: true };
+
+    trigger.focus?.();
+    mouse(trigger, ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']);
+    await sleep(350);
+    const before = document.activeElement;
+    const search =
+      (before instanceof HTMLInputElement && before !== select && !trigger.contains(before) ? before : null) ??
+      [...document.querySelectorAll('.select2-search__field, .choices__input--cloned, .bs-searchbox input, input[type="search"], input[aria-autocomplete]')].find(visible) ??
+      null;
     if (search) {
-      setValue(search, text.split(' (')[0]);
-      search.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'n' }));
-      await sleep(350);
+      // taper le nom (sans « blur » : la liste se fermerait)
+      search.focus();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(search, name);
+      search.dispatchEvent(new InputEvent('input', { bubbles: true, data: name, inputType: 'insertText' }));
+      press(search, name.slice(-1), name.toUpperCase().charCodeAt(name.length - 1));
+      await sleep(450);
     }
-    const option = [...document.querySelectorAll('.select2-results__option, [role="option"], li')]
-      .filter(visible)
-      .find((entry) => norm(entry.textContent) === norm(text) || norm(entry.textContent).startsWith(norm(text.split(' (')[0])));
-    if (!option) return false;
-    for (const type of ['mouseenter', 'mousemove', 'mousedown', 'mouseup', 'click']) option.dispatchEvent(new MouseEvent(type, { bubbles: true }));
-    await sleep(200);
-    return true;
+    const options = [...document.querySelectorAll('[role="option"], .select2-results__option, .choices__item--choice, li, .dropdown-item, a')]
+      .filter((element) => visible(element) && !element.closest('select') && norm(element.textContent).length < 80);
+    const option =
+      options.find((element) => norm(element.textContent) === norm(label)) ??
+      options.find((element) => norm(element.textContent).startsWith(norm(name)));
+    if (option) {
+      option.scrollIntoView?.({ block: 'nearest' });
+      mouse(option, ['pointerover', 'mouseover', 'mouseenter', 'pointermove', 'mousemove', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']);
+      await sleep(300);
+      if (done()) return { ok: true };
+    }
+    // sinon : Entrée choisit l'option surlignée (la première qui correspond à ce qu'on a tapé)
+    if (search) {
+      press(search, 'Enter', 13);
+      await sleep(300);
+      if (done()) return { ok: true };
+    }
+    press(document.activeElement ?? document.body, 'Escape', 27);
+    return {
+      ok: false,
+      why: option ? 'option trouvée mais pas acceptée' : 'option introuvable',
+      diagnostic: diag(option ? 'option cliquée sans effet' : 'option introuvable', [
+        `liste : ${trigger.outerHTML.slice(0, 600)}`,
+        `recherche : ${search ? search.outerHTML.slice(0, 300) : 'aucune'}`,
+        `option : ${option ? option.outerHTML.slice(0, 300) : 'aucune'}`,
+        `menu : ${(option ?? search)?.closest('ul, [role="listbox"], .select2-dropdown, .choices__list, .dropdown-menu, div')?.outerHTML.slice(0, 1500) ?? 'aucun'}`,
+      ]),
+    };
   };
 
   const fillChoice = async (control, text) => {
     if (!control || !text) return false;
     if (control instanceof HTMLSelectElement) {
-      if (!choiceIsEmpty(control)) return false;
       const option = [...control.options].find((entry) => norm(entry.textContent) === norm(text) || norm(entry.value) === norm(text) || norm(entry.textContent).startsWith(norm(text)));
+      if (visible(control)) {
+        if (!choiceIsEmpty(control) || !option) return false;
+        setValue(control, option.value);
+        return true;
+      }
+      // <select> cachée sous une liste dessinée : c'est ce que la liste AFFICHE qui compte (vide ou pas, choisi ou pas)
+      const trigger = widgetTrigger(control);
+      if (trigger && !widgetEmpty(trigger)) return false;
       if (!option) return false;
-      // la valeur cachée d'abord, puis la fausse liste affichée (si elle existe) comme le ferait une personne
-      setValue(control, option.value);
-      if (!visible(control)) await pickInWidget(control, option.textContent.trim());
-      return true;
+      const result = await pickInWidget(control, option.textContent.trim());
+      if (!result.ok) widgetProblems.push(result);
+      return result.ok;
     }
     if (isCombo(control)) return fillCombo(control, text);
     return fillText(control, text);
@@ -399,6 +477,7 @@
   };
 
   let doneFor = null;
+  let widgetProblems = [];
   const complete = async ({ force = false } = {}) => {
     // pas un formulaire d'envoi (aucun champ « HS Code ») : rien à faire
     if (!fieldsByLabel('HS Code').length) return hideButton();
@@ -418,6 +497,7 @@
       say(`Resin Queue : rien complété pour ${ref.replace(/^nom:/, '')} (${data?.error ?? 'app injoignable'}).`, 'warn');
       return;
     }
+    widgetProblems = [];
     const filled = [];
     if (data.ioss && fieldsByLabel('Customs Tax Reference Number').some((control) => fillText(control, data.ioss))) filled.push(`IOSS ${data.ioss}`);
     const count = (label, fill) => fieldsByLabel(label).reduce((n, control, index) => n + (fill(control, index) ? 1 : 0), 0);
@@ -450,7 +530,14 @@
     if (weights) filled.push(`poids 1 g ×${weights}`);
     const makers = await fillManufacturers(data.items);
     if (makers) filled.push(`fabricant ×${makers}`);
-    if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);
+    if (widgetProblems.length) {
+      // ne jamais annoncer « complété » pour un champ qui ne l'est pas
+      say(
+        `Resin Queue a complété ${data.orderNumber}${filled.length ? ` (${filled.join(', ')})` : ''}, MAIS ${widgetProblems.length} province(s) n’ont pas pu être choisies (${widgetProblems[0].why}) : choisis-les à la main, et envoie le diagnostic pour que ce soit corrigé.`,
+        'warn',
+        widgetProblems.map((problem) => problem.diagnostic).join('\n\n-----\n\n'),
+      );
+    } else if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);
     else if (force) say(`Resin Queue : rien à compléter pour ${data.orderNumber} (les champs sont déjà remplis, ou pas reconnus).`, 'warn');
   };
 

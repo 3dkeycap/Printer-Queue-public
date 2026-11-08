@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.12.5 : province choisie pour de vrai dans la liste de Chit Chats.** L'extension ouvre la liste, tape le nom,
+  clique l'option et, si ça ne prend pas, appuie sur Entrée ; puis elle **vérifie** que la liste affiche bien la province. Si ce
+  n'est pas le cas, le message le dit (« N province(s) n'ont pas pu être choisies : choisis-les à la main ») au lieu d'annoncer
+  « complété », avec un bouton **« Copier le diagnostic »** à coller dans la conversation. Une liste qui affiche encore « Province »
+  compte comme vide ; une province déjà choisie n'est jamais remplacée.
 - **Extension 1.12.4** : province du fabricant au **Québec** (et Guangdong) choisie dans la liste à recherche de Chit Chats comme le ferait une personne : ouvrir la liste, taper le nom, cliquer l'option (changer la valeur cachée ne suffisait pas). Une liste restée sur « Choisir… » compte comme vide.
 - **Extension 1.12.3** : le bouton **« ✍ Compléter »** de Chit Chats occupe toute la zone libre à gauche de la fenêtre « Edit Shipment », du haut jusqu'en bas (impossible à rater).
 - **Extension 1.12.2** : « Province / State » du fabricant reconnu sur le vrai Chit Chats (étiquette avec une marque, champ recréé après le choix du pays : l'extension l'attend jusqu'à 2 s et le cherche aussi par nom ou par texte).
