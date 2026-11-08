@@ -75,6 +75,10 @@
     .ddopt::before { content: ''; width: 14px; height: 14px; border: 1.5px solid #9aa8c4; border-radius: 4px; flex: none; }
     .ddopt.on::before { background: #1f5fd6; border-color: #1f5fd6; box-shadow: inset 0 0 0 2px #fff; }
     .ddopt[disabled] { opacity: .55; cursor: default; }
+    .addform { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+    .addform[hidden] { display: none; }
+    .addform .row { align-items: center; }
+    .addform input[type=number] { width: 70px; flex: none; }
     .empty { color: #5b6a86; padding: 20px 0; text-align: center; }
   `;
 
@@ -184,6 +188,40 @@
     return h('div', { class: 'dd' }, [toggle, menu, note]);
   };
 
+  /** Ajouter une pièce à la commande (oubliée, supplément) : elle rejoint « À imprimer » et le bac, sans passer par l'app. */
+  const addPartBox = (orderExternalId, getDraft, getNote) => {
+    const name = h('input', { type: 'text', placeholder: 'Nom de la pièce', maxlength: '120' });
+    const variant = h('input', { type: 'text', placeholder: 'Variante / couleur (facultatif)', maxlength: '100' });
+    const qty = h('input', { type: 'number', min: '1', max: '20', value: '1' });
+    const note = h('div', { class: 'meta' }, '');
+    const add = h('button', { class: 'btn ghost', type: 'button' }, 'Ajouter à la commande');
+    const form = h('div', { class: 'addform', hidden: true }, [name, variant, h('div', { class: 'row' }, [h('label', { class: 'meta' }, 'Quantité'), qty, add]), note]);
+    const toggle = h('button', { class: 'ddbtn', type: 'button' }, '➕ Ajouter une pièce à la commande');
+    toggle.addEventListener('click', () => {
+      form.hidden = !form.hidden;
+      if (!form.hidden) name.focus();
+    });
+    add.addEventListener('click', async () => {
+      if (!name.value.trim()) {
+        note.textContent = 'Donne un nom à la pièce.';
+        return;
+      }
+      add.disabled = true;
+      note.textContent = '';
+      const { lastPacker = '' } = await chrome.storage.local.get('lastPacker');
+      const result = await send({ type: 'order-add-part', orderExternalId, name: name.value, variant: variant.value, quantity: qty.value, adder: lastPacker });
+      add.disabled = false;
+      if (result?.error) {
+        note.textContent = `Pièce non ajoutée : ${result.error}`;
+        return;
+      }
+      // la liste se redessine avec la nouvelle pièce ; ce qui était saisi (quantités, note) est gardé
+      render(orderExternalId, result, { ok: true, text: `✓ « ${name.value.trim()} » ajoutée à la commande.`, keepDraft: getDraft(), keepNote: getNote() });
+      globalThis.dispatchEvent(new CustomEvent('resin-queue-pack', { detail: { open: true, saved: true } }));
+    });
+    return h('div', { class: 'dd' }, [toggle, form]);
+  };
+
   const render = async (orderExternalId, view, flash) => {
     ensureHost();
     const old = root.querySelector('.panel');
@@ -213,7 +251,7 @@
 
     const order = view.order;
     // quantités choisies, pré-remplies avec ce qui est déjà dans le bac
-    const draft = new Map(view.items.map((item) => [item.id, { packed: item.packed, reason: item.lastReason ?? '', other: '' }]));
+    const draft = new Map(view.items.map((item) => [item.id, flash?.keepDraft?.get(item.id) ?? { packed: item.packed, reason: item.lastReason ?? '', other: '' }]));
     const { lastPacker = '' } = await chrome.storage.local.get('lastPacker');
 
     const msg = h('div', { class: `msg ${flash?.ok ? 'ok' : 'err'}` }, flash?.text ?? '');
@@ -371,7 +409,7 @@
 
     const last = view.history[0];
     const noteInput = h('textarea', { placeholder: 'Ex. bac 4, la keycap rouge est dans le sac à part…' });
-    noteInput.value = order.packNote ?? '';
+    noteInput.value = flash?.keepNote ?? order.packNote ?? '';
     panel.append(
       h('header', {}, [
         h('div', {}, [h('h2', {}, `📦 Bac — commande ${order.number ?? ''}`)]),
@@ -385,6 +423,7 @@
           h('h3', {}, 'Mis dans le bac'),
           view.items.length ? h('div', { class: 'items' }, view.items.flatMap(itemRow)) : h('div', { class: 'empty' }, 'Aucun article'),
         ]),
+        order.cancelledAt || order.shippedAt ? null : addPartBox(orderExternalId, () => draft, () => noteInput.value),
         h('div', { class: 'box' }, [h('h3', {}, 'Notes (internes, pas envoyées à la boutique)'), noteInput]),
       ]),
       h('footer', {}, [

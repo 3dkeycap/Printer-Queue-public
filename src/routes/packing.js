@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncRoute } from '../lib/errors.js';
-import { addPacker, getPackingView, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
+import { PACKED_TAG, addPacker, addPartsToOrder, getPackingView, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
 
 export const packingRouter = Router();
 
@@ -57,3 +57,15 @@ const tagRoute = (key) =>
 packingRouter.post('/shopify/:id/tags', tagRoute('shopifyId'));
 packingRouter.post('/etsy/:id/tags', tagRoute('etsyId'));
 packingRouter.post('/orders/:id/tags', tagRoute('orderId'));
+
+/** Pièce(s) ajoutée(s) à la commande depuis l'extension : { name, variant?, quantity?, adder? }. */
+const addPartsRoute = (key) =>
+  asyncRoute(async (req, res) => {
+    const { view, unpacked, order } = addPartsToOrder({ [key]: req.params.id }, req.body ?? {});
+    // le bac n'est plus complet : « Pre packed » est retiré aussi dans Shopify
+    const shopifyTags = unpacked ? await pushShopifyOrderTag({ ...order, tag: PACKED_TAG, on: false }) : null;
+    res.json({ ...view, shopifyTags });
+  });
+packingRouter.post('/shopify/:id/parts', addPartsRoute('shopifyId'));
+packingRouter.post('/etsy/:id/parts', addPartsRoute('etsyId'));
+packingRouter.post('/orders/:id/parts', addPartsRoute('orderId'));

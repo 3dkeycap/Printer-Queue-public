@@ -5,6 +5,7 @@ import { normalizeComments } from './parts.service.js';
 import { getSettings, updateSettings } from './settings.service.js';
 import { placeholderImages, realImage } from './images.js';
 import { isConfigured as shopifyConfigured, updateOrderTags } from '../integrations/shopify.js';
+import { listColors, parseColorRules, resolveItemColorKey } from './colors.js';
 
 const log = createLogger('packing');
 
@@ -304,4 +305,64 @@ export const pushShopifyOrderTag = async ({ source, externalId, tag, on }) => {
     log.warn('shopify tag not updated', { externalId, tag, error: error.message });
     return { error: error.message };
   }
+};
+
+/**
+ * Ajoute des pièces à une commande existante depuis l'extension (une pièce oubliée, un supplément) : elles apparaissent
+ * dans « À imprimer » comme les autres pièces de la commande et dans la fenêtre du bac. La commande n'est pas modifiée
+ * côté boutique ; la ligne ajoutée (`added-…`) est ignorée par la synchro, qui ne supprime jamais de pièce.
+ * Renvoie la vue du bac ; `unpacked` vaut true quand le tag « Pre packed » a été retiré (le bac n'est plus complet).
+ */
+export const addPartsToOrder = (where, { name, variant, quantity = 1, adder } = {}) => {
+  const title = String(name ?? '').trim().replace(/\s+/g, ' ');
+  if (!title) throw badRequest('Donne un nom à la pièce');
+  if (title.length > 120) throw badRequest('Le nom de la pièce est trop long (120 caractères maximum)');
+  const variantTitle = String(variant ?? '').trim().replace(/\s+/g, ' ').slice(0, 100) || null;
+  const qty = Number.parseInt(quantity, 10);
+  if (!Number.isFinite(qty) || qty < 1 || qty > 20) throw badRequest('La quantité doit être un nombre entre 1 et 20');
+  const who = String(adder ?? '').trim().slice(0, 60) || null;
+
+  const db = getDb();
+  const order = findOrder(where);
+  if (order.cancelled_at) throw badRequest('Cette commande est annulée : on n’y ajoute pas de pièce');
+  if (order.shipped_at) throw badRequest('Cette commande est déjà expédiée : on n’y ajoute pas de pièce');
+
+  const ts = nowIso();
+  const colorKey = resolveItemColorKey(
+    { title, variantTitle, colorHints: [] },
+    listColors(),
+    parseColorRules(getSettings()['production.colorRules']),
+  );
+  const tags = normalizeComments(who ? [`Ajoutée par ${who}`] : ['Ajoutée']);
+
+  const run = db.transaction(() => {
+    const item = db
+      .prepare(
+        `INSERT INTO order_items (order_id, external_id, title, variant_title, quantity, color_key, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(order.id, `added-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, variantTitle, qty, colorKey, ts, ts);
+    for (let unit = 1; unit <= qty; unit += 1) {
+      const part = db
+        .prepare(
+          `INSERT INTO parts (order_id, order_item_id, unit_index, name, variant_title, color_key, status, priority, comment,
+                              status_changed_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'TO_PRINT', ?, ?, ?, ?, ?)`,
+        )
+        .run(order.id, item.lastInsertRowid, unit, title, variantTitle, colorKey, order.is_priority ? 1 : 0, tags, ts, ts, ts);
+      db.prepare(
+        `INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at) VALUES (?, NULL, 'TO_PRINT', ?, ?, ?)`,
+      ).run(part.lastInsertRowid, who ? `pack:${who}` : 'extension', `Ajoutée à la commande ${order.order_number ?? order.id} depuis l'extension`, ts);
+    }
+    // une pièce de plus : le bac n'est plus complet, le tag « Pre packed » ne dit plus vrai
+    const current = parseTags(order);
+    const unpacked = current.includes(PACKED_TAG);
+    if (unpacked) {
+      db.prepare('UPDATE orders SET order_tags = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(current.filter((tag) => tag !== PACKED_TAG)), ts, order.id);
+    }
+    return unpacked;
+  });
+  const unpacked = run();
+  log.info('parts added to order', { orderId: order.id, name: title, quantity: qty, by: who });
+  return { view: getPackingView({ orderId: order.id }), unpacked, order: { source: order.source, externalId: order.external_id } };
 };

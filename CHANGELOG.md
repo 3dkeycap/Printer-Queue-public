@@ -6,6 +6,13 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.9.0 : ajouter des pièces à la commande sans passer par l'app.** Dans la fenêtre « J'ai packé » (Shopify et Etsy),
+  « ➕ Ajouter une pièce à la commande » : nom, variante / couleur (facultative), quantité (1 à 20). Les pièces rejoignent
+  la commande : elles sont dans « À imprimer » (couleur détectée comme pour une commande normale), portent le tag « Ajoutée par <nom> »,
+  apparaissent tout de suite dans le bac et sont suivies jusqu'à l'expédition. Rien n'est modifié dans la boutique, la synchro ne
+  les touche pas ; une commande annulée ou déjà expédiée refuse l'ajout. Si le bac était complet, il ne l'est plus : le tag
+  « Pre packed » est retiré (aussi dans Shopify). Les quantités et la note déjà saisies dans la fenêtre sont gardées.
+  API : `POST /api/packing/{shopify,etsy,orders}/:id/parts`.
 - **Suivi Chit Chats → Etsy automatique.** Quand une commande Etsy part avec Chit Chats, son numéro de suivi est envoyé à Etsy
   tout seul (Etsy marque la commande expédiée et prévient l'acheteur) : plus de copier-coller. Si le suivi est déjà dans Etsy,
   rien n'est renvoyé ; un transporteur refusé est renvoyé avec « other » ; une erreur est notée sur la commande (fiche → « Suivi Etsy »)

@@ -324,6 +324,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+  // pièce ajoutée à la commande depuis la fenêtre : l'app la crée (suivie comme les autres) et renvoie la vue du bac
+  if (message?.type === 'order-add-part') {
+    appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}/parts`, {
+      method: 'POST',
+      body: { name: message.name, variant: message.variant, quantity: message.quantity, adder: message.adder },
+    }).then(sendResponse);
+    return true;
+  }
   // tag de commande (To pack, Hold…) coché / décoché dans la fenêtre : l'app le garde et le pousse dans Shopify
   if (message?.type === 'order-tag') {
     appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}/tags`, {

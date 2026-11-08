@@ -7,7 +7,7 @@ const { migrate } = await import('../src/db/migrate.js');
 const { closeDb, getDb } = await import('../src/db/index.js');
 const { getSettings, updateSettings } = await import('../src/domain/settings.service.js');
 const { ingestOrder } = await import('../src/domain/ingest.js');
-const { getPackingView, savePack, syncShopifyTags, setOrderTag, pushShopifyOrderTag } = await import('../src/domain/packing.js');
+const { getPackingView, savePack, syncShopifyTags, setOrderTag, pushShopifyOrderTag, addPartsToOrder } = await import('../src/domain/packing.js');
 const { syncMarketplaceFulfillment } = await import('../src/domain/fulfillment.js');
 const { listParts, getFacets } = await import('../src/domain/parts.service.js');
 
@@ -120,6 +120,41 @@ describe("« J'ai packé la commande »", () => {
     const view = savePack({ etsyId: '3919990002' }, { packer: 'Sam', items });
     await syncShopifyTags(view);
     assert.deepEqual(getPackingView({ etsyId: '3919990002' }).orderTags, ['Pre packed']);
+  });
+
+  it('ajouter des pièces à une commande depuis l’extension : pièces suivies, bac, resynchro sans effet', () => {
+    const { orderId } = ingestOrder(makeOrder({ externalId: '7770095', orderNumber: '#4295', items: [{ externalId: 'q1', title: 'Keycap', quantity: 1 }] }));
+    const before = getPackingView({ shopifyId: '7770095' });
+    assert.equal(before.items.length, 1);
+    assert.throws(() => addPartsToOrder({ shopifyId: '7770095' }, { name: ' ' }), /nom/);
+    assert.throws(() => addPartsToOrder({ shopifyId: '7770095' }, { name: 'X', quantity: 0 }), /quantité/);
+    assert.throws(() => addPartsToOrder({ shopifyId: '7770095' }, { name: 'X', quantity: 21 }), /quantité/);
+
+    const { view } = addPartsToOrder({ shopifyId: '7770095' }, { name: 'Nylon Grey Spacebar', variant: '6.25u', quantity: 2, adder: 'Alex' });
+    assert.equal(view.items.length, 2);
+    const added = view.items.find((item) => item.title === 'Nylon Grey Spacebar');
+    assert.equal(added.total, 2);
+    assert.equal(added.variant, '6.25u');
+    const parts = partsOf(orderId).filter((part) => part.name === 'Nylon Grey Spacebar');
+    assert.equal(parts.length, 2);
+    assert.ok(parts.every((part) => part.status === 'TO_PRINT' && String(part.comment).includes('Ajoutée par Alex')));
+    assert.notEqual(parts[0].color_key, 'unassigned', 'la couleur est détectée comme pour une commande normale');
+
+    // la synchro de la boutique repasse sur la commande : les pièces ajoutées restent, rien n'est dupliqué
+    ingestOrder(makeOrder({ externalId: '7770095', orderNumber: '#4295', items: [{ externalId: 'q1', title: 'Keycap', quantity: 1 }] }));
+    assert.equal(partsOf(orderId).length, 3);
+
+    // le bac complet ne l'est plus : « Pre packed » est retiré
+    const items = getPackingView({ shopifyId: '7770095' }).items.map((item) => ({ orderItemId: item.id, packed: item.total }));
+    syncShopifyTags(savePack({ shopifyId: '7770095' }, { packer: 'Sam', items }));
+    assert.deepEqual(getPackingView({ shopifyId: '7770095' }).orderTags, ['Pre packed']);
+    const second = addPartsToOrder({ shopifyId: '7770095' }, { name: 'Oubliée' });
+    assert.equal(second.unpacked, true);
+    assert.deepEqual(getPackingView({ shopifyId: '7770095' }).orderTags, []);
+
+    // commande expédiée ou annulée : refusé
+    getDb().prepare('UPDATE orders SET shipped_at = ? WHERE id = ?').run(new Date().toISOString(), orderId);
+    assert.throws(() => addPartsToOrder({ shopifyId: '7770095' }, { name: 'Trop tard' }), /déjà expédiée/);
   });
 
   it('une commande Etsy ne touche pas Shopify', async () => {
