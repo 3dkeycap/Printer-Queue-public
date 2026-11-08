@@ -123,6 +123,13 @@ Québec, JLC PCB à Hong Kong pour le nylon, Dongguan Gaote pour les switchs), d
 de chaque article est mis à 1 g (même s'il était déjà rempli). Ce qui est
 déjà rempli n'est pas touché. Vérifie, puis enregistre dans Chit Chats.
 
+## Envoi Chit Chats de bout en bout
+
+En ouvrant un envoi (« Edit Shipment ») : la Description se complète et passe toute seule à Package ; une fenêtre demande la
+taille de l'enveloppe (petite, moyenne ou grosse, + hauteur) et le poids ; puis à Postage la livraison la moins chère est choisie
+et l'assurance Chit Chats décochée. **Le paiement (« Pay for Shipment ») reste à toi**, après vérification. « Annuler » dans la
+fenêtre de l'enveloppe arrête l'automatisme.
+
 ## Étiquette VAT (Etsy)
 
 Pour l'Europe, Etsy demande d'écrire sur le colis la valeur de la commande en euros et de donner son numéro IOSS au transporteur.

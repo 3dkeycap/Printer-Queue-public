@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.13.0 : envoi Chit Chats automatisé jusqu'au choix de la livraison.** Description : les champs manquants sont remplis
+  puis **« Save and continue »** est cliqué tout seul (pas si une province n'a pas pu être choisie, ni si Chit Chats affiche des erreurs).
+  Package : **Thick Envelope** est coché et une fenêtre demande la **taille** (petite 22 × 17 × 4 cm, moyenne 21 × 30 cm ou grosse
+  30 × 37 cm, avec la **hauteur** pour ces deux-là) et le **poids** (g), puis remplit et fait « Save and continue ». Postage : la
+  **livraison la moins chère** est choisie et l'**assurance Chit Chats décochée**. **Jamais « Pay for Shipment »** (ni « Save » sur
+  Postage) : une personne vérifie et paie.
 - **Extension 1.12.7 : province du fabricant enfin juste (Québec, Guangdong).** D'après l'enregistrement de la vraie page : chaque article
   a plusieurs champs province du même nom (un texte pour Hong Kong, une liste Select2 par pays : Canada, États-Unis, Chine) ; seul celui
   du pays choisi est actif, les autres sont **désactivés**. L'extension écrivait dans le champ texte désactivé ; elle prend maintenant le

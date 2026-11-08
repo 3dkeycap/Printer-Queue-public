@@ -546,6 +546,8 @@
       );
     } else if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);
     else if (force) say(`Resin Queue : rien à compléter pour ${data.orderNumber} (les champs sont déjà remplis, ou pas reconnus).`, 'warn');
+    // étape suivante toute seule (pas si une province manque : la personne la choisit d'abord, puis clique elle-même)
+    if (!widgetProblems.length) await saveAndContinue('Description');
   };
 
   /*
@@ -618,11 +620,199 @@
     button = null;
   }
 
+
+  /* ---------------------------------------------- envoi de bout en bout (Description -> Package -> Postage) */
+
+  /*
+   * Description complétée -> « Save and continue » tout seul ; Package : « Thick Envelope » + taille et poids demandés à
+   * la personne ; Postage : la livraison la moins chère, assurance Chit Chats décochée. JAMAIS « Pay for Shipment » :
+   * une personne vérifie et paie elle-même. Chaque étape n'est faite qu'une fois par formulaire affiché.
+   */
+  const stepRoot = (element) => element?.closest('form') ?? element?.closest('[role="dialog"], .modal') ?? document.body;
+  const buttonNamed = (pattern) =>
+    [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, a.button')]
+      .filter(visible)
+      .find((element) => pattern.test(norm(element.textContent || element.value)));
+
+  const saveAndContinue = async (step) => {
+    const next = buttonNamed(/^save and continue$/);
+    if (!next || /pay/.test(norm(next.textContent || next.value))) return false;
+    const root = stepRoot(next);
+    if (root.dataset.rqSaved) return false;
+    root.dataset.rqSaved = '1';
+    await sleep(700);
+    next.click();
+    // refusé par Chit Chats (champ manquant…) : on s'arrête et on le dit
+    await sleep(2500);
+    if (root.isConnected && /please review the error/i.test(root.innerText ?? '')) {
+      say(`Resin Queue : Chit Chats refuse l’étape « ${step} » (voir les erreurs en rouge). Corrige puis clique « Save and continue ».`, 'warn');
+      return false;
+    }
+    return true;
+  };
+
+  const SIZES = {
+    petite: { label: 'Petite', dims: [22, 17, 4], askHeight: false },
+    moyenne: { label: 'Moyenne', dims: [30, 21, null], askHeight: true },
+    grosse: { label: 'Grosse', dims: [37, 30, null], askHeight: true },
+  };
+
+  /** Fenêtre « Quelle enveloppe ? » : taille (petite / moyenne / grosse), hauteur si besoin, poids. null si annulé. */
+  const askPackage = () =>
+    new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.setAttribute('data-resin-queue', '');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(15,25,45,.45);display:flex;align-items:center;justify-content:center;font:15px system-ui,-apple-system,sans-serif;';
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#fff;color:#14213d;border-radius:16px;padding:22px;width:min(440px,92vw);box-shadow:0 30px 80px -20px rgba(0,0,0,.5);';
+      card.innerHTML = `
+        <div style="font:800 19px system-ui;margin-bottom:4px">Resin Queue — l’enveloppe (Thick Envelope)</div>
+        <div style="color:#5b6a86;margin-bottom:14px">Quelle taille, et combien ça pèse ?</div>
+        <div data-sizes style="display:flex;gap:8px;margin-bottom:14px"></div>
+        <label data-hwrap style="display:none;margin-bottom:12px">Hauteur (cm)<input data-h type="number" min="0.1" step="0.1" inputmode="decimal" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
+        <label style="display:block;margin-bottom:12px">Poids (g)<input data-w type="number" min="1" step="1" inputmode="numeric" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
+        <div data-err style="color:#a02828;min-height:1.2em;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px"><button data-cancel type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#eef2f8;font:700 15px system-ui;cursor:pointer">Annuler (je fais à la main)</button>
+        <button data-ok type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#1f5fd6;color:#fff;font:700 15px system-ui;cursor:pointer">Continuer</button></div>`;
+      overlay.append(card);
+      let chosen = null;
+      const sizes = card.querySelector('[data-sizes]');
+      const hwrap = card.querySelector('[data-hwrap]');
+      for (const [key, size] of Object.entries(SIZES)) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.size = key;
+        b.innerHTML = `<b>${size.label}</b><br><span style="font-size:13px;color:#5b6a86">${size.askHeight ? `${size.dims[1]} × ${size.dims[0]}` : size.dims.join(' × ')} cm</span>`;
+        b.style.cssText = 'flex:1;padding:12px 6px;border:2px solid #ccd5e5;border-radius:12px;background:#fff;cursor:pointer;font:15px system-ui;color:#14213d;';
+        b.addEventListener('click', () => {
+          chosen = key;
+          for (const other of sizes.children) other.style.borderColor = other === b ? '#1f5fd6' : '#ccd5e5';
+          hwrap.style.display = size.askHeight ? 'block' : 'none';
+          (size.askHeight ? card.querySelector('[data-h]') : card.querySelector('[data-w]')).focus();
+        });
+        sizes.append(b);
+      }
+      const finish = (value) => {
+        overlay.remove();
+        resolve(value);
+      };
+      card.querySelector('[data-cancel]').addEventListener('click', () => finish(null));
+      const submit = () => {
+        const err = card.querySelector('[data-err]');
+        if (!chosen) return (err.textContent = 'Choisis la taille.');
+        const size = SIZES[chosen];
+        const height = size.askHeight ? Number(String(card.querySelector('[data-h]').value).replace(',', '.')) : size.dims[2];
+        const weight = Number(String(card.querySelector('[data-w]').value).replace(',', '.'));
+        if (!(height > 0)) return (err.textContent = 'Indique la hauteur (cm).');
+        if (!(weight > 0)) return (err.textContent = 'Indique le poids (g).');
+        finish({ length: size.dims[0], width: size.dims[1], height, weight: Math.round(weight) });
+      };
+      card.querySelector('[data-ok]').addEventListener('click', submit);
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') submit();
+      });
+      document.documentElement.append(overlay);
+    });
+
+  /** Choisit l'option `value` (texte ou valeur) d'une liste, en remplaçant le choix actuel. */
+  const forceSelect = (control, value) => {
+    if (!(control instanceof HTMLSelectElement)) return false;
+    const option = [...control.options].find((entry) => norm(entry.value) === norm(value) || norm(entry.textContent) === norm(value));
+    if (!option) return false;
+    if (control.value !== option.value) setValue(control, option.value);
+    return true;
+  };
+
+  const packageStep = async (radio) => {
+    const root = stepRoot(radio);
+    if (root.dataset.rqPackage) return;
+    root.dataset.rqPackage = '1';
+    const answer = await askPackage();
+    if (!answer) return say('Resin Queue : enveloppe à remplir à la main.', 'warn');
+    if (!radio.checked) radio.click();
+    // les champs poids / taille apparaissent après le choix du type
+    let weight = null;
+    for (let attempt = 0; attempt < 15 && !weight; attempt += 1) {
+      weight = fieldsByLabel('Weight', root, { exact: true }).find((control) => !control.disabled && visible(control)) ?? null;
+      if (!weight) await sleep(200);
+    }
+    const one = (label) => fieldsByLabel(label, root, { exact: true }).find((control) => !control.disabled && visible(control)) ?? null;
+    const units = fieldsByLabel('Unit', root, { exact: true }).filter((control) => !control.disabled && visible(control));
+    const missing = [];
+    const put = (control, value, name) => {
+      if (!control) return missing.push(name);
+      setValue(control, String(value));
+    };
+    put(weight, answer.weight, 'poids');
+    if (units[0] && !forceSelect(units[0], 'g')) missing.push('unité du poids');
+    put(one('Length'), answer.length, 'longueur');
+    put(one('Width'), answer.width, 'largeur');
+    put(one('Height'), answer.height, 'hauteur');
+    if (units.length > 1 && !forceSelect(units[units.length - 1], 'cm')) missing.push('unité de taille');
+    if (missing.length) return say(`Resin Queue : je ne trouve pas ${missing.join(', ')} sur cette page : remplis-les à la main.`, 'warn');
+    say(`Resin Queue : Thick Envelope ${answer.length} × ${answer.width} × ${answer.height} cm, ${answer.weight} g.`);
+    await saveAndContinue('Package');
+  };
+
+  /** Le prix d'une livraison (« $8.89 + fees ») et la ligne qui le porte. */
+  const rateRow = (radio) => {
+    let node = radio.parentElement;
+    while (node && node !== document.body) {
+      if (node.querySelectorAll('input[type="radio"]').length > 1) return null;
+      if (/\$\s?\d/.test(node.textContent ?? '')) return node;
+      node = node.parentElement;
+    }
+    return null;
+  };
+
+  const postageStep = async (root) => {
+    if (root.dataset.rqPostage) return;
+    root.dataset.rqPostage = '1';
+    // les tarifs arrivent un peu après l'affichage de l'étape
+    let rates = [];
+    for (let attempt = 0; attempt < 40 && !rates.length; attempt += 1) {
+      rates = [...root.querySelectorAll('input[type="radio"]')]
+        .map((radio) => ({ radio, row: rateRow(radio) }))
+        .filter(({ row, radio }) => row && !radio.disabled && visible(row))
+        .map(({ radio, row }) => ({ radio, row, price: Number((/\$\s?(\d[\d,]*\.\d{2})/.exec(row.textContent) ?? [])[1]?.replace(/,/g, '')) }))
+        .filter((rate) => rate.price > 0);
+      if (!rates.length) await sleep(400);
+    }
+    const done = [];
+    if (rates.length) {
+      const cheapest = rates.reduce((best, rate) => (rate.price < best.price ? rate : best));
+      if (!cheapest.radio.checked) cheapest.radio.click();
+      const name = (cheapest.row.innerText ?? '').split('\n').map((line) => line.trim()).find(Boolean) ?? '';
+      done.push(cheapest.radio.checked ? `${name} ($${cheapest.price.toFixed(2)}) choisi` : `livraison NON choisie`);
+    } else done.push('aucun tarif trouvé');
+    // assurance Chit Chats cochée par défaut : on la décoche
+    const insurance = [...root.querySelectorAll('input[type="checkbox"]')].find((box) => /chit chats insurance/i.test(box.closest('label, div')?.textContent ?? ''));
+    if (insurance?.checked) insurance.click();
+    await sleep(300);
+    done.push(insurance ? (insurance.checked ? 'assurance ENCORE cochée' : 'assurance décochée') : 'case assurance introuvable');
+    const ok = done[0].endsWith('choisi') && done[1] === 'assurance décochée';
+    say(`Resin Queue : ${done.join(', ')}. Vérifie, puis clique toi-même « Pay for Shipment ».`, ok ? 'ok' : 'warn');
+  };
+
+  /** Regarde quelle étape est affichée et fait la suite (appelé à chaque changement de la page). */
+  const advance = async () => {
+    const thick = [...document.querySelectorAll('input[type="radio"]')].find(
+      (radio) => visible(radio.closest('label, li, div')) && (/thick/i.test(radio.value) || /thick envelope/i.test(radio.closest('label, li, div')?.textContent ?? '')),
+    );
+    if (thick) return packageStep(thick);
+    const insuranceBox = [...document.querySelectorAll('input[type="checkbox"]')].find((box) => /chit chats insurance/i.test(box.closest('label, div')?.textContent ?? ''));
+    if (insuranceBox && visible(insuranceBox.closest('label, div'))) return postageStep(stepRoot(insuranceBox));
+    return null;
+  };
+
   // le formulaire de Chit Chats se construit après le chargement (et change sans recharger la page)
   let timer = null;
   new MutationObserver(() => {
     clearTimeout(timer);
-    timer = setTimeout(() => complete().catch(() => {}), 700);
+    timer = setTimeout(() => {
+      complete().catch(() => {});
+      advance().catch((error) => say(`Resin Queue : ${error.message}`, 'warn'));
+    }, 700);
   }).observe(document.documentElement, { childList: true, subtree: true });
   setTimeout(() => complete().catch(() => {}), 1200);
 
