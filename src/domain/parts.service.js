@@ -145,7 +145,7 @@ export const listParts = (query = {}) => {
               p.packed_at, p.packed_by,
               p.status_changed_at, p.printed_at, p.shipped_at, p.created_at, p.updated_at,
               o.source, o.order_number, o.customer_name, o.placed_at, o.is_priority AS order_priority,
-              o.tracking_number, o.carrier,
+              o.tracking_number, o.carrier, o.etsy_tracking_at, o.etsy_tracking_error,
               o.chitchats_import_status, o.chitchats_import_error, o.chitchats_shipment_id,
               o.shipped_at AS order_shipped_at, o.created_at AS order_created_at, o.note AS order_note, o.pack_note,
               COALESCE(c.name, 'Non assigné') AS color_name,

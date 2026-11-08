@@ -50,7 +50,8 @@ export const DEFINITIONS = [
     hint: "Etsy → Your Apps, à côté de la Keystring. Etsy l'exige maintenant sur chaque appel (en-tête x-api-key « keystring:shared secret ») : sans lui, erreur 403.",
     fallback: () => process.env.ETSY_SHARED_SECRET || '',
   },
-  { key: 'etsy.scopes', group: 'etsy', label: 'Scopes OAuth', type: 'text', fallback: () => 'transactions_r' },
+  { key: 'etsy.scopes', group: 'etsy', label: 'Scopes OAuth', type: 'text', fallback: () => 'transactions_r transactions_w' },
+  { key: 'etsy.pushTracking', group: 'etsy', label: 'Envoyer le suivi à Etsy', type: 'boolean', hint: 'Quand une commande Etsy part avec Chit Chats, son numéro de suivi est envoyé à Etsy tout seul (plus de copier-coller). Demande le droit « transactions_w » : reconnecte Etsy une fois.', fallback: () => true },
   {
     key: 'etsy.accessToken',
     group: 'etsy',

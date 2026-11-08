@@ -2,6 +2,7 @@ import { getDb, nowIso } from '../db/index.js';
 import { findOrderForShipment, markOrderShipped } from '../domain/orders.service.js';
 import { createLogger } from '../lib/logger.js';
 import { fetchShipments, isShippedStatus } from '../integrations/chitchats.js';
+import { pushEtsyTracking, pushPendingEtsyTracking } from '../domain/etsyTracking.js';
 
 const log = createLogger('sync:shipments');
 
@@ -27,6 +28,8 @@ export const applyShipment = (shipment, { actor = 'chitchats' } = {}) => {
 
   const result = markOrderShipped(order.id, shipment, { actor });
   log.info('shipment applied', { shipmentId: shipment.id, orderId: order.id, ...result });
+  // commande Etsy : le suivi part tout seul vers Etsy (en arrière-plan, sans retarder le webhook)
+  if (order.source === 'etsy') pushEtsyTracking(order.id).catch((error) => log.warn('etsy tracking failed', { orderId: order.id, error: error.message }));
   return { matched: true, order, ...result };
 };
 
@@ -52,6 +55,9 @@ export const syncShipments = async ({ trigger = 'cron' } = {}) => {
       }
     }
 
+    // filet de sécurité : les suivis Etsy qui ne sont pas encore partis (erreur passée, Etsy injoignable…)
+    const etsy = await pushPendingEtsyTracking().catch(() => ({ sent: 0, already: 0, error: 0 }));
+
     const finishedAt = nowIso();
     db.prepare(
       `UPDATE sync_runs SET status = 'success', finished_at = ?, duration_ms = ?,
@@ -62,7 +68,7 @@ export const syncShipments = async ({ trigger = 'cron' } = {}) => {
       new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
       shipments.length,
       parts,
-      `${applied} commande(s) expédiée(s)`,
+      `${applied} commande(s) expédiée(s)${etsy.sent || etsy.error ? ` · suivi Etsy : ${etsy.sent} envoyé(s)${etsy.error ? `, ${etsy.error} en erreur` : ''}` : ''}`,
       runId,
     );
 

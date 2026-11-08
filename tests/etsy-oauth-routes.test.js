@@ -45,7 +45,7 @@ describe('routes OAuth Etsy (PKCE)', () => {
     assert.equal(location.pathname, '/oauth/connect');
     assert.equal(location.searchParams.get('response_type'), 'code');
     assert.equal(location.searchParams.get('client_id'), 'keystring_123');
-    assert.equal(location.searchParams.get('scope'), 'transactions_r');
+    assert.equal(location.searchParams.get('scope'), 'transactions_r transactions_w');
     assert.equal(location.searchParams.get('code_challenge_method'), 'S256');
     assert.equal(
       location.searchParams.get('redirect_uri'),

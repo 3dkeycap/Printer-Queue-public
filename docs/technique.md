@@ -611,6 +611,14 @@ L'extension propose elle-même le bouton **Ouvrir sur Chit Chats** (l'app ne l'a
 Réglages → Boutiques → Chit Chats, `{order}` = numéro de commande) et copie le numéro de commande.
 Le marquage disparaît en changeant de page, en fermant l'onglet, ou après 30 min sur la même page.
 
+## Suivi Chit Chats → Etsy
+
+Une commande Etsy expédiée par Chit Chats (webhook ou job des expéditions) voit son numéro de suivi poussé à Etsy
+(`POST /shops/{shop}/receipts/{receipt}/tracking`, scope `transactions_w`) : `src/domain/etsyTracking.js`. On lit d'abord les
+suivis déjà présents sur le reçu (pas de doublon), le transporteur est traduit (`etsyCarrier`, « other » en repli), le résultat
+est dans `orders.etsy_tracking_at` / `etsy_tracking_error`, et le job des expéditions renvoie au plus 10 commandes en attente
+(14 jours). Réglage `etsy.pushTracking`.
+
 ## Import automatique des commandes dans Chit Chats
 
 Toutes les heures (Réglages → Synchronisation, activable dans Boutiques → Chit Chats), chaque

@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Suivi Chit Chats → Etsy automatique.** Quand une commande Etsy part avec Chit Chats, son numéro de suivi est envoyé à Etsy
+  tout seul (Etsy marque la commande expédiée et prévient l'acheteur) : plus de copier-coller. Si le suivi est déjà dans Etsy,
+  rien n'est renvoyé ; un transporteur refusé est renvoyé avec « other » ; une erreur est notée sur la commande (fiche → « Suivi Etsy »)
+  et réessayée au passage suivant. Réglage « Envoyer le suivi à Etsy » (activé par défaut). **À faire une fois : reconnecter
+  Etsy** (Réglages → Boutiques → Etsy → « Reconnecter via OAuth ») pour accorder le droit d'écriture `transactions_w`.
 - **Les objets d'inventaire se créent depuis `/inventory/mobile`** (le téléphone) : le formulaire « Nouvel objet » a quitté le tableau de bord, qui garde le code QR, le bouton « Ouvrir la page d'inventaire » et l'impression de ce code. Le code QR (et ses étiquettes imprimables) mène maintenant à `/inventory/mobile` ; `/inventory/new` marche toujours (ouvre le formulaire d'ajout), donc les étiquettes déjà imprimées restent valides. Modifier, signaler, commander et supprimer restent aussi possibles sur l'ordinateur.
 
 ### Ajouté

@@ -110,6 +110,11 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 - **Résines** : couleurs, alias de détection, stock.
 - **Mises à jour** : bouton pour installer la dernière version (la base est sauvegardée avant).
 
+## Suivi Etsy automatique
+
+Quand une commande Etsy part avec Chit Chats, le numéro de suivi est envoyé à Etsy tout seul : plus rien à copier-coller.
+Première fois seulement : Réglages → Boutiques → Etsy → « Reconnecter via OAuth » (autorisation d'écriture).
+
 ## Tags de commande (To pack, Hold…)
 
 Dans la fenêtre « J'ai packé » (Shopify et Etsy), la section **Tags de la commande** : un clic coche / décoche

@@ -246,3 +246,34 @@ export const fetchCancelledReceipts = async ({ since } = {}) => {
   }
   return cancelled;
 };
+
+/** Suivis déjà enregistrés sur un reçu Etsy : [{ tracking_code, carrier_name }]. */
+export const fetchReceiptShipments = async (receiptId) => {
+  await ensureFreshEtsyToken();
+  const fresh = getSettings();
+  const payload = await requestJson(`${config.etsy.apiBase}/shops/${fresh['etsy.shopId']}/receipts/${receiptId}`, {
+    headers: { 'x-api-key': etsyApiKeyHeader(fresh), Authorization: `Bearer ${fresh['etsy.accessToken']}` },
+    retries: 1,
+  });
+  return payload?.shipments ?? [];
+};
+
+/**
+ * Envoie le numéro de suivi à Etsy (il marque la commande expédiée et prévient l'acheteur).
+ * Demande le scope transactions_w. Pas de nouvel essai automatique : un POST répété ajouterait un 2e envoi.
+ */
+export const createReceiptShipment = async (receiptId, { trackingCode, carrierName, sendBcc = false }) => {
+  await ensureFreshEtsyToken();
+  const fresh = getSettings();
+  const body = new URLSearchParams({ tracking_code: trackingCode, carrier_name: carrierName, send_bcc: String(sendBcc) });
+  return requestJson(`${config.etsy.apiBase}/shops/${fresh['etsy.shopId']}/receipts/${receiptId}/tracking`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': etsyApiKeyHeader(fresh),
+      Authorization: `Bearer ${fresh['etsy.accessToken']}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+    retries: 0,
+  });
+};

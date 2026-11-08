@@ -180,6 +180,11 @@ export const openDrawer = async (partId, actions) => {
           el('dd', {}, String(part.fail_count)),
           el('dt', { class: 'adv' }, 'Suivi'),
           el('dd', { class: 'adv' }, part.tracking_number ?? '—'),
+          // commande Etsy partie avec Chit Chats : le suivi est envoyé tout seul à Etsy, on voit si c'est fait
+          part.source === 'etsy' && part.tracking_number ? el('dt', { class: 'adv' }, 'Suivi Etsy') : null,
+          part.source === 'etsy' && part.tracking_number
+            ? el('dd', { class: 'adv', title: part.etsy_tracking_error ?? '' }, part.etsy_tracking_at ? `Envoyé à Etsy ✓ (${formatDate(part.etsy_tracking_at)})` : part.etsy_tracking_error ?? 'Pas encore envoyé')
+            : null,
         ]),
       ]),
 

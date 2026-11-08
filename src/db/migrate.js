@@ -180,6 +180,9 @@ export const migrate = () => {
   // tags de commande posés depuis l'extension (To pack, Hold…) ; ceux de Shopify sont aussi poussés dans la boutique
   addColumnIfMissing(db, 'orders', 'order_tags', "TEXT NOT NULL DEFAULT '[]'");
   // étiquette grand format : quantité à commander, fournisseur, photo (data URL JPEG/PNG/WebP réduite côté navigateur)
+  // suivi envoyé à Etsy quand une commande Etsy part avec Chit Chats (date de l'envoi réussi / dernière erreur)
+  addColumnIfMissing(db, 'orders', 'etsy_tracking_at', 'TEXT');
+  addColumnIfMissing(db, 'orders', 'etsy_tracking_error', 'TEXT');
   // unité du minimum et de la quantité à commander (« rouleaux », « bac »…)
   addColumnIfMissing(db, 'inventory_items', 'unit', 'TEXT');
   addColumnIfMissing(db, 'inventory_items', 'order_qty', 'INTEGER');

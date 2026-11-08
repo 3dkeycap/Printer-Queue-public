@@ -58,7 +58,10 @@ export const buildAuthorizeUrl = (state, codeChallenge) => {
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', apiKey);
   url.searchParams.set('redirect_uri', redirectUri(settings));
-  url.searchParams.set('scope', settings['etsy.scopes'] || 'transactions_r');
+  // transactions_w : l'app envoie à Etsy le suivi des commandes parties avec Chit Chats
+  const scopes = new Set(String(settings['etsy.scopes'] || 'transactions_r').split(/[\s,]+/).filter(Boolean));
+  scopes.add('transactions_w');
+  url.searchParams.set('scope', [...scopes].join(' '));
   url.searchParams.set('state', state);
   url.searchParams.set('code_challenge', codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
