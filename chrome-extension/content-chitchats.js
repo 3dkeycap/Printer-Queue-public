@@ -305,6 +305,28 @@
     return done;
   };
 
+  /*
+   * « Province / State » du fabricant. Chit Chats le recrée après le choix du pays (liste pour le Canada / la Chine, champ texte
+   * pour Hong Kong) et son étiquette peut porter une marque (« Province / State * ») : on cherche par début d'étiquette, par
+   * nom de champ ou par texte, et on attend jusqu'à 2 secondes qu'il apparaisse.
+   */
+  const provinceField = async (block) => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const control =
+        fieldsByLabel('Province', block)[0] ??
+        fieldsByLabel('State', block, { exact: true })[0] ??
+        block.querySelector('input[name*="province" i], select[name*="province" i], input[name*="state" i], select[name*="state" i]') ??
+        [...block.querySelectorAll('*')]
+          .filter((element) => !element.children.length && /^(province|state|province \/ state)\b/.test(norm(element.textContent)))
+          .map((element) => element.closest('div')?.querySelector('input, select'))
+          .find(Boolean) ??
+        null;
+      if (control) return control;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    return null;
+  };
+
   const fillManufacturers = async (items) => {
     const blocks = itemBlocks();
     if (!blocks.length || blocks.some((block) => !block)) return 0;
@@ -324,8 +346,8 @@
       // le pays d'abord : la liste des provinces / états en dépend
       changed = (await fillChoice(one('Country', true), maker.country)) || changed;
       if (maker.province) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        changed = (await fillChoice(one('Province', true) ?? one('State', true) ?? one('Province / State', true), maker.province)) || changed;
+        const province = await provinceField(block);
+        changed = (await fillChoice(province, maker.province)) || changed;
       }
       if (changed) done += 1;
     }
