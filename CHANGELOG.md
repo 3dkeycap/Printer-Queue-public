@@ -96,6 +96,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Import Chit Chats : « hs_tariff_code required for origin_country CA »** : chaque article du détail douanier envoyé à
+  Chit Chats porte maintenant le **code tarifaire 8473305100** (réglage modifiable : Réglages → Boutiques → Chit Chats →
+  options avancées → « Code tarifaire douanier (HS) »). Les commandes déjà en erreur sont réessayées à la prochaine
+  importation automatique (toutes les heures), ou tout de suite avec « Importer maintenant » / « Réessayer » sur la commande.
 - **Plus rien d'effacé en cours de saisie** : le rafraîchissement automatique (toutes les 8 et 30 s) ne
   redessine plus la page quand une fenêtre est ouverte, qu'un champ a le focus ou contient du texte pas
   encore envoyé (nouvel objet d'inventaire, questions…). Dans Réglages, les modifications pas enregistrées

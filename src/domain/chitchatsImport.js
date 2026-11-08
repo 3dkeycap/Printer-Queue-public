@@ -158,6 +158,8 @@ export const buildShipment = (order, items, settings = getSettings()) => {
           value_amount: Number(item.unit_price ?? 0).toFixed(2),
           currency_code: currency,
           origin_country: 'CA',
+          // Chit Chats l'exige dès que l'origine est le Canada (« hs_tariff_code required for origin_country CA »)
+          hs_tariff_code: clean(settings['chitchats.hsTariffCode']) || undefined,
         }))
       : undefined,
   };

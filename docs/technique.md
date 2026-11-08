@@ -617,7 +617,7 @@ Toutes les heures (Réglages → Synchronisation, activable dans Boutiques → C
 commande Shopify / Etsy ouverte et récente devient un **envoi « en attente » dans Chit Chats**
 (rien n'est acheté : l'étiquette s'achète toujours dans Chit Chats). Adresse reprise de la commande,
 poids / dimensions par défaut réglables, Canada → Chit Chats Canada Tracked, États-Unis → USPS
-Ground Advantage, ailleurs → International Tracked (avec détail douane), ou « le moins cher ».
+Ground Advantage, ailleurs → International Tracked (avec détail douane : chaque article porte le code tarifaire `hs_tariff_code`, réglage `chitchats.hsTariffCode`, `8473305100` par défaut ; Chit Chats l'exige pour une origine Canada), ou « le moins cher ».
 Si Chit Chats a déjà un envoi pour ce numéro de commande, il est simplement relié (pas de doublon).
 
 En cas d'échec, l'app **trouve la raison** (adresse incomplète : code postal / province manquant,

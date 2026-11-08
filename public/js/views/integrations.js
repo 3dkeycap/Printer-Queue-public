@@ -379,7 +379,7 @@ const SHOP_CARDS = [
     key: 'chitchats',
     title: 'Chit Chats',
     hint: 'Un colis scanné fait passer les pièces en « Expédié ».',
-    advanced: ['chitchats.apiBase', 'chitchats.packageType', 'chitchats.cheapestPostage', 'chitchats.shipUrlTemplate', 'chitchats.webhookSecret'],
+    advanced: ['chitchats.apiBase', 'chitchats.packageType', 'chitchats.hsTariffCode', 'chitchats.cheapestPostage', 'chitchats.shipUrlTemplate', 'chitchats.webhookSecret'],
     enabled: null,
   },
 ];

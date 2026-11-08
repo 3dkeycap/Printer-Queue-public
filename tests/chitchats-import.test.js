@@ -112,6 +112,9 @@ describe('import des commandes dans Chit Chats', () => {
     assert.deepEqual(problems, []);
     assert.equal(payload.postage_type, 'chit_chats_international_tracked');
     assert.equal(payload.line_items.length, 1);
+    // Chit Chats refuse le détail douanier sans code tarifaire quand l'origine est le Canada
+    assert.equal(payload.line_items[0].origin_country, 'CA');
+    assert.equal(payload.line_items[0].hs_tariff_code, '8473305100');
   });
 });
 
