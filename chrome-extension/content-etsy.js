@@ -118,10 +118,22 @@
 
 
   /*
-   * Étiquette VAT 2 po × 1 po (600 × 300 px à 300 dpi) en PNG : numéro de commande, pays, VAT et total payé,
-   * lus dans la commande Etsy par l'app, pour ne plus l'écrire à la main sur le colis.
+   * Étiquette VAT 2 po × 1 po (600 × 300 px à 300 dpi) en PNG. Etsy impose, pour l'Europe, de donner son numéro IOSS au
+   * transporteur et d'écrire sur le colis la valeur de la commande en euros : « You must share Etsy's IOSS number,
+   * IM3720000224 … write the value of this order in euros, €105.34, on your package ». L'étiquette porte les deux ; la valeur
+   * en euros est lue dans ce texte sur la page Etsy (le numéro IOSS, à défaut, vient des réglages de l'app).
    */
-  const drawVatLabel = (data) => {
+  const readVatNotice = (row) => {
+    for (const source of [row?.innerText, document.body.innerText]) {
+      const text = String(source ?? '').replace(/\s+/g, ' ');
+      const ioss = /IOSS number,?\s*([A-Z]{2}\d{8,})/i.exec(text)?.[1] ?? null;
+      const euro = /(?:value of this order in euros|valeur de cette commande en euros)[^\d€]{0,20}€?\s?(\d[\d\s.,]*\d)/i.exec(text)?.[1] ?? /€\s?(\d[\d.,]*\d)\s*,?\s*on your package/i.exec(text)?.[1] ?? null;
+      if (ioss || euro) return { ioss, euro: euro ? euro.replace(/\s/g, '').replace(',', '.') : null };
+    }
+    return { ioss: null, euro: null };
+  };
+
+  const drawVatLabel = ({ orderNumber, country, euro, ioss }) => {
     const canvas = document.createElement('canvas');
     canvas.width = 600;
     canvas.height = 300;
@@ -131,13 +143,19 @@
     ctx.fillStyle = '#000000';
     ctx.textBaseline = 'top';
     const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.font = `700 34px ${FONT}`;
-    ctx.fillText(`#${data.orderNumber}${data.country ? `  ·  ${data.country}` : ''}`, 24, 20);
-    const money = (value) => (value === null || value === undefined ? '—' : `${value} ${data.currency ?? ''}`.trim());
-    ctx.font = `800 86px ${FONT}`;
-    ctx.fillText(`VAT ${money(data.vat)}`, 24, 78);
-    ctx.font = `600 52px ${FONT}`;
-    ctx.fillText(`Total ${money(data.total)}`, 24, 192);
+    // le texte rétrécit pour toujours tenir dans l'étiquette (jamais coupé)
+    const fit = (text, weight, size, y) => {
+      let px = size;
+      ctx.font = `${weight} ${px}px ${FONT}`;
+      while (ctx.measureText(text).width > 552 && px > 16) {
+        px -= 2;
+        ctx.font = `${weight} ${px}px ${FONT}`;
+      }
+      ctx.fillText(text, 24, y);
+    };
+    fit(`#${orderNumber}${country ? `  ·  ${country}` : ''}`, 700, 34, 20);
+    fit(euro ? `€${euro}` : '€ —', 800, 120, 66);
+    fit(ioss ? `IOSS ${ioss}` : 'IOSS —', 700, 52, 206);
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, 596, 296);
@@ -151,9 +169,12 @@
       alert(`Étiquette VAT impossible : ${data?.error ?? 'pas de réponse de l’app'}`);
       return;
     }
-    if (data.vat === null) alert('Etsy n’a pas donné de montant de VAT pour cette commande : la case VAT affichera « — ».');
+    const notice = readVatNotice(selected.row);
+    if (!notice.euro) {
+      alert('Je ne trouve pas « la valeur de cette commande en euros » sur la page : ouvre le détail de la commande (le texte « You must share Etsy’s IOSS number… ») puis réessaie. L’étiquette affichera « € — ».');
+    }
     const link = document.createElement('a');
-    link.href = drawVatLabel(data).toDataURL('image/png');
+    link.href = drawVatLabel({ orderNumber: data.orderNumber, country: data.country, euro: notice.euro, ioss: notice.ioss ?? data.ioss }).toDataURL('image/png');
     link.download = `vat-${data.orderNumber}.png`;
     document.documentElement.append(link);
     link.click();
@@ -227,7 +248,7 @@
       } else parts.push(
         btn(`Chit Chats ${selected.name ?? '#' + selected.id}`, `Ouvrir ${label} sur Chit Chats (cherché par le nom de l’acheteur)`, '#1f5fd6', openChitChats, 'padding:10px 14px 10px 11px;'),
       );
-      parts.push(btn('🏷 VAT', 'Télécharger l’étiquette VAT (2 × 1 po, PNG) : VAT et total de la commande', '#2f7a4f', async () => {
+      parts.push(btn('🏷 VAT', 'Télécharger l’étiquette VAT (2 × 1 po, PNG) : valeur en euros et numéro IOSS', '#2f7a4f', async () => {
         if (selected.key === selected.id && selected.candidates.length > 1) await resolveKey(selected);
         downloadVatLabel();
       }, 'border-left:1px solid rgba(255,255,255,.25);'));

@@ -163,7 +163,7 @@ describe("« J'ai packé la commande »", () => {
       raw: { receipt_id: 3917770001, grandtotal: { amount: 4500, divisor: 100, currency_code: 'EUR' }, total_vat_cost: { amount: 718, divisor: 100, currency_code: 'EUR' } },
       items: [{ externalId: 'v1', title: 'Keycap', quantity: 1 }],
     }));
-    assert.deepEqual(getVatLabel({ etsyId: '3917770001' }), { orderNumber: '3917770001', customer: 'Alex Tremblay', country: 'DE', currency: 'EUR', total: '45.00', vat: '7.18' });
+    assert.deepEqual(getVatLabel({ etsyId: '3917770001' }), { orderNumber: '3917770001', customer: 'Alex Tremblay', country: 'DE', currency: 'EUR', total: '45.00', vat: '7.18', ioss: 'IM3720000224' });
 
     ingestOrder(makeOrder({ source: 'etsy', externalId: '3917770002', orderNumber: '3917770002', totalPrice: 20, currency: 'CAD', raw: { receipt_id: 3917770002 }, items: [{ externalId: 'v2', title: 'K', quantity: 1 }] }));
     const noVat = getVatLabel({ etsyId: '3917770002' });

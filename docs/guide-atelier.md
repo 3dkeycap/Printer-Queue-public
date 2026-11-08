@@ -117,8 +117,10 @@ Première fois seulement : Réglages → Boutiques → Etsy → « Reconnecter v
 
 ## Étiquette VAT (Etsy)
 
-Sur Etsy, clique la commande puis **🏷 VAT** dans la barre : une image 2 × 1 po avec le numéro, le pays, la VAT et le total payé se
-télécharge, prête à imprimer et coller sur le colis (plus besoin d'écrire la VAT à la main).
+Pour l'Europe, Etsy demande d'écrire sur le colis la valeur de la commande en euros et de donner son numéro IOSS au transporteur.
+Sur Etsy, clique la commande puis **🏷 VAT** : une image 2 × 1 po (« €105.34 » et « IOSS IM3720000224 », avec le numéro de commande
+et le pays) se télécharge, prête à imprimer. La valeur en euros est lue sur la page Etsy : si elle n'est pas affichée, ouvre le
+détail de la commande et réessaie.
 
 ## Ajouter une pièce à une commande (extension)
 

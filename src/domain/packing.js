@@ -374,7 +374,7 @@ const moneyOf = (money) => {
 };
 
 /**
- * Ce qu'il faut écrire sur l'étiquette VAT d'une commande Etsy (douane / TVA à la main) : numéro, pays, total payé et VAT.
+ * Ce qu'il faut écrire sur l'étiquette VAT d'une commande Etsy (douane / TVA à la main) : numéro, pays, numéro IOSS, total payé et VAT.
  * Lu dans le reçu Etsy gardé par la synchro (`total_vat_cost`, `grandtotal`) ; null quand Etsy n'a pas donné le montant.
  */
 export const getVatLabel = (where) => {
@@ -396,5 +396,7 @@ export const getVatLabel = (where) => {
     currency,
     total: total ? total.value.toFixed(2) : null,
     vat: vat ? vat.value.toFixed(2) : null,
+    // numéro IOSS d'Etsy à donner au transporteur (la valeur en euros, elle, se lit sur la page de la commande)
+    ioss: String(getSettings()['etsy.iossNumber'] ?? '').trim() || null,
   };
 };
