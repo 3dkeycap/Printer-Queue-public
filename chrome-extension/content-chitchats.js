@@ -256,9 +256,53 @@
   // liste déroulante, liste à recherche, ou simple champ texte (« Province / State » pour Hong Kong)
   const isCombo = (control) =>
     control.getAttribute('role') === 'combobox' || control.hasAttribute('aria-autocomplete') || control.getAttribute('aria-haspopup') === 'listbox';
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const visible = (element) => Boolean(element && (element.offsetWidth || element.offsetHeight || element.getClientRects().length));
+  // une liste encore sur « Choisir… » compte comme vide
+  const choiceIsEmpty = (control) =>
+    isEmpty(control) || /^(select|choose|choisir|--)/.test(norm(control.selectedOptions?.[0]?.textContent ?? ''));
+
+  /*
+   * Liste « à la Select2 » (Province sur Chit Chats) : la vraie <select> est cachée et une fausse liste avec une zone de
+   * recherche s'affiche par-dessus. Changer la valeur cachée ne suffit pas : on fait comme une personne — ouvrir la liste,
+   * taper le nom, cliquer l'option.
+   */
+  const pickInWidget = async (select, text) => {
+    const field = select.closest('.select2-container')?.parentElement ?? select.parentElement;
+    let trigger = null;
+    for (let node = field, depth = 0; node && depth < 3 && !trigger; node = node.parentElement, depth += 1) {
+      trigger = [...node.querySelectorAll('.select2-selection, [role="combobox"], [aria-haspopup="listbox"]')].find((element) => element !== select && visible(element));
+    }
+    if (!trigger) return false;
+    for (const type of ['mousedown', 'mouseup', 'click']) trigger.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+    await sleep(250);
+    const search = [...document.querySelectorAll('.select2-search__field, .select2-container--open input, [role="listbox"] input, input[type="search"]')].find(visible) ??
+      (document.activeElement instanceof HTMLInputElement && document.activeElement !== select ? document.activeElement : null);
+    if (search) {
+      setValue(search, text.split(' (')[0]);
+      search.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'n' }));
+      await sleep(350);
+    }
+    const option = [...document.querySelectorAll('.select2-results__option, [role="option"], li')]
+      .filter(visible)
+      .find((entry) => norm(entry.textContent) === norm(text) || norm(entry.textContent).startsWith(norm(text.split(' (')[0])));
+    if (!option) return false;
+    for (const type of ['mouseenter', 'mousemove', 'mousedown', 'mouseup', 'click']) option.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+    await sleep(200);
+    return true;
+  };
+
   const fillChoice = async (control, text) => {
     if (!control || !text) return false;
-    if (control instanceof HTMLSelectElement) return fillSelect(control, text);
+    if (control instanceof HTMLSelectElement) {
+      if (!choiceIsEmpty(control)) return false;
+      const option = [...control.options].find((entry) => norm(entry.textContent) === norm(text) || norm(entry.value) === norm(text) || norm(entry.textContent).startsWith(norm(text)));
+      if (!option) return false;
+      // la valeur cachée d'abord, puis la fausse liste affichée (si elle existe) comme le ferait une personne
+      setValue(control, option.value);
+      if (!visible(control)) await pickInWidget(control, option.textContent.trim());
+      return true;
+    }
     if (isCombo(control)) return fillCombo(control, text);
     return fillText(control, text);
   };
