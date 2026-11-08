@@ -153,5 +153,9 @@ describe('compléter le formulaire Chit Chats (extension)', () => {
     assert.equal(shop.source, 'shopify');
     assert.equal(shop.ioss, null, 'IOSS d’Etsy seulement pour les commandes Etsy');
     assert.equal(customsFor('inconnue'), null);
+    // page de recherche de Chit Chats : retrouvée par le nom de l'acheteur (commande pas encore expédiée)
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '4217424516', orderNumber: '4217424516', customerName: 'Alison Thompson', shippingCountry: 'US' }));
+    assert.equal(customsFor('', { name: 'alison thompson' }).orderNumber, '4217424516');
+    assert.equal(customsFor('', { name: 'Personne' }), null);
   });
 });

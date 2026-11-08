@@ -81,7 +81,7 @@ packingRouter.get('/orders/:id/vat', (req, res) => {
 
 /** Extension, page d'un envoi Chit Chats : ce qu'il faut pour compléter le formulaire (IOSS, code HS, pays d'origine…). */
 packingRouter.get('/customs', (req, res) => {
-  const data = customsFor(req.query.order);
+  const data = customsFor(req.query.order, { name: req.query.name });
   if (!data) throw notFound("Commande inconnue de l'app");
   res.json(data);
 });

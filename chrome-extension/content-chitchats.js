@@ -86,6 +86,7 @@
   };
 
   const render = async () => {
+    if (window.top !== window) return;
     const status = await send({ type: 'link-status' });
     const link = status?.link;
     const isMine = link?.state === 'live' && link.chitchatsTabId === status.tabId;
@@ -182,6 +183,20 @@
     return true;
   };
 
+  /** Liste à recherche (on tape, puis on clique l'option) : « Origin Country » sur Chit Chats. */
+  const fillCombo = async (control, text) => {
+    if (!(control instanceof HTMLInputElement) || !isEmpty(control) || control.disabled) return false;
+    control.focus();
+    control.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    setValue(control, text);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const option = [...document.querySelectorAll('[role="option"], li')].find((entry) => norm(entry.textContent) === norm(text));
+    if (!option) return false;
+    option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    option.click();
+    return true;
+  };
+
   /** Liste déroulante classique : choisit l'option dont le texte est `text` (si rien n'est choisi). */
   const fillSelect = (control, text) => {
     if (!(control instanceof HTMLSelectElement) || !isEmpty(control)) return false;
@@ -205,16 +220,38 @@
     setTimeout(() => toast?.remove(), 7000);
   };
 
+  /*
+   * Le numéro de la commande de cet envoi. La fenêtre « Edit Shipment » n'a pas toujours de champ « Order ID » :
+   * on prend alors la commande suivie par le lien Live, puis le « Order 4217424516 » du panneau de l'envoi.
+   */
+  const orderRef = async () => {
+    const field = String(fieldsByLabel('Order ID')[0]?.value ?? '').trim().replace(/^#/, '');
+    if (field) return field;
+    const status = await send({ type: 'link-status' });
+    const link = status?.link;
+    if (link?.state === 'live' && link.chitchatsTabId === status.tabId && link.lastOrder) return String(link.lastOrder).replace(/^#/, '');
+    const text = String(window.top === window ? document.body.innerText : document.body?.innerText ?? '');
+    return /\bOrder\b\s{0,8}[^\d\s]{0,3}\s{0,4}#?(\d{6,})/.exec(text)?.[1] ?? null;
+  };
+
   let doneFor = null;
-  const complete = async () => {
-    const orderField = fieldsByLabel('Order ID')[0];
-    const ref = String(orderField?.value ?? '').trim().replace(/^#/, '');
-    // pas un formulaire d'envoi, ou déjà complété pour cette commande
-    if (!ref || !fieldsByLabel('HS Code').length || doneFor === ref) return;
+  const complete = async ({ force = false } = {}) => {
+    // pas un formulaire d'envoi (aucun champ « HS Code ») : rien à faire
+    if (!fieldsByLabel('HS Code').length) return hideButton();
+    showButton();
+    // dernier recours : le nom cherché dans la page de recherche de Chit Chats (…/shipments/search?q=Alison%20Thompson)
+    const name = new URL(window.top === window ? location.href : document.referrer || location.href).searchParams.get('q') ?? '';
+    const ref = (await orderRef()) ?? (name ? `nom:${name}` : null);
+    if (!ref) {
+      if (force) say('Resin Queue : je ne trouve pas la commande de cet envoi (ni « Order ID », ni lien Live, ni nom recherché).', 'warn');
+      return;
+    }
+    // déjà complété pour cette commande (le bouton permet de refaire)
+    if (doneFor === ref && !force) return;
     doneFor = ref;
-    const data = await send({ type: 'cc-customs', order: ref });
+    const data = await send({ type: 'cc-customs', order: ref.startsWith('nom:') ? '' : ref, name });
     if (!data || data.error) {
-      say(`Resin Queue : rien complété pour ${ref} (${data?.error ?? 'app injoignable'}).`, 'warn');
+      say(`Resin Queue : rien complété pour ${ref.replace(/^nom:/, '')} (${data?.error ?? 'app injoignable'}).`, 'warn');
       return;
     }
     const filled = [];
@@ -222,7 +259,10 @@
     const count = (label, fill) => fieldsByLabel(label).reduce((n, control, index) => n + (fill(control, index) ? 1 : 0), 0);
     const hs = count('HS Code', (control) => fillText(control, data.hsCode));
     if (hs) filled.push(`code HS ×${hs}`);
-    const origin = count('Origin Country', (control) => fillSelect(control, data.originCountry));
+    let origin = count('Origin Country', (control) => fillSelect(control, data.originCountry));
+    for (const control of fieldsByLabel('Origin Country')) {
+      if (control instanceof HTMLInputElement && (await fillCombo(control, data.originCountry))) origin += 1;
+    }
     if (origin) filled.push(`pays d'origine ×${origin}`);
     // description et identifiant produit : seulement quand chaque ligne de Chit Chats correspond à un article de la commande
     const rows = fieldsByLabel('HS Code').length;
@@ -237,8 +277,29 @@
         if (pid) filled.push(`identifiant produit ×${pid}`);
       }
     }
-    if (filled.length) say(`Resin Queue a complété ${ref} : ${filled.join(', ')}. Vérifie puis enregistre.`);
+    if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);
+    else if (force) say(`Resin Queue : rien à compléter pour ${data.orderNumber} (les champs sont déjà remplis, ou pas reconnus).`, 'warn');
   };
+
+  /** Bouton « Compléter » visible dès qu'un formulaire d'envoi est à l'écran : montre que l'extension l'a vu, et relance. */
+  let button = null;
+  function showButton() {
+    if (button?.isConnected) return;
+    button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('data-resin-queue', '');
+    button.textContent = '✍ Compléter (Resin Queue)';
+    button.title = 'Remplit les champs vides : IOSS (Etsy vers l’Europe), code HS, pays d’origine, description, SKU';
+    button.style.cssText =
+      'all:unset;position:fixed;left:16px;bottom:16px;z-index:2147483647;cursor:pointer;padding:10px 14px;border-radius:10px;' +
+      'font:700 13px system-ui,-apple-system,sans-serif;color:#fff;background:#1f5fd6;box-shadow:0 10px 30px -10px rgba(20,30,60,.5);';
+    button.addEventListener('click', () => complete({ force: true }).catch((error) => say(`Resin Queue : ${error.message}`, 'warn')));
+    document.documentElement.append(button);
+  }
+  function hideButton() {
+    button?.remove();
+    button = null;
+  }
 
   // le formulaire de Chit Chats se construit après le chargement (et change sans recharger la page)
   let timer = null;

@@ -334,7 +334,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   // formulaire d'un envoi Chit Chats : ce que l'app sait de la commande pour compléter les champs vides
   if (message?.type === 'cc-customs') {
-    appFetch(`/api/packing/customs?order=${encodeURIComponent(message.order)}`).then(sendResponse);
+    const query = new URLSearchParams({ order: message.order ?? '', name: message.name ?? '' });
+    appFetch(`/api/packing/customs?${query}`).then(sendResponse);
     return true;
   }
   // étiquette VAT d'une commande Etsy : l'app donne le total et la VAT, la page dessine le PNG

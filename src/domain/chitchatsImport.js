@@ -433,17 +433,30 @@ export const EU_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI
  * l'extension complète le formulaire de Chit Chats avec ça. Recherche par le numéro de commande affiché dans
  * « Order ID ». Le numéro IOSS n'est donné que pour une commande Etsy vers l'Union européenne.
  */
-export const customsFor = (ref) => {
+export const customsFor = (ref, { name } = {}) => {
   const clean = String(ref ?? '').trim().replace(/^#/, '');
-  if (!clean) return null;
+  const buyer = String(name ?? '').trim();
+  if (!clean && !buyer) return null;
   const db = getDb();
-  const order = db
-    .prepare(
-      `SELECT * FROM orders WHERE source IN ('shopify', 'etsy')
-         AND (order_number = @ref OR order_number = '#' || @ref OR external_id = @ref)
-       ORDER BY id DESC LIMIT 1`,
-    )
-    .get({ ref: clean });
+  let order = clean
+    ? db
+        .prepare(
+          `SELECT * FROM orders WHERE source IN ('shopify', 'etsy')
+             AND (order_number = @ref OR order_number = '#' || @ref OR external_id = @ref)
+           ORDER BY id DESC LIMIT 1`,
+        )
+        .get({ ref: clean })
+    : null;
+  // page de recherche de Chit Chats (…/shipments/search?q=Alison%20Thompson) : la commande pas encore expédiée de cet acheteur
+  if (!order && buyer) {
+    order = db
+      .prepare(
+        `SELECT * FROM orders WHERE source IN ('shopify', 'etsy') AND customer_name = ? COLLATE NOCASE
+           AND shipped_at IS NULL AND cancelled_at IS NULL
+         ORDER BY id DESC LIMIT 1`,
+      )
+      .get(buyer);
+  }
   if (!order) return null;
   const settings = getSettings();
   let raw = null;

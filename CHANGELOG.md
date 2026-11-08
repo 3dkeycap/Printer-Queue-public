@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.11.1 : complétion Chit Chats corrigée.** Dans la fenêtre « Edit Shipment » il n'y a pas de champ « Order ID » : la
+  commande est maintenant retrouvée par le lien Live, puis par le « Order 4217424516 » du panneau de l'envoi, puis par le nom cherché
+  (`…/shipments/search?q=Alison Thompson`, commande pas encore expédiée de cet acheteur). Le « Origin Country » à recherche (on tape,
+  puis on choisit) est rempli, l'extension tourne aussi dans les cadres de la page, et un bouton **« ✍ Compléter (Resin Queue) »**
+  apparaît dès qu'un formulaire d'envoi est à l'écran (preuve que l'extension le voit, et pour relancer).
 - **Extension 1.11.0 : le formulaire d'un envoi Chit Chats se complète tout seul.** Sur la page d'un envoi (importé par l'app ou par
   l'import Etsy / Shopify de Chit Chats), l'extension remplit **seulement les champs vides** avec ce que l'app sait de la commande
   (trouvée par « Order ID ») : **Customs Tax Reference Number** = numéro IOSS d'Etsy (`IM3720000224`), **uniquement pour une commande
