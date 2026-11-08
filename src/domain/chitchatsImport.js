@@ -424,3 +424,45 @@ export const importOrdersToChitChats = async ({ trigger = 'cron', orderId = null
   log.info('chit chats import done', { trigger, ...counts });
   return { status: 'success', orders: orders.length, ...counts, message };
 };
+
+// pays de l'Union européenne : Etsy y perçoit la TVA (IOSS) et Chit Chats demande la « Customs Tax Reference Number »
+export const EU_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
+
+/**
+ * Ce qui manque souvent sur un envoi Chit Chats importé (par l'app ou par l'import Etsy / Shopify de Chit Chats) :
+ * l'extension complète le formulaire de Chit Chats avec ça. Recherche par le numéro de commande affiché dans
+ * « Order ID ». Le numéro IOSS n'est donné que pour une commande Etsy vers l'Union européenne.
+ */
+export const customsFor = (ref) => {
+  const clean = String(ref ?? '').trim().replace(/^#/, '');
+  if (!clean) return null;
+  const db = getDb();
+  const order = db
+    .prepare(
+      `SELECT * FROM orders WHERE source IN ('shopify', 'etsy')
+         AND (order_number = @ref OR order_number = '#' || @ref OR external_id = @ref)
+       ORDER BY id DESC LIMIT 1`,
+    )
+    .get({ ref: clean });
+  if (!order) return null;
+  const settings = getSettings();
+  let raw = null;
+  try {
+    raw = order.raw_payload ? JSON.parse(order.raw_payload) : null;
+  } catch {
+    raw = null;
+  }
+  const country = String(order.shipping_country || extractAddress(order.source, raw)?.country_code || '').toUpperCase() || null;
+  const eu = EU_COUNTRIES.includes(country);
+  const items = db.prepare('SELECT title, sku, variant_title, quantity, unit_price FROM order_items WHERE order_id = ? ORDER BY id').all(order.id);
+  return {
+    orderNumber: String(order.order_number ?? order.external_id).replace(/^#/, ''),
+    source: order.source,
+    country,
+    eu,
+    ioss: order.source === 'etsy' && eu ? String(settings['etsy.iossNumber'] ?? '').trim() || null : null,
+    hsCode: String(settings['chitchats.hsTariffCode'] ?? '').trim() || null,
+    originCountry: 'Canada',
+    items: items.map((item) => ({ title: item.title, sku: item.sku ?? null, variant: item.variant_title ?? null, quantity: item.quantity, unitValue: item.unit_price })),
+  };
+};

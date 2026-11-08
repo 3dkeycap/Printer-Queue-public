@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { asyncRoute } from '../lib/errors.js';
+import { asyncRoute, notFound } from '../lib/errors.js';
+import { customsFor } from '../domain/chitchatsImport.js';
 import { PACKED_TAG, addPacker, addPartsToOrder, getPackingView, getVatLabel, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
 
 export const packingRouter = Router();
@@ -76,4 +77,11 @@ packingRouter.get('/etsy/:id/vat', (req, res) => {
 });
 packingRouter.get('/orders/:id/vat', (req, res) => {
   res.json(getVatLabel({ orderId: req.params.id }));
+});
+
+/** Extension, page d'un envoi Chit Chats : ce qu'il faut pour compléter le formulaire (IOSS, code HS, pays d'origine…). */
+packingRouter.get('/customs', (req, res) => {
+  const data = customsFor(req.query.order);
+  if (!data) throw notFound("Commande inconnue de l'app");
+  res.json(data);
 });

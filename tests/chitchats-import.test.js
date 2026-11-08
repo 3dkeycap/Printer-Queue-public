@@ -133,3 +133,25 @@ describe('envois déjà présents dans Chit Chats', () => {
     assert.match(old.reason, /trop ancienne/);
   });
 });
+
+describe('compléter le formulaire Chit Chats (extension)', () => {
+  it('IOSS seulement pour une commande Etsy vers l’Union européenne ; code HS et pays d’origine ; recherche par numéro', async () => {
+    const { customsFor } = await import('../src/domain/chitchatsImport.js');
+    migrate();
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '4212304296', orderNumber: '4212304296', shippingCountry: 'DE', items: [{ externalId: 'c1', title: 'Mechanical Keyboard Switch Covers', sku: 'SW-10', quantity: 1, unitPrice: 9 }] }));
+    const de = customsFor('4212304296');
+    assert.equal(de.eu, true);
+    assert.equal(de.ioss, 'IM3720000224');
+    assert.equal(de.hsCode, '8473305100');
+    assert.equal(de.originCountry, 'Canada');
+    assert.deepEqual(de.items.map((item) => [item.title, item.sku, item.quantity]), [['Mechanical Keyboard Switch Covers', 'SW-10', 1]]);
+
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '4212304297', orderNumber: '4212304297', shippingCountry: 'US' }));
+    assert.equal(customsFor('4212304297').ioss, null, 'pas d’IOSS hors Union européenne');
+    ingestOrder(makeOrder({ externalId: '88001', orderNumber: '#5558', shippingCountry: 'FR' }));
+    const shop = customsFor('5558');
+    assert.equal(shop.source, 'shopify');
+    assert.equal(shop.ioss, null, 'IOSS d’Etsy seulement pour les commandes Etsy');
+    assert.equal(customsFor('inconnue'), null);
+  });
+});

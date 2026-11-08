@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.11.0 : le formulaire d'un envoi Chit Chats se complète tout seul.** Sur la page d'un envoi (importé par l'app ou par
+  l'import Etsy / Shopify de Chit Chats), l'extension remplit **seulement les champs vides** avec ce que l'app sait de la commande
+  (trouvée par « Order ID ») : **Customs Tax Reference Number** = numéro IOSS d'Etsy (`IM3720000224`), **uniquement pour une commande
+  Etsy vers l'Union européenne** ; **HS Code** de chaque article ; **Origin Country** = Canada ; et, quand chaque ligne correspond à
+  un article, **Description** et **identifiant produit** (SKU). Une valeur déjà saisie n'est jamais remplacée ; un message dit ce qui
+  a été complété (« Vérifie puis enregistre »). API : `GET /api/packing/customs?order=…`.
 - **Extension 1.10.1 : étiquette VAT (Etsy).** Sur la barre Etsy, « 🏷 VAT » télécharge en PNG (2 po × 1 po, 600 × 300 px) l'étiquette
   que demande Etsy pour l'Europe : la **valeur de la commande en euros** (« €105.34 », lue dans le texte « write the value of this order
   in euros… » de la page Etsy) et le **numéro IOSS d'Etsy** (« IM3720000224 », lu sur la page, sinon le réglage « Numéro IOSS d'Etsy »),

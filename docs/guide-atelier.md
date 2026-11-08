@@ -115,6 +115,12 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 Quand une commande Etsy part avec Chit Chats, le numéro de suivi est envoyé à Etsy tout seul : plus rien à copier-coller.
 Première fois seulement : Réglages → Boutiques → Etsy → « Reconnecter via OAuth » (autorisation d'écriture).
 
+## Envoi Chit Chats : champs complétés tout seuls
+
+Quand tu ouvres un envoi dans Chit Chats, l'extension remplit les champs vides : numéro IOSS d'Etsy dans « Customs Tax Reference
+Number » (commandes Etsy vers l'Europe seulement), code HS, pays d'origine (Canada), description et SKU des articles. Ce qui est
+déjà rempli n'est pas touché. Vérifie, puis enregistre dans Chit Chats.
+
 ## Étiquette VAT (Etsy)
 
 Pour l'Europe, Etsy demande d'écrire sur le colis la valeur de la commande en euros et de donner son numéro IOSS au transporteur.
