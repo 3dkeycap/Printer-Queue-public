@@ -159,6 +159,8 @@
     closeComments();
     const result = await send({ type: 'order-comments', orderExternalId: orderId });
     const comments = result?.comments ?? [];
+    // sans fenêtre, il faut pouvoir savoir pourquoi (console de la page : F12)
+    if (result?.error) console.warn('Resin Queue · commentaires Shopify :', result.error);
     if (!comments.length || orderIdFromPath() !== orderId) return;
     const { seenComments = {} } = await chrome.storage.local.get('seenComments');
     if (seenComments[orderId] === comments[0].id) return;

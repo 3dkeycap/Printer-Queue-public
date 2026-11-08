@@ -173,6 +173,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Fenêtre des commentaires Shopify qui ne s’affichait jamais.** Shopify refuse souvent de donner l’auteur d’un commentaire
+  (membre du personnel, scope `read_users`) et cette seule erreur annulait toute la réponse. L’app réessaie maintenant sans
+  l’auteur, puis sans les photos, et garde les données partielles : les commentaires s’affichent (auteur seulement quand
+  Shopify le donne). En cas d’échec complet, la raison est renvoyée par `GET /api/packing/shopify/:id/comments` et écrite
+  dans la console de la page (extension 1.15.1).
 - **Import Chit Chats : « hs_tariff_code required for origin_country CA »** : chaque article du détail douanier envoyé à
   Chit Chats porte maintenant le **code tarifaire 8473305100** (réglage modifiable : Réglages → Boutiques → Chit Chats →
   options avancées → « Code tarifaire douanier (HS) »). Les commandes déjà en erreur sont réessayées à la prochaine

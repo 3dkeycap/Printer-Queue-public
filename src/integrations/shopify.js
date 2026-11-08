@@ -232,33 +232,48 @@ export const updateOrderTags = async (externalId, { add = [], remove = [] }, set
 
 /**
  * Commentaires de l'équipe sur une commande (fil « Timeline » de Shopify, ex. « replacement reason: damaged package » + photo).
- * GraphQL (scope read_orders) ; si la version de l'API ne connaît pas les pièces jointes, on redemande sans.
+ * GraphQL (scope read_orders). L'auteur est un StaffMember, que Shopify refuse souvent sans le scope read_users : une seule
+ * erreur de champ annulait toute la réponse et aucun commentaire ne s'affichait. On essaie donc du plus complet au plus
+ * simple (auteur + photos, photos, texte seul) et on garde les données partielles quand Shopify en renvoie avec ses erreurs.
  * Renvoie [{ id, author, createdAt, message, attachments: [{ name, url }] }], le plus récent d'abord.
  */
 export const fetchOrderComments = async (externalId, settings = getSettings()) => {
   if (!isConfigured(settings)) throw new Error('Shopify n’est pas connecté');
   if (!/^\d+$/.test(String(externalId))) throw new Error('Commande Shopify inconnue');
-  const run = async (withAttachments) => {
-    const payload = await requestJson(graphqlUrl(settings), {
-      method: 'POST',
-      headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'], 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `query ($id: ID!) { order(id: $id) { events(first: 50, sortKey: CREATED_AT, reverse: true) { nodes {
-          __typename id createdAt message
-          ... on CommentEvent { rawMessage author { name } ${withAttachments ? 'attachments { name url image { url } }' : ''} }
-        } } } }`,
-        variables: { id: `gid://shopify/Order/${externalId}` },
-      }),
-      retries: 1,
-    });
-    if (payload?.errors?.length) throw new Error(payload.errors[0]?.message ?? 'erreur Shopify');
-    return payload?.data?.order?.events?.nodes ?? [];
-  };
-  let nodes;
-  try {
-    nodes = await run(true);
-  } catch {
-    nodes = await run(false);
+  const variants = [
+    'rawMessage author { name } attachments { name url image { url } }',
+    'rawMessage attachments { name url image { url } }',
+    'rawMessage',
+  ];
+  let nodes = null;
+  let lastError = null;
+  for (const fields of variants) {
+    try {
+      const payload = await requestJson(graphqlUrl(settings), {
+        method: 'POST',
+        headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'], 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query ($id: ID!) { order(id: $id) { events(first: 50, sortKey: CREATED_AT, reverse: true) { nodes {
+            __typename id createdAt message
+            ... on CommentEvent { ${fields} }
+          } } } }`,
+          variables: { id: `gid://shopify/Order/${externalId}` },
+        }),
+        retries: 1,
+      });
+      const found = payload?.data?.order?.events?.nodes;
+      if (Array.isArray(found)) {
+        nodes = found.filter(Boolean);
+        break;
+      }
+      lastError = new Error(payload?.errors?.[0]?.message ?? 'réponse Shopify vide');
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (!nodes) {
+    log.warn('shopify order comments failed', { externalId, error: String(lastError?.message ?? lastError) });
+    throw lastError;
   }
   const text = (html) => String(html ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
   return nodes
