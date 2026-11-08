@@ -490,6 +490,7 @@ Le `POST` d'une commande Shopify (ou par id local) ajoute ensuite les tags « Pa
 | `GET` | `/inventory/cards?ids=1,2&style=small\|large` | `small` (défaut) : 2 po × 1 po, une par page ; `large` : 4 par feuille Lettre avec photo, minimum, quantité à commander, fournisseur |
 | `GET` `POST` | `/r/:token` · `/r/:token/scan` · `/r/:token/undo` | **Publics** (sans mot de passe) : page ouverte par le code QR ; le `GET` ne change rien, c'est son script qui envoie le `POST` |
 | `GET` `POST` | `/api/bugs/webhook` · `/api/bugs/webhook/test` | État du dernier envoi du webhook « nouveau bug » ; envoi d'un faux bug (`{ url? }`) |
+| `GET` `POST` | `/api/qz/certificate` · `/api/qz/certificate.crt` · `/api/qz/sign` | **QZ Tray** (impression directe de l'étiquette VAT par l'extension) : certificat X.509 auto-signé de l'atelier (JSON, ou fichier à ajouter une fois dans QZ Tray → Site Manager → Allowed) ; `POST { request }` → `{ signature }` (RSA SHA512). Certificat et clé créés au premier appel (`src/integrations/qzTray.js`, sans openssl), gardés dans `settings` (`internal.qzCertificate`, `internal.qzPrivateKey`) ; la clé ne sort jamais |
 | `POST` | `/api/parts/:id/undo-failure` | Annule le dernier échec d'une pièce (Ctrl+Z) |
 | `GET` | `/api/failures` | Historique des échecs + taux d'échec par fichier (échecs / (échecs + impressions réussies)) |
 | `GET` | `/api/stats/summary` | Agrégats du dashboard (statuts, couleurs, UV, sources) |

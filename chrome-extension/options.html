@@ -66,6 +66,25 @@
         </div>
       </section>
 
+      <section id="qz-section">
+        <h2>Impression directe (QZ Tray)</h2>
+        <p>Avec <strong>QZ Tray</strong> lancé sur cet ordinateur, l'étiquette VAT d'Etsy (🏷 VAT) sort directement sur
+          l'imprimante d'étiquettes 2 × 1 po, sans fenêtre d'impression. <strong>Une seule fois</strong> : télécharge le
+          certificat de l'atelier, puis dans QZ Tray (icône près de l'horloge) → <em>Advanced</em> → <em>Site Manager</em>
+          → onglet <em>Allowed</em> → <strong>+</strong> → choisis ce fichier. Sans imprimante choisie, l'étiquette est
+          téléchargée en PNG comme avant.</p>
+        <div class="row" style="margin-bottom:10px">
+          <button id="qz-cert" class="ghost">Télécharger le certificat</button>
+          <button id="qz-find">Chercher les imprimantes</button>
+        </div>
+        <label for="qz-printer">Imprimante des étiquettes VAT (sur cet ordinateur)</label>
+        <select id="qz-printer"><option value="">— aucune : télécharger le PNG —</option></select>
+        <div class="row" style="margin-top:10px">
+          <button id="qz-test" class="ghost">Imprimer un test</button>
+        </div>
+        <div id="qz-status" class="msg"></div>
+      </section>
+
       <section id="update-section">
         <h2>Mise à jour</h2>
         <p>Récupère la dernière version sur GitHub et l'installe dans le dossier de l'extension, puis la recharge.

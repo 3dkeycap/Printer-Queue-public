@@ -229,3 +229,70 @@ if (location.hash === '#update') {
   $('update-section').classList.add('flash');
   $('update-section').scrollIntoView();
 }
+
+/* ------------------------------------------------------ impression directe (QZ Tray) */
+
+// l'imprimante est propre à CET ordinateur : chrome.storage.local (pas sync)
+const fillPrinters = (names, current) => {
+  const select = $('qz-printer');
+  const options = [['', '— aucune : télécharger le PNG —'], ...[...new Set([...names, current].filter(Boolean))].map((name) => [name, name])];
+  select.replaceChildren(
+    ...options.map(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      option.selected = value === (current ?? '');
+      return option;
+    }),
+  );
+};
+
+const initQz = async () => {
+  const { qzPrinter } = await chrome.storage.local.get('qzPrinter');
+  fillPrinters([], qzPrinter);
+};
+
+$('qz-cert').addEventListener('click', async () => {
+  const { appUrl } = await chrome.storage.sync.get('appUrl');
+  if (!appUrl) return show($('qz-status'), "Renseigne d'abord l'adresse de l'app (en haut).", false);
+  chrome.tabs.create({ url: `${appUrl}/api/qz/certificate.crt` });
+});
+
+$('qz-find').addEventListener('click', async () => {
+  show($('qz-status'), 'Connexion à QZ Tray…', true);
+  const result = await chrome.runtime.sendMessage({ type: 'qz-printers' });
+  if (!result || result.error) return show($('qz-status'), result?.error ?? 'pas de réponse', false);
+  const { qzPrinter } = await chrome.storage.local.get('qzPrinter');
+  fillPrinters(result.printers, qzPrinter);
+  show($('qz-status'), `${result.printers.length} imprimante(s) trouvée(s)${result.default ? ` (par défaut : ${result.default})` : ''}. Choisis celle des étiquettes 2 × 1 po.`, true);
+});
+
+$('qz-printer').addEventListener('change', async () => {
+  const qzPrinter = $('qz-printer').value;
+  await chrome.storage.local.set({ qzPrinter });
+  show($('qz-status'), qzPrinter ? `Les étiquettes VAT sortiront sur « ${qzPrinter} ».` : 'Plus d’impression directe : l’étiquette VAT sera téléchargée.', true);
+});
+
+$('qz-test').addEventListener('click', async () => {
+  const printer = $('qz-printer').value;
+  if (!printer) return show($('qz-status'), 'Choisis d’abord une imprimante.', false);
+  // même format que l'étiquette VAT : 600 × 300 px (2 × 1 po à 300 dpi)
+  const canvas = document.createElement('canvas');
+  canvas.width = 600;
+  canvas.height = 300;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, 600, 300);
+  ctx.fillStyle = '#000';
+  ctx.font = '800 64px system-ui, Arial, sans-serif';
+  ctx.fillText('TEST VAT', 24, 120);
+  ctx.font = '700 36px system-ui, Arial, sans-serif';
+  ctx.fillText('3D Keycap Lab · 2 × 1 po', 24, 220);
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, 596, 296);
+  show($('qz-status'), 'Impression…', true);
+  const result = await chrome.runtime.sendMessage({ type: 'qz-print', printer, image: canvas.toDataURL('image/png').split(',')[1] });
+  show($('qz-status'), result?.ok ? `Test envoyé à « ${result.printer} ».` : `Échec : ${result?.error ?? 'pas de réponse'}`, Boolean(result?.ok));
+});
+
+initQz();

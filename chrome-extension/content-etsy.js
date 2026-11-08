@@ -173,12 +173,31 @@
     if (!notice.euro) {
       alert('Je ne trouve pas « la valeur de cette commande en euros » sur la page : ouvre le détail de la commande (le texte « You must share Etsy’s IOSS number… ») puis réessaie. L’étiquette affichera « € — ».');
     }
+    const canvas = drawVatLabel({ orderNumber: data.orderNumber, country: data.country, euro: notice.euro, ioss: notice.ioss ?? data.ioss });
+    // imprimante choisie dans les options (QZ Tray) : l'étiquette sort directement, sans fenêtre ni fichier
+    const { qzPrinter } = await chrome.storage.local.get('qzPrinter');
+    if (qzPrinter) {
+      if (!notice.euro) return; // pas d'étiquette « € — » gâchée : le message ci-dessus dit quoi faire
+      const printed = await send({ type: 'qz-print', image: canvas.toDataURL('image/png').split(',')[1] });
+      if (printed?.ok) return flashVat(`🖨 VAT envoyée à ${printed.printer}`);
+      alert(`Impression directe impossible (${printed?.error ?? 'pas de réponse'}) : l’étiquette est téléchargée à la place.`);
+    }
     const link = document.createElement('a');
-    link.href = drawVatLabel({ orderNumber: data.orderNumber, country: data.country, euro: notice.euro, ioss: notice.ioss ?? data.ioss }).toDataURL('image/png');
+    link.href = canvas.toDataURL('image/png');
     link.download = `vat-${data.orderNumber}.png`;
     document.documentElement.append(link);
     link.click();
     link.remove();
+  };
+
+  // petit message de confirmation, 3 s, en bas de l'écran
+  const flashVat = (text) => {
+    const note = document.createElement('div');
+    note.setAttribute('data-resin-queue', '');
+    note.textContent = text;
+    note.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;background:#2f7a4f;color:#fff;font:700 15px system-ui;padding:10px 16px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);';
+    document.documentElement.append(note);
+    setTimeout(() => note.remove(), 3000);
   };
 
   const removeDock = () => {
@@ -248,7 +267,7 @@
       } else parts.push(
         btn(`Chit Chats ${selected.name ?? '#' + selected.id}`, `Ouvrir ${label} sur Chit Chats (cherché par le nom de l’acheteur)`, '#1f5fd6', openChitChats, 'padding:10px 14px 10px 11px;'),
       );
-      parts.push(btn('🏷 VAT', 'Télécharger l’étiquette VAT (2 × 1 po, PNG) : valeur en euros et numéro IOSS', '#2f7a4f', async () => {
+      parts.push(btn('🏷 VAT', 'Étiquette VAT (2 × 1 po) : valeur en euros et numéro IOSS. Imprimée directement si une imprimante QZ Tray est choisie (options), sinon téléchargée en PNG', '#2f7a4f', async () => {
         if (selected.key === selected.id && selected.candidates.length > 1) await resolveKey(selected);
         downloadVatLabel();
       }, 'border-left:1px solid rgba(255,255,255,.25);'));

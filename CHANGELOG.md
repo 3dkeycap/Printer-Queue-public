@@ -86,6 +86,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - **Les objets d'inventaire se créent depuis `/inventory/mobile`** (le téléphone) : le formulaire « Nouvel objet » a quitté le tableau de bord, qui garde le code QR, le bouton « Ouvrir la page d'inventaire » et l'impression de ce code. Le code QR (et ses étiquettes imprimables) mène maintenant à `/inventory/mobile` ; `/inventory/new` marche toujours (ouvre le formulaire d'ajout), donc les étiquettes déjà imprimées restent valides. Modifier, signaler, commander et supprimer restent aussi possibles sur l'ordinateur.
 
 ### Ajouté
+- **Extension 1.16.0 : l’étiquette VAT d’Etsy s’imprime directement avec QZ Tray.** 🏷 VAT envoie l’étiquette 2 × 1 po
+  à l’imprimante d’étiquettes choisie dans les options de l’extension (« Impression directe (QZ Tray) » : chercher les
+  imprimantes, choisir, imprimer un test), sans fenêtre d’impression ni fichier. Les demandes à QZ Tray sont signées par l’app
+  avec un certificat de l’atelier créé automatiquement (`/api/qz/certificate`, `/api/qz/sign`) : une fois ce certificat
+  ajouté dans QZ Tray (Site Manager), plus de « Allow / Block ». Si QZ Tray ne répond pas, l’étiquette est téléchargée
+  comme avant. Bibliothèque officielle `qz-tray.js` 2.3.0 incluse telle quelle dans `chrome-extension/vendor/`.
 - **Unité du minimum** : on peut choisir une unité (rouleaux, bac, boîtes, bouteilles… ou n'importe quel texte) pour la quantité minimale et la quantité à commander : « Scanner à 2 rouleaux », « Minimum 1 bac ». Champ « Unité » dans le formulaire, « Modifier » et la page du téléphone ; elle apparaît sur les deux étiquettes (si l'unité est longue, la petite étiquette réduit le texte ou affiche seulement « 2 rouleaux ») et sur les cartes de l'app.
 - **Étiquette « Ajouter à l'inventaire »** : un code QR imprimable (2×1 po ou grande) à coller dans l'atelier, qui ouvre la page d'ajout du téléphone (`/inventory/add-card`, boutons sur la page Inventaire).
 - **Questions au scan depuis le téléphone** : la page d'ajout du téléphone a une section « Questions au scan » (choix dans une liste ou couleurs de résine avec plusieurs réponses possibles, nombre, texte libre).

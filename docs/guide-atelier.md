@@ -140,6 +140,17 @@ Sur Etsy, clique la commande puis **🏷 VAT** : une image 2 × 1 po (« €105.
 et le pays) se télécharge, prête à imprimer. La valeur en euros est lue sur la page Etsy : si elle n'est pas affichée, ouvre le
 détail de la commande et réessaie.
 
+**Impression directe (QZ Tray).** Avec QZ Tray lancé sur l'ordinateur, 🏷 VAT imprime l'étiquette tout de suite sur
+l'imprimante d'étiquettes, sans fenêtre ni fichier. À faire **une seule fois par ordinateur**, dans les options de
+l'extension (clic droit sur l'icône → Options) → « Impression directe (QZ Tray) » :
+1. **Télécharger le certificat**, puis dans QZ Tray (icône près de l'horloge) → *Advanced* → *Site Manager* → onglet
+   *Allowed* → **+** → choisir ce fichier (sans ça, QZ Tray demande « Allow » à chaque étiquette) ;
+2. **Chercher les imprimantes**, choisir celle des étiquettes 2 × 1 po ;
+3. **Imprimer un test**.
+
+Si QZ Tray ne répond pas, l'étiquette est téléchargée en PNG comme avant (un message dit pourquoi). Si la valeur en
+euros n'est pas sur la page, rien n'est imprimé (pas d'étiquette « € — » gâchée).
+
 ## Ajouter une pièce à une commande (extension)
 
 Une pièce oubliée ou un supplément : dans la fenêtre « J'ai packé », « ➕ Ajouter une pièce à la commande » (nom, variante,

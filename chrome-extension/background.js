@@ -123,6 +123,73 @@ const appFetch = async (path, { method = 'GET', body } = {}) => {
   }
 };
 
+/* ---------------------------------------------------------- QZ Tray (impression) */
+
+/*
+ * QZ Tray, installé sur l'ordinateur, imprime directement sur une imprimante (étiquette VAT d'Etsy) : pas de fenêtre
+ * d'impression, pas de fichier. La bibliothèque officielle (vendor/qz-tray.js, inchangée) parle à QZ Tray par
+ * WebSocket (localhost). Chaque demande est signée par l'app avec le certificat de l'atelier, que QZ Tray a accepté
+ * une fois : il n'affiche alors plus « Allow / Block ».
+ */
+try {
+  importScripts('vendor/qz-tray.js');
+} catch (error) {
+  console.warn('Resin Queue · QZ Tray indisponible', error);
+}
+if (self.qz) {
+  self.qz.security.setCertificatePromise((resolve, reject) =>
+    appFetch('/api/qz/certificate').then((result) => (result.certificate ? resolve(result.certificate) : reject(new Error(result.error)))),
+  );
+  self.qz.security.setSignatureAlgorithm('SHA512');
+  self.qz.security.setSignaturePromise((toSign) => (resolve, reject) =>
+    appFetch('/api/qz/sign', { method: 'POST', body: { request: toSign } }).then((result) =>
+      result.signature ? resolve(result.signature) : reject(new Error(result.error)),
+    ),
+  );
+}
+let qzConnecting = null;
+const qzConnect = async () => {
+  const qz = self.qz;
+  if (!qz) throw new Error('bibliothèque QZ Tray absente : mets l’extension à jour');
+  if (qz.websocket.isActive()) return qz;
+  qzConnecting ??= qz.websocket.connect({ retries: 1, delay: 0 }).finally(() => {
+    qzConnecting = null;
+  });
+  try {
+    await qzConnecting;
+  } catch (error) {
+    if (qz.websocket.isActive()) return qz;
+    throw new Error(`QZ Tray ne répond pas : lance-le sur cet ordinateur (${error?.message ?? error})`);
+  }
+  return qz;
+};
+const qzError = (error) => ({ error: String(error?.message ?? error) });
+
+/** Imprimantes vues par QZ Tray (pour le choix dans les options). */
+const qzPrinters = async () => {
+  try {
+    const qz = await qzConnect();
+    const [printers, fallback] = await Promise.all([qz.printers.find(), qz.printers.getDefault().catch(() => null)]);
+    return { printers: [].concat(printers ?? []), default: fallback };
+  } catch (error) {
+    return qzError(error);
+  }
+};
+
+/** Image PNG (base64) imprimée sur l'imprimante choisie, au format de l'étiquette (2 × 1 po par défaut). */
+const qzPrintImage = async ({ image, printer, width = 2, height = 1 }) => {
+  try {
+    const target = printer || (await chrome.storage.local.get('qzPrinter')).qzPrinter;
+    if (!target) throw new Error('aucune imprimante choisie (options de l’extension → Impression directe)');
+    const qz = await qzConnect();
+    const config = qz.configs.create(target, { size: { width, height }, units: 'in', scaleContent: true, margins: 0 });
+    await qz.print(config, [{ type: 'pixel', format: 'image', flavor: 'base64', data: image }]);
+    return { ok: true, printer: target };
+  } catch (error) {
+    return qzError(error);
+  }
+};
+
 const report = async (tabId, orderExternalId, state) => {
   const config = await getConfig();
   return appFetch('/api/presence/shopify', {
@@ -341,6 +408,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // étiquette VAT d'une commande Etsy : l'app donne le total et la VAT, la page dessine le PNG
   if (message?.type === 'order-vat') {
     appFetch(`/api/packing/etsy/${encodeURIComponent(message.orderExternalId)}/vat`).then(sendResponse);
+    return true;
+  }
+  // impression directe par QZ Tray (étiquette VAT ; choix de l'imprimante dans les options)
+  if (message?.type === 'qz-printers') {
+    qzPrinters().then(sendResponse);
+    return true;
+  }
+  if (message?.type === 'qz-print') {
+    qzPrintImage(message).then(sendResponse);
     return true;
   }
   // commentaires de l'équipe sur la commande Shopify (fil « Timeline »)
