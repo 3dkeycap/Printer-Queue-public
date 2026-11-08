@@ -546,31 +546,59 @@
    * Il occupe toute la zone libre à gauche de la fenêtre « Edit Shipment » (du haut jusqu'en bas), pour être impossible à rater.
    */
   let button = null;
+  let bigText = null;
+  let smallText = null;
+  /*
+   * La taille suit la place libre à gauche de la fenêtre « Edit Shipment » : grand panneau quand il y a de la place,
+   * barre fine verticale dans une colonne étroite (écran partagé), petit bouton en bas à gauche quand il n'y a rien
+   * (jamais par-dessus le formulaire).
+   */
   const placeButton = () => {
     if (!button) return;
-    const dialog = fieldsByLabel('HS Code')[0]?.closest('[role="dialog"], .modal, .modal-dialog, dialog');
-    const left = dialog?.getBoundingClientRect().left ?? 0;
-    // la place à gauche de la fenêtre ; sans fenêtre repérable : un peu moins d'un tiers de l'écran
-    const width = left > 200 ? left - 24 : Math.round(window.innerWidth * 0.28);
-    Object.assign(button.style, { width: `${width}px` });
+    const dialog = fieldsByLabel('HS Code')[0]?.closest('[role="dialog"], .modal-dialog, .modal-content, .modal, dialog');
+    const free = dialog ? Math.round(dialog.getBoundingClientRect().left) : 0;
+    const base = {
+      top: '', bottom: '', left: '12px', width: '', height: '', padding: '', borderRadius: '', flexDirection: 'column', gap: '14px', writingMode: '', font: '',
+    };
+    if (free >= 260) {
+      Object.assign(button.style, base, { top: '12px', bottom: '12px', width: `${free - 24}px`, padding: '24px', borderRadius: '18px', font: '800 34px/1.15 system-ui,-apple-system,sans-serif' });
+      bigText.textContent = '✍ Compléter';
+      smallText.hidden = false;
+    } else if (free >= 64) {
+      Object.assign(button.style, base, {
+        top: '12px', bottom: '12px', left: '8px', width: `${Math.min(free - 16, 72)}px`, padding: '12px 0', borderRadius: '14px', gap: '10px',
+        font: '800 18px/1 system-ui,-apple-system,sans-serif',
+      });
+      bigText.textContent = '✍';
+      smallText.hidden = false;
+      smallText.style.writingMode = 'vertical-rl';
+      smallText.style.transform = 'rotate(180deg)';
+      smallText.textContent = 'Compléter (Resin Queue)';
+      smallText.style.font = '800 16px/1 system-ui,-apple-system,sans-serif';
+      return;
+    } else {
+      Object.assign(button.style, base, { bottom: '12px', padding: '10px 14px', borderRadius: '12px', flexDirection: 'row', gap: '8px', font: '800 14px/1 system-ui,-apple-system,sans-serif' });
+      bigText.textContent = '✍ Compléter';
+      smallText.hidden = true;
+    }
+    smallText.style.writingMode = '';
+    smallText.style.transform = '';
+    smallText.textContent = 'Resin Queue remplit les champs vides de cet envoi';
+    smallText.style.font = '600 16px/1.35 system-ui,-apple-system,sans-serif';
   };
   function showButton() {
     if (button?.isConnected) return placeButton();
     button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('data-resin-queue', '');
-    button.title = 'Remplit les champs vides : IOSS (Etsy vers l’Europe), code HS, pays d’origine, fabricant, poids 1 g, description, SKU';
+    button.title = 'Resin Queue : remplit les champs vides (IOSS pour l’Europe, code HS, pays d’origine, fabricant, poids 1 g, description, SKU)';
     button.style.cssText =
-      'all:unset;box-sizing:border-box;position:fixed;left:12px;top:12px;bottom:12px;z-index:2147483647;cursor:pointer;' +
-      'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;' +
-      'border-radius:18px;color:#fff;background:#1f5fd6;box-shadow:0 20px 50px -18px rgba(20,30,60,.6);' +
-      'font:800 34px/1.15 system-ui,-apple-system,sans-serif;';
-    const big = document.createElement('span');
-    big.textContent = '✍ Compléter';
-    const small = document.createElement('span');
-    small.textContent = 'Resin Queue remplit les champs vides de cet envoi';
-    small.style.cssText = 'font:600 16px/1.35 system-ui,-apple-system,sans-serif;opacity:.85;max-width:320px;';
-    button.append(big, small);
+      'all:unset;box-sizing:border-box;position:fixed;z-index:2147483647;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+      'text-align:center;color:#fff;background:#1f5fd6;box-shadow:0 20px 50px -18px rgba(20,30,60,.6);';
+    bigText = document.createElement('span');
+    smallText = document.createElement('span');
+    smallText.style.cssText = 'opacity:.9;max-width:320px;';
+    button.append(bigText, smallText);
     button.addEventListener('mouseenter', () => { button.style.background = '#174bb0'; });
     button.addEventListener('mouseleave', () => { button.style.background = '#1f5fd6'; });
     button.addEventListener('click', () => complete({ force: true }).catch((error) => say(`Resin Queue : ${error.message}`, 'warn')));

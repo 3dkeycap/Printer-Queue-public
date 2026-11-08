@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.12.6** : le bouton « ✍ Compléter » de Chit Chats s'adapte à la place libre à gauche de la fenêtre « Edit Shipment » : grand panneau quand il y a de la place, **barre fine verticale** dans la colonne étroite d'un écran partagé (sans recouvrir le formulaire), petit bouton en bas à gauche quand il n'y a presque rien.
 - **Extension 1.12.5 : province choisie pour de vrai dans la liste de Chit Chats.** L'extension ouvre la liste, tape le nom,
   clique l'option et, si ça ne prend pas, appuie sur Entrée ; puis elle **vérifie** que la liste affiche bien la province. Si ce
   n'est pas le cas, le message le dit (« N province(s) n'ont pas pu être choisies : choisis-les à la main ») au lieu d'annoncer
