@@ -30,6 +30,8 @@ docker compose up -d --build      # stack complète : app + worker + updater
   `setStatus(…, 'FAILED')` consigne l'échec (`print_results`, `fail_count`, tag « A échoué ×N »)
   et remet la pièce en `TO_PRINT`. Les taux d'échec viennent de `print_results`, qui n'a pas de
   clé étrangère : l'historique survit à la suppression d'une pièce.
+- **Bac** : une pièce dans le bac (`packed_at`) est toujours « Imprimé » ou « Expédié ». Enregistrer le bac la passe en
+  « Imprimé » ; la remettre à imprimer (échec, retour en arrière) la sort du bac (Ctrl+Z sur l'échec l'y remet).
 - **Réglages en base** (`settings`, définis dans `src/domain/settings.service.js`), pas en
   `.env` (qui ne donne que des valeurs initiales). Un réglage `type: 'secret'` n'est **jamais**
   renvoyé par l'API.

@@ -322,6 +322,14 @@ const recordEvent = (db, { partId, from, to, actor, note }) => {
   ).run(partId, from, to, actor ?? 'system', note ?? null, nowIso());
 };
 
+/*
+ * Une pièce dans le bac est forcément imprimée (« Imprimé » ou expédiée) : la remettre à imprimer (échec, retour en
+ * arrière) la sort du bac, sinon elle s'afficherait « Dans le bac » dans « À imprimer ».
+ */
+const PACK_TAG_PREFIX = 'Packé par ';
+const withoutPackTag = (comment) => normalizeComments(String(comment ?? '').split('\n').filter((tag) => !tag.startsWith(PACK_TAG_PREFIX)));
+const LEFT_BAC = /retirée du bac \(packée par (.+)\)$/;
+
 /**
  * Core state transition. Also maintains the derived columns
  * (fail_count, printed_at, shipped_at) so the UI never has to compute them.
@@ -340,6 +348,10 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
   if (part.status === status) return hydrate({ ...part, priority: part.priority });
 
   const ts = nowIso();
+  // remise à imprimer d'une pièce qui était dans le bac : elle en sort (dans le bac = déjà imprimée)
+  const leavesBac = Boolean(part.packed_at) && ['TO_PRINT', 'PRINTING', 'FAILED'].includes(status);
+  const bacNote = leavesBac ? ` · retirée du bac (packée par ${part.packed_by ?? '?'})` : '';
+  const comment = leavesBac ? withoutPackTag(part.comment) : part.comment;
   const apply = db.transaction(() => {
     recordTransition(db, part, part.status, status, { actor, at: ts });
 
@@ -349,11 +361,14 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
       db.prepare(
         `UPDATE parts SET status = 'TO_PRINT', status_changed_at = @ts, updated_at = @ts,
                           fail_count = fail_count + 1, printed_at = NULL, shipped_at = NULL,
+                          packed_at = CASE WHEN @leavesBac THEN NULL ELSE packed_at END,
+                          packed_by = CASE WHEN @leavesBac THEN NULL ELSE packed_by END,
                           comment = @comment
          WHERE id = @id`,
-      ).run({ id: part.id, ts, comment: withFailTag(part.comment, (part.fail_count ?? 0) + 1) });
+      ).run({ id: part.id, ts, leavesBac: leavesBac ? 1 : 0, comment: withFailTag(comment, (part.fail_count ?? 0) + 1) });
       recordEvent(db, { partId: part.id, from: part.status, to: 'FAILED', actor, note });
-      recordEvent(db, { partId: part.id, from: 'FAILED', to: 'TO_PRINT', actor, note: 'Échec enregistré : remise dans « À imprimer »' });
+      // le nom de qui avait packé est gardé ici : Ctrl+Z remet la pièce dans le bac (voir undoFailure)
+      recordEvent(db, { partId: part.id, from: 'FAILED', to: 'TO_PRINT', actor, note: `Échec enregistré : remise dans « À imprimer »${bacNote}` });
       return;
     }
 
@@ -364,11 +379,14 @@ export const setStatus = (id, status, { actor = 'dashboard', note = null, force 
          updated_at = @ts,
          fail_count = fail_count + @failInc,
          printed_at = CASE WHEN @status IN ('DONE','SHIPPED') AND printed_at IS NULL THEN @ts ELSE printed_at END,
-         shipped_at = CASE WHEN @status = 'SHIPPED' THEN @ts WHEN @status <> 'SHIPPED' THEN NULL ELSE shipped_at END
+         shipped_at = CASE WHEN @status = 'SHIPPED' THEN @ts WHEN @status <> 'SHIPPED' THEN NULL ELSE shipped_at END,
+         packed_at = CASE WHEN @leavesBac THEN NULL ELSE packed_at END,
+         packed_by = CASE WHEN @leavesBac THEN NULL ELSE packed_by END,
+         comment = @comment
        WHERE id = @id`,
-    ).run({ id: part.id, status, ts, failInc: status === 'FAILED' ? 1 : 0 });
+    ).run({ id: part.id, status, ts, failInc: status === 'FAILED' ? 1 : 0, leavesBac: leavesBac ? 1 : 0, comment });
 
-    recordEvent(db, { partId: part.id, from: part.status, to: status, actor, note });
+    recordEvent(db, { partId: part.id, from: part.status, to: status, actor, note: [note, bacNote.replace(/^ · /, '')].filter(Boolean).join(' · ') || null });
   });
   apply();
 
@@ -387,7 +405,7 @@ export const undoFailure = (id, { actor = 'dashboard' } = {}) => {
   if (!part) throw notFound(`Part ${id} not found`);
 
   const events = db
-    .prepare('SELECT id, from_status, to_status FROM part_events WHERE part_id = ? ORDER BY id DESC LIMIT 2')
+    .prepare('SELECT id, from_status, to_status, note FROM part_events WHERE part_id = ? ORDER BY id DESC LIMIT 2')
     .all(part.id);
   const [back, fail] = events;
   const undoable =
@@ -401,11 +419,25 @@ export const undoFailure = (id, { actor = 'dashboard' } = {}) => {
     db.prepare('DELETE FROM part_events WHERE id IN (?, ?)').run(back.id, fail.id);
     // un « Imprimé » défait par cet échec redevient une réussite
     if (fail.from_status === 'DONE') recordTransition(db, part, 'PRINTING', 'DONE', { actor, at: ts });
+    // l'échec l'avait sortie du bac : elle y retourne (avec le nom de qui l'avait packée)
+    const packer = ['DONE', 'SHIPPED'].includes(fail.from_status) ? LEFT_BAC.exec(back.note ?? '')?.[1] ?? null : null;
+    const restored = withoutLastFailTag(part.comment, part.fail_count - 1);
     db.prepare(
       `UPDATE parts SET status = ?, status_changed_at = ?, updated_at = ?, fail_count = fail_count - 1, comment = ?,
-                        printed_at = CASE WHEN ? = 'DONE' THEN ? ELSE printed_at END
+                        printed_at = CASE WHEN ? = 'DONE' THEN ? ELSE printed_at END,
+                        packed_at = COALESCE(?, packed_at), packed_by = COALESCE(?, packed_by)
        WHERE id = ?`,
-    ).run(fail.from_status, ts, ts, withoutLastFailTag(part.comment, part.fail_count - 1), fail.from_status, ts, part.id);
+    ).run(
+      fail.from_status,
+      ts,
+      ts,
+      packer ? normalizeComments([...String(restored ?? '').split('\n'), `${PACK_TAG_PREFIX}${packer}`]) : restored,
+      fail.from_status,
+      ts,
+      packer ? ts : null,
+      packer,
+      part.id,
+    );
     recordEvent(db, { partId: part.id, from: 'TO_PRINT', to: fail.from_status, actor, note: 'Échec annulé (Ctrl+Z)' });
   })();
   return getPart(part.id);

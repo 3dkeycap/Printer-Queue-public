@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Dans le bac = imprimée, toujours.** Enregistrer le bac passait déjà les pièces en « Imprimé ». Maintenant, une pièce du bac
+  remise à imprimer (échec, retour en arrière à la main) **sort du bac** (plus de « Dans le bac » dans « À imprimer ») ; Ctrl+Z
+  sur cet échec la remet en « Imprimé » **et** dans le bac, avec le nom de qui l'avait packée. Réparation unique au démarrage de
+  cette version : les pièces marquées « dans le bac » mais restées « À imprimer » / « En impression » passent en « Imprimé »,
+  sauf celles que quelqu'un a remises à imprimer après le bac (elles sortent du bac). L'historique des bacs est gardé.
 - **Extension 1.11.1 : complétion Chit Chats corrigée.** Dans la fenêtre « Edit Shipment » il n'y a pas de champ « Order ID » : la
   commande est maintenant retrouvée par le lien Live, puis par le « Order 4217424516 » du panneau de l'envoi, puis par le nom cherché
   (`…/shipments/search?q=Alison Thompson`, commande pas encore expédiée de cet acheteur). Le « Origin Country » à recherche (on tape,

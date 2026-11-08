@@ -173,6 +173,44 @@ describe("« J'ai packé la commande »", () => {
     assert.throws(() => getVatLabel({ shopifyId: '7770001' }), /Etsy/);
   });
 
+  it('dans le bac = imprimée : remise à imprimer, elle sort du bac ; Ctrl+Z la remet dans le bac', async () => {
+    const { setStatus, undoFailure } = await import('../src/domain/parts.service.js');
+    const { orderId } = ingestOrder(makeOrder({ externalId: '7770097', orderNumber: '#4297', items: [{ externalId: 'b1', title: 'Bac Keycap', quantity: 2 }] }));
+    const [item] = getPackingView({ shopifyId: '7770097' }).items;
+    savePack({ shopifyId: '7770097' }, { packer: 'Alex', items: [{ orderItemId: item.id, packed: 2 }] });
+    let [a, b] = partsOf(orderId);
+    assert.ok([a, b].every((part) => part.status === 'DONE' && part.packed_by === 'Alex'), 'mises dans le bac -> Imprimé');
+
+    // échec d'une pièce du bac : elle retourne à imprimer et n'est plus « dans le bac »
+    setStatus(a.id, 'FAILED');
+    a = partsOf(orderId).find((part) => part.id === a.id);
+    assert.equal(a.status, 'TO_PRINT');
+    assert.equal(a.packed_at, null);
+    assert.equal(a.packed_by, null);
+    assert.ok(!String(a.comment).includes('Packé par'));
+    assert.ok(String(a.comment).includes('A échoué'));
+
+    // Ctrl+Z : de nouveau « Imprimé » ET dans le bac, avec le nom de qui l'avait packée
+    undoFailure(a.id);
+    a = partsOf(orderId).find((part) => part.id === a.id);
+    assert.equal(a.status, 'DONE');
+    assert.equal(a.packed_by, 'Alex');
+    assert.ok(a.packed_at);
+    assert.ok(String(a.comment).includes('Packé par Alex'));
+    assert.ok(!String(a.comment).includes('A échoué'));
+
+    // retour en arrière à la main (Imprimé -> En impression) : sort du bac aussi
+    setStatus(b.id, 'PRINTING', { force: true });
+    b = partsOf(orderId).find((part) => part.id === b.id);
+    assert.equal(b.status, 'PRINTING');
+    assert.equal(b.packed_at, null);
+    // la fenêtre du bac le voit : 1 pièce sur 2 dans le bac
+    assert.equal(getPackingView({ shopifyId: '7770097' }).items[0].packed, 1);
+    // Imprimé -> Expédié : reste dans le bac (rien ne change)
+    setStatus(a.id, 'SHIPPED', { force: true });
+    assert.equal(partsOf(orderId).find((part) => part.id === a.id).packed_by, 'Alex');
+  });
+
   it('une commande Etsy ne touche pas Shopify', async () => {
     assert.equal(await syncShopifyTags({ order: { source: 'etsy' }, history: [] }), null);
   });

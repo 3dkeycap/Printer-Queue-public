@@ -671,6 +671,8 @@ reçoivent une automatiquement à la mise à jour.
 
 ## Bac (« J'ai packé »), commandes traitées, délais, notes client
 
+Invariant : une pièce avec `packed_at` est `DONE` ou `SHIPPED`. `setStatus` vers `TO_PRINT` / `PRINTING` / `FAILED` efface `packed_at`, `packed_by` et le tag « Packé par » (le nom est gardé dans la note de l'événement, `undoFailure` le remet). Réparation unique `internal.packedPartsPrinted` (`printPackedParts`, `src/db/migrate.js`).
+
 - **J'ai packé la commande** (extension Chrome, v1.3.1) : sur une commande Shopify, le bouton
   « 📦 J'ai packé » ouvre une fenêtre avec toute la commande (note client, articles, Chit Chats,
   historique). On indique pour chaque article combien sont dans le bac (− / +), pourquoi il en

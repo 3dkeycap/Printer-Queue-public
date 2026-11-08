@@ -162,6 +162,48 @@ const tagFailedParts = (db) => {
   setSetting(FAILED_TAG_KEY, '1');
 };
 
+const PACKED_PRINTED_KEY = 'internal.packedPartsPrinted';
+
+/**
+ * Une seule fois : une pièce dans le bac est déjà imprimée. Celles restées « À imprimer » / « En impression » avec la
+ * marque du bac passent en « Imprimé » — sauf si quelqu'un les a remises à imprimer après le bac (échec, retour en
+ * arrière) : celles-là ne sont plus dans le bac, on retire seulement la marque. L'historique des bacs (`packs`) est gardé.
+ */
+const printPackedParts = (db) => {
+  if (getSetting(PACKED_PRINTED_KEY)) return;
+  const rows = db
+    .prepare(`SELECT id, status, packed_at, packed_by, comment FROM parts WHERE packed_at IS NOT NULL AND status IN ('TO_PRINT', 'PRINTING')`)
+    .all();
+  const movedBackAfter = db.prepare(
+    // un vrai retour en arrière (pas la création de la pièce, qui n'a pas d'état de départ), hors bac lui-même
+    `SELECT 1 FROM part_events WHERE part_id = ? AND created_at > ? AND from_status IS NOT NULL
+        AND to_status IN ('TO_PRINT', 'PRINTING', 'FAILED') AND actor NOT LIKE 'pack:%' LIMIT 1`,
+  );
+  const ts = nowIso();
+  let printed = 0;
+  let unpacked = 0;
+  db.transaction(() => {
+    for (const row of rows) {
+      if (movedBackAfter.get(row.id, row.packed_at)) {
+        const tags = String(row.comment ?? '').split('\n').filter((tag) => tag && !tag.startsWith('Packé par ')).join('\n') || null;
+        db.prepare('UPDATE parts SET packed_at = NULL, packed_by = NULL, comment = ? WHERE id = ?').run(tags, row.id);
+        db.prepare(`INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at) VALUES (?, ?, ?, 'system', ?, ?)`).run(
+          row.id, row.status, row.status, `Retirée du bac (packée par ${row.packed_by ?? '?'}) : remise à imprimer après le bac`, ts,
+        );
+        unpacked += 1;
+      } else {
+        db.prepare(`UPDATE parts SET status = 'DONE', status_changed_at = ?, printed_at = COALESCE(printed_at, ?), updated_at = ? WHERE id = ?`).run(ts, ts, ts, row.id);
+        db.prepare(`INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at) VALUES (?, ?, 'DONE', 'system', ?, ?)`).run(
+          row.id, row.status, `Dans le bac (packée par ${row.packed_by ?? '?'}) : donc déjà imprimée`, ts,
+        );
+        printed += 1;
+      }
+    }
+  })();
+  if (rows.length) log.info('packed parts made consistent', { printed, unpacked });
+  setSetting(PACKED_PRINTED_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -221,6 +263,7 @@ export const migrate = () => {
   resetCorruptedSyncCursors(db);
   migrateFailedColumn(db);
   tagFailedParts(db);
+  printPackedParts(db);
 
   const insertColor = db.prepare(
     `INSERT INTO resin_colors (key, name, hex, aliases, sort_order, updated_at)
