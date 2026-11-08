@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.13.3 : taper dans l'extension ne déclenche plus les raccourcis clavier de Shopify** (ni d'Etsy) : notes du bac, raison d'une pièce manquante, pièce ajoutée… Les touches tapées dans un champ de l'extension s'écrivent mais ne vont plus jusqu'à la page ; les raccourcis de Shopify marchent toujours ailleurs.
 - **Extension 1.13.2** : quand la fenêtre **« Print Postage »** de Chit Chats s'affiche (« shipment ready to print », après le paiement fait par la personne), son bouton « Print Postage » est cliqué tout seul, une fois. Jamais le bouton de la barre du bas, jamais « Pay for Shipment ».
 - **Extension 1.13.1** : on peut **taper** le poids et la hauteur dans la fenêtre de l'enveloppe (la fenêtre de Chit Chats reprenait le curseur : seules les flèches marchaient). Champs texte simples, curseur directement dans « Poids », Entrée pour continuer.
 - **Extension 1.13.0 : envoi Chit Chats automatisé jusqu'au choix de la livraison.** Description : les champs manquants sont remplis
