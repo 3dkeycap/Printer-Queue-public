@@ -253,10 +253,56 @@
       return null;
     });
 
+  // liste déroulante, liste à recherche, ou simple champ texte (« Province / State » pour Hong Kong)
+  const isCombo = (control) =>
+    control.getAttribute('role') === 'combobox' || control.hasAttribute('aria-autocomplete') || control.getAttribute('aria-haspopup') === 'listbox';
   const fillChoice = async (control, text) => {
     if (!control || !text) return false;
     if (control instanceof HTMLSelectElement) return fillSelect(control, text);
-    return fillCombo(control, text);
+    if (isCombo(control)) return fillCombo(control, text);
+    return fillText(control, text);
+  };
+
+  /** Le bloc d'un article qui contient aussi `label` : le plus petit ancêtre de son « HS Code » qui n'a qu'un seul HS Code. */
+  const blockWith = (hs, label) => {
+    let node = hs.parentElement;
+    while (node && node !== document.body) {
+      if (fieldsByLabel('HS Code', node).length > 1) return null;
+      if (fieldsByLabel(label, node).length) return node;
+      node = node.parentElement;
+    }
+    return null;
+  };
+
+  /*
+   * Poids de chaque article : toujours 1 g (demande de l'atelier), même s'il y avait déjà une valeur — c'est la seule
+   * exception à « on ne remplace jamais ». Le poids du colis (étape « Package ») n'est pas touché.
+   */
+  const setItemWeights = async () => {
+    let done = 0;
+    for (const hs of fieldsByLabel('HS Code')) {
+      const block = blockWith(hs, 'Weight');
+      if (!block) continue;
+      const weight = fieldsByLabel('Weight', block)[0];
+      const unit = fieldsByLabel('Unit', block, { exact: true })[0];
+      let changed = false;
+      if (weight && !weight.disabled && String(weight.value).trim() !== '1') {
+        setValue(weight, '1');
+        changed = true;
+      }
+      if (unit instanceof HTMLSelectElement && unit.value !== 'g') {
+        const option = [...unit.options].find((entry) => norm(entry.value) === 'g' || norm(entry.textContent) === 'g');
+        if (option) {
+          setValue(unit, option.value);
+          changed = true;
+        }
+      } else if (unit instanceof HTMLInputElement && norm(unit.value) !== 'g') {
+        setValue(unit, '');
+        changed = (await fillChoice(unit, 'g')) || changed;
+      }
+      if (changed) done += 1;
+    }
+    return done;
   };
 
   const fillManufacturers = async (items) => {
@@ -279,7 +325,7 @@
       changed = (await fillChoice(one('Country', true), maker.country)) || changed;
       if (maker.province) {
         await new Promise((resolve) => setTimeout(resolve, 300));
-        changed = (await fillChoice(one('Province', true) ?? one('State', true), maker.province)) || changed;
+        changed = (await fillChoice(one('Province', true) ?? one('State', true) ?? one('Province / State', true), maker.province)) || changed;
       }
       if (changed) done += 1;
     }
@@ -334,6 +380,8 @@
         if (pid) filled.push(`identifiant produit ×${pid}`);
       }
     }
+    const weights = await setItemWeights();
+    if (weights) filled.push(`poids 1 g ×${weights}`);
     const makers = await fillManufacturers(data.items);
     if (makers) filled.push(`fabricant ×${makers}`);
     if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);

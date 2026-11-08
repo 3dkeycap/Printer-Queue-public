@@ -432,7 +432,7 @@ export const importOrdersToChitChats = async ({ trigger = 'cron', orderId = null
  */
 export const MANUFACTURERS = {
   quebec: { contact: 'Innov3d inc.', address1: '441 rue saint georges', address2: '', city: 'la Prairie', postalCode: 'J5R2N1', country: 'Canada', countryCode: 'CA', province: 'Quebec (QC)' },
-  hongkong: { contact: 'JiaLiChuang (HongKong) Co., Limited', address1: 'Unit 21, 28/F', address2: 'Metropole Square', city: 'Hong Kong', postalCode: '', country: 'Hong Kong', countryCode: 'HK', province: '' },
+  hongkong: { contact: 'JiaLiChuang (HongKong) Co., Limited', address1: 'Unit 21, 28/F', address2: 'Metropole Square', city: 'Hong Kong', postalCode: '000000', country: 'Hong Kong', countryCode: 'HK', province: 'HONG KONG' },
   dongguan: { contact: 'Dongguan Gaote Electronics Co, Ltd.', address1: 'Building 1, No. 1 , Tangxia Town', address2: 'Zhenxingwei Industrial Zone', city: 'Dongguan', postalCode: '523710', country: 'China', countryCode: 'CN', province: 'Guangdong (GD)' },
 };
 

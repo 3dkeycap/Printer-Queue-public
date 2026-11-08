@@ -6,6 +6,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.12.1** : fabricant de Hong Kong complété avec le code postal **000000** et « Province / State » **HONG KONG**
+  (champ texte quand le pays est Hong Kong). Le **poids de chaque article** est mis à **1 g** dans le formulaire Chit Chats, même
+  s'il y avait déjà une valeur (seule exception à « on ne remplace jamais ») ; le poids du colis n'est pas touché.
 - **Extension 1.12.0 : « Manufacturer Details » remplis dans Chit Chats.** Pour chaque article, le fabricant (exigé pour l'envoi DDP
   aux États-Unis) : **Innov3d inc.** (441 rue saint georges, la Prairie, J5R2N1, Québec) par défaut ; **JiaLiChuang (HongKong) Co.,
   Limited** (Unit 21, 28/F, Metropole Square, Hong Kong) pour les pièces en **nylon** ; **Dongguan Gaote Electronics Co, Ltd.**
