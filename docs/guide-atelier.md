@@ -127,7 +127,8 @@ déjà rempli n'est pas touché. Vérifie, puis enregistre dans Chit Chats.
 
 En ouvrant un envoi (« Edit Shipment ») : la Description se complète et passe toute seule à Package ; une fenêtre demande la
 taille de l'enveloppe (petite, moyenne ou grosse, + hauteur) et le poids ; puis à Postage la livraison la moins chère est choisie
-et l'assurance Chit Chats décochée. **Le paiement (« Pay for Shipment ») reste à toi**, après vérification. « Annuler » dans la
+et l'assurance Chit Chats décochée. **Le paiement (« Pay for Shipment ») reste à toi**, après vérification ; ensuite, la fenêtre « Print Postage » lance
+l'impression toute seule. « Annuler » dans la
 fenêtre de l'enveloppe arrête l'automatisme.
 
 ## Étiquette VAT (Etsy)

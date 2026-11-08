@@ -802,8 +802,28 @@
     say(`Resin Queue : ${done.join(', ')}. Vérifie, puis clique toi-même « Pay for Shipment ».`, ok ? 'ok' : 'warn');
   };
 
+  /*
+   * Fenêtre « Print Postage » (après le paiement fait par la personne : « 1 of 1 shipment ready to print ») : on clique son
+   * bouton « Print Postage » tout seul, une fois par fenêtre. Seulement le bouton DANS cette fenêtre (pas celui de la barre du
+   * bas), et seulement quand elle dit que l'envoi est prêt à imprimer.
+   */
+  const printPostage = async () => {
+    const print = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a')]
+      .filter((element) => visible(element) && !element.disabled && !element.classList.contains('disabled'))
+      .find((element) => norm(element.textContent || element.value) === 'print postage' && element.closest('.modal, [role="dialog"]'));
+    if (!print) return false;
+    const modal = print.closest('.modal, [role="dialog"]');
+    if (!/ready to print/i.test(modal.innerText ?? '') || modal.dataset.rqPrinted) return false;
+    modal.dataset.rqPrinted = '1';
+    await sleep(600);
+    print.click();
+    say('Resin Queue : « Print Postage » lancé.');
+    return true;
+  };
+
   /** Regarde quelle étape est affichée et fait la suite (appelé à chaque changement de la page). */
   const advance = async () => {
+    if (await printPostage()) return null;
     const thick = [...document.querySelectorAll('input[type="radio"]')].find(
       (radio) => visible(radio.closest('label, li, div')) && (/thick/i.test(radio.value) || /thick envelope/i.test(radio.closest('label, li, div')?.textContent ?? '')),
     );
