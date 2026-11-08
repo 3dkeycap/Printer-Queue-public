@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.12.7 : province du fabricant enfin juste (Québec, Guangdong).** D'après l'enregistrement de la vraie page : chaque article
+  a plusieurs champs province du même nom (un texte pour Hong Kong, une liste Select2 par pays : Canada, États-Unis, Chine) ; seul celui
+  du pays choisi est actif, les autres sont **désactivés**. L'extension écrivait dans le champ texte désactivé ; elle prend maintenant le
+  champ **actif** et choisit la province par sa valeur (QC, GD), ce que Select2 affiche et que le formulaire envoie. Vérifié avec le vrai
+  formulaire, le vrai Select2 et la même bascule par pays.
 - **Extension 1.12.6** : le bouton « ✍ Compléter » de Chit Chats s'adapte à la place libre à gauche de la fenêtre « Edit Shipment » : grand panneau quand il y a de la place, **barre fine verticale** dans la colonne étroite d'un écran partagé (sans recouvrir le formulaire), petit bouton en bas à gauche quand il n'y a presque rien.
 - **Extension 1.12.5 : province choisie pour de vrai dans la liste de Chit Chats.** L'extension ouvre la liste, tape le nom,
   clique l'option et, si ça ne prend pas, appuie sur Entrée ; puis elle **vérifie** que la liste affiche bien la province. Si ce

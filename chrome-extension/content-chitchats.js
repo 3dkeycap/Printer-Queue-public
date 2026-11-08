@@ -367,11 +367,19 @@
   const fillChoice = async (control, text) => {
     if (!control || !text) return false;
     if (control instanceof HTMLSelectElement) {
+      if (control.disabled) return false;
       const option = [...control.options].find((entry) => norm(entry.textContent) === norm(text) || norm(entry.value) === norm(text) || norm(entry.textContent).startsWith(norm(text)));
-      if (visible(control)) {
+      // Select2 (Chit Chats) : la vraie <select> reste dans la page, juste réduite à 1 px ; un « change » suffit, la liste
+      // affichée suit et c'est cette valeur qui part à l'enregistrement
+      const rendered = control.parentElement?.querySelector('.select2-selection__rendered');
+      if (visible(control) || rendered) {
         if (!choiceIsEmpty(control) || !option) return false;
         setValue(control, option.value);
-        return true;
+        if (!rendered || norm(rendered.textContent).includes(norm(option.textContent.split(' (')[0]))) return true;
+        // la liste affichée n'a pas suivi : comme une personne
+        const result = await pickInWidget(control, option.textContent.trim());
+        if (!result.ok) widgetProblems.push(result);
+        return result.ok;
       }
       // <select> cachée sous une liste dessinée : c'est ce que la liste AFFICHE qui compte (vide ou pas, choisi ou pas)
       const trigger = widgetTrigger(control);
@@ -428,21 +436,20 @@
   };
 
   /*
-   * « Province / State » du fabricant. Chit Chats le recrée après le choix du pays (liste pour le Canada / la Chine, champ texte
-   * pour Hong Kong) et son étiquette peut porter une marque (« Province / State * ») : on cherche par début d'étiquette, par
-   * nom de champ ou par texte, et on attend jusqu'à 2 secondes qu'il apparaisse.
+   * « Province / State » du fabricant. Sur Chit Chats, l'article a PLUSIEURS champs province du même nom
+   * (`…[manufacturer_province_code]`) : un texte (« Province / State », pour Hong Kong et les autres pays) et une liste
+   * par pays (Canada, États-Unis, Chine). Seul celui du pays choisi est actif ; les autres sont désactivés et cachés.
+   * On prend donc le champ ACTIF (jamais un champ désactivé), en attendant jusqu'à 2 s que Chit Chats l'ait activé
+   * après le choix du pays.
    */
   const provinceField = async (block) => {
     for (let attempt = 0; attempt < 10; attempt += 1) {
-      const control =
-        fieldsByLabel('Province', block)[0] ??
-        fieldsByLabel('State', block, { exact: true })[0] ??
-        block.querySelector('input[name*="province" i], select[name*="province" i], input[name*="state" i], select[name*="state" i]') ??
-        [...block.querySelectorAll('*')]
-          .filter((element) => !element.children.length && /^(province|state|province \/ state)\b/.test(norm(element.textContent)))
-          .map((element) => element.closest('div')?.querySelector('input, select'))
-          .find(Boolean) ??
-        null;
+      const candidates = [
+        ...block.querySelectorAll('[name$="[manufacturer_province_code]"], select[name*="province" i], input[name*="province" i]'),
+        ...fieldsByLabel('Province', block),
+        ...fieldsByLabel('State', block, { exact: true }),
+      ].filter((control, index, all) => all.indexOf(control) === index && !control.disabled);
+      const control = candidates.find((candidate) => visible(candidate.parentElement)) ?? candidates[0] ?? null;
       if (control) return control;
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
