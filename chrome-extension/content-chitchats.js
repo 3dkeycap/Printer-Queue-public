@@ -669,8 +669,8 @@
         <div style="font:800 19px system-ui;margin-bottom:4px">Resin Queue — l’enveloppe (Thick Envelope)</div>
         <div style="color:#5b6a86;margin-bottom:14px">Quelle taille, et combien ça pèse ?</div>
         <div data-sizes style="display:flex;gap:8px;margin-bottom:14px"></div>
-        <label data-hwrap style="display:none;margin-bottom:12px">Hauteur (cm)<input data-h type="number" min="0.1" step="0.1" inputmode="decimal" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
-        <label style="display:block;margin-bottom:12px">Poids (g)<input data-w type="number" min="1" step="1" inputmode="numeric" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
+        <label data-hwrap style="display:none;margin-bottom:12px">Hauteur (cm)<input data-h type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 5" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
+        <label style="display:block;margin-bottom:12px">Poids (g)<input data-w type="text" inputmode="numeric" autocomplete="off" placeholder="ex. 156" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
         <div data-err style="color:#a02828;min-height:1.2em;margin-bottom:8px"></div>
         <div style="display:flex;gap:8px"><button data-cancel type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#eef2f8;font:700 15px system-ui;cursor:pointer">Annuler (je fais à la main)</button>
         <button data-ok type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#1f5fd6;color:#fff;font:700 15px system-ui;cursor:pointer">Continuer</button></div>`;
@@ -711,7 +711,15 @@
       card.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') submit();
       });
+      /*
+       * La fenêtre « Edit Shipment » de Chit Chats ramène le curseur chez elle dès qu'on clique ailleurs : on ne pouvait
+       * pas taper dans nos champs (seulement les flèches). On garde ces événements pour notre fenêtre.
+       */
+      for (const type of ['focusin', 'focus', 'keydown', 'keypress', 'keyup', 'mousedown', 'click']) {
+        overlay.addEventListener(type, (event) => event.stopPropagation());
+      }
       document.documentElement.append(overlay);
+      setTimeout(() => card.querySelector('[data-w]').focus(), 50);
     });
 
   /** Choisit l'option `value` (texte ou valeur) d'une liste, en remplaçant le choix actuel. */

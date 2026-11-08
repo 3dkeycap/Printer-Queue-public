@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.13.1** : on peut **taper** le poids et la hauteur dans la fenêtre de l'enveloppe (la fenêtre de Chit Chats reprenait le curseur : seules les flèches marchaient). Champs texte simples, curseur directement dans « Poids », Entrée pour continuer.
 - **Extension 1.13.0 : envoi Chit Chats automatisé jusqu'au choix de la livraison.** Description : les champs manquants sont remplis
   puis **« Save and continue »** est cliqué tout seul (pas si une province n'a pas pu être choisie, ni si Chit Chats affiche des erreurs).
   Package : **Thick Envelope** est coché et une fenêtre demande la **taille** (petite 22 × 17 × 4 cm, moyenne 21 × 30 cm ou grosse
