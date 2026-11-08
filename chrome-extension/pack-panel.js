@@ -318,6 +318,7 @@
           h('div', {}, [
             h('div', { class: 'title' }, item.title),
             h('div', { class: 'meta' }, [
+              item.variant ? h('span', { class: 'tag' }, item.variant) : null,
               item.notPrinted ? h('span', { class: 'tag stock' }, 'en stock') : null,
               statusText(item),
             ]),

@@ -6,6 +6,7 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.9.1** : la **variante** de chaque article est de nouveau affichée dans la fenêtre « J'ai packé » (l'image reste retirée).
 - **Extension 1.9.0 : ajouter des pièces à la commande sans passer par l'app.** Dans la fenêtre « J'ai packé » (Shopify et Etsy),
   « ➕ Ajouter une pièce à la commande » : nom, variante / couleur (facultative), quantité (1 à 20). Les pièces rejoignent
   la commande : elles sont dans « À imprimer » (couleur détectée comme pour une commande normale), portent le tag « Ajoutée par <nom> »,
