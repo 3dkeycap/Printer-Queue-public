@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncRoute, notFound } from '../lib/errors.js';
 import { customsFor } from '../domain/chitchatsImport.js';
+import { fetchOrderComments } from '../integrations/shopify.js';
 import { PACKED_TAG, addPacker, addPartsToOrder, getPackingView, getVatLabel, pushShopifyOrderTag, savePack, setOrderTag, syncShopifyTags } from '../domain/packing.js';
 
 export const packingRouter = Router();
@@ -85,3 +86,15 @@ packingRouter.get('/customs', (req, res) => {
   if (!data) throw notFound("Commande inconnue de l'app");
   res.json(data);
 });
+
+/** Commentaires de l'équipe sur la commande Shopify (l'extension les montre dans une fenêtre bien visible). */
+packingRouter.get(
+  '/shopify/:id/comments',
+  asyncRoute(async (req, res) => {
+    try {
+      res.json({ comments: await fetchOrderComments(req.params.id) });
+    } catch (error) {
+      res.json({ comments: [], error: error.message });
+    }
+  }),
+);

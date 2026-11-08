@@ -343,6 +343,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     appFetch(`/api/packing/etsy/${encodeURIComponent(message.orderExternalId)}/vat`).then(sendResponse);
     return true;
   }
+  // commentaires de l'équipe sur la commande Shopify (fil « Timeline »)
+  if (message?.type === 'order-comments') {
+    appFetch(`/api/packing/shopify/${encodeURIComponent(message.orderExternalId)}/comments`).then(sendResponse);
+    return true;
+  }
   // tag de commande (To pack, Hold…) coché / décoché dans la fenêtre : l'app le garde et le pousse dans Shopify
   if (message?.type === 'order-tag') {
     appFetch(`/api/packing/${packSource(message)}/${encodeURIComponent(message.orderExternalId)}/tags`, {

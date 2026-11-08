@@ -229,3 +229,45 @@ export const updateOrderTags = async (externalId, { add = [], remove = [] }, set
   await run('tagsAdd', add);
   await run('tagsRemove', remove);
 };
+
+/**
+ * Commentaires de l'équipe sur une commande (fil « Timeline » de Shopify, ex. « replacement reason: damaged package » + photo).
+ * GraphQL (scope read_orders) ; si la version de l'API ne connaît pas les pièces jointes, on redemande sans.
+ * Renvoie [{ id, author, createdAt, message, attachments: [{ name, url }] }], le plus récent d'abord.
+ */
+export const fetchOrderComments = async (externalId, settings = getSettings()) => {
+  if (!isConfigured(settings)) throw new Error('Shopify n’est pas connecté');
+  if (!/^\d+$/.test(String(externalId))) throw new Error('Commande Shopify inconnue');
+  const run = async (withAttachments) => {
+    const payload = await requestJson(graphqlUrl(settings), {
+      method: 'POST',
+      headers: { 'X-Shopify-Access-Token': settings['shopify.accessToken'], 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `query ($id: ID!) { order(id: $id) { events(first: 50, sortKey: CREATED_AT, reverse: true) { nodes {
+          __typename id createdAt message
+          ... on CommentEvent { rawMessage author { name } ${withAttachments ? 'attachments { name url image { url } }' : ''} }
+        } } } }`,
+        variables: { id: `gid://shopify/Order/${externalId}` },
+      }),
+      retries: 1,
+    });
+    if (payload?.errors?.length) throw new Error(payload.errors[0]?.message ?? 'erreur Shopify');
+    return payload?.data?.order?.events?.nodes ?? [];
+  };
+  let nodes;
+  try {
+    nodes = await run(true);
+  } catch {
+    nodes = await run(false);
+  }
+  const text = (html) => String(html ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+  return nodes
+    .filter((node) => node.__typename === 'CommentEvent')
+    .map((node) => ({
+      id: node.id,
+      author: node.author?.name ?? null,
+      createdAt: node.createdAt,
+      message: node.rawMessage ?? text(node.message),
+      attachments: (node.attachments ?? []).map((file) => ({ name: file.name ?? null, url: file.image?.url ?? file.url ?? null })).filter((file) => file.url),
+    }));
+};

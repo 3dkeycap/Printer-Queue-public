@@ -134,8 +134,88 @@
     placeBubble();
   }
 
+
+  /*
+   * Les commentaires de l'équipe (fil « Timeline » en bas de la commande Shopify : « replacement reason: damaged package » +
+   * photo…) passent facilement inaperçus. À l'ouverture d'une commande qui en a, une fenêtre bien visible les montre ; « Vu »
+   * la ferme jusqu'au prochain nouveau commentaire de cette commande.
+   */
+  let commentsBox = null;
+  let commentsFor = null;
+  const agoText = (iso) => {
+    const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (!Number.isFinite(minutes)) return '';
+    if (minutes < 60) return `il y a ${minutes} min`;
+    const hours = Math.round(minutes / 60);
+    return hours < 24 ? `il y a ${hours} h` : `il y a ${Math.round(hours / 24)} j`;
+  };
+  const closeComments = () => {
+    commentsBox?.remove();
+    commentsBox = null;
+  };
+  const showComments = async (orderId) => {
+    if (!orderId || commentsFor === orderId) return;
+    commentsFor = orderId;
+    closeComments();
+    const result = await send({ type: 'order-comments', orderExternalId: orderId });
+    const comments = result?.comments ?? [];
+    if (!comments.length || orderIdFromPath() !== orderId) return;
+    const { seenComments = {} } = await chrome.storage.local.get('seenComments');
+    if (seenComments[orderId] === comments[0].id) return;
+
+    commentsBox = document.createElement('div');
+    commentsBox.setAttribute('data-resin-queue', '');
+    commentsBox.style.cssText =
+      'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:2147483647;width:min(560px,92vw);max-height:70vh;overflow:auto;' +
+      'background:#fffaf0;color:#14213d;border:3px solid #e8a33d;border-radius:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.45);' +
+      'font:14px/1.45 system-ui,-apple-system,sans-serif;padding:16px 18px;';
+    const title = document.createElement('div');
+    title.style.cssText = 'font:800 17px system-ui;margin-bottom:10px;';
+    title.textContent = `💬 ${comments.length} commentaire${comments.length > 1 ? 's' : ''} de l’équipe sur cette commande`;
+    commentsBox.append(title);
+    for (const comment of comments) {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1px solid #f0d49a;border-radius:12px;padding:10px 12px;margin-bottom:8px;';
+      const head = document.createElement('div');
+      head.style.cssText = 'font-weight:700;margin-bottom:4px;';
+      head.textContent = `${comment.author ?? 'Quelqu’un'} · ${agoText(comment.createdAt)}`;
+      const body = document.createElement('div');
+      body.style.cssText = 'white-space:pre-wrap;font-size:15px;';
+      body.textContent = comment.message;
+      card.append(head, body);
+      for (const file of comment.attachments ?? []) {
+        const link = document.createElement('a');
+        link.href = file.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        const image = document.createElement('img');
+        image.src = file.url;
+        image.alt = file.name ?? '';
+        image.style.cssText = 'display:block;max-width:100%;max-height:220px;margin-top:8px;border-radius:8px;border:1px solid #eee;';
+        link.append(image);
+        card.append(link);
+      }
+      commentsBox.append(card);
+    }
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.textContent = 'Vu ✓';
+    ok.style.cssText = 'all:unset;display:block;margin:6px 0 0 auto;padding:10px 18px;border-radius:10px;background:#1f5fd6;color:#fff;font:700 15px system-ui;cursor:pointer;';
+    ok.addEventListener('click', async () => {
+      const { seenComments: seen = {} } = await chrome.storage.local.get('seenComments');
+      await chrome.storage.local.set({ seenComments: { ...seen, [orderId]: comments[0].id } });
+      closeComments();
+    });
+    commentsBox.append(ok);
+    document.documentElement.append(commentsBox);
+  };
+
   const render = async () => {
-    if (!isOrderPage()) return removeDock();
+    if (!isOrderPage()) {
+      closeComments();
+      commentsFor = null;
+      return removeDock();
+    }
     const number = await freshOrderNumber();
     const info = await send({ type: 'resolve', pageOrderNumber: number });
     // le bouton reste affiché sur toute commande (le pack ne dépend pas de Chit Chats)
@@ -244,6 +324,7 @@
     dock.replaceChildren(...[grip, info.chitchatsUrl && button, packButton, info.chitchatsUrl && linkPart].filter(Boolean));
     globalThis.ResinQueuePack?.place();
     renderBubble();
+    showComments(orderIdFromPath());
 
     // boîte du bac laissée ouverte : elle se rouvre sur cette commande
     const pack = globalThis.ResinQueuePack;

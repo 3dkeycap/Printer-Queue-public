@@ -144,6 +144,11 @@ Une pièce oubliée ou un supplément : dans la fenêtre « J'ai packé », « �
 quantité). Elle apparaît dans « À imprimer » avec le tag « Ajoutée par <ton nom> » et dans le bac de la commande. Impossible
 sur une commande annulée ou déjà expédiée.
 
+## Commentaires de l'équipe (Shopify)
+
+Une commande Shopify qui a des commentaires de l'équipe (en bas, dans « Timeline ») les montre dans une grande fenêtre dès
+qu'on l'ouvre, avec les photos. « Vu ✓ » la ferme ; elle revient seulement s'il y a un nouveau commentaire.
+
 ## Tags de commande (To pack, Hold…)
 
 Dans la fenêtre « J'ai packé » (Shopify et Etsy), la section **Tags de la commande** : un clic coche / décoche
