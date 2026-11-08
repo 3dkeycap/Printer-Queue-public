@@ -125,11 +125,13 @@ déjà rempli n'est pas touché. Vérifie, puis enregistre dans Chit Chats.
 
 ## Envoi Chit Chats de bout en bout
 
-En ouvrant un envoi (« Edit Shipment ») : la Description se complète et passe toute seule à Package ; une fenêtre demande la
-taille de l'enveloppe (petite, moyenne ou grosse, + hauteur) et le poids ; puis à Postage la livraison la moins chère est choisie
-et l'assurance Chit Chats décochée. **Le paiement (« Pay for Shipment ») reste à toi**, après vérification ; ensuite, la fenêtre « Print Postage » lance
-l'impression toute seule. « Annuler » dans la
-fenêtre de l'enveloppe arrête l'automatisme.
+En ouvrant un envoi (« Edit Shipment »), un **petit panneau Resin Queue** (à gauche) montre les étapes et les fait une à une :
+**Description** (se complète et passe toute seule à Package — si Chit Chats ouvre directement à Package, il revient d’abord à
+Description), **Enveloppe** (il demande la taille — **Petite** déjà choisie, sinon moyenne ou grosse + hauteur — et le poids),
+**Livraison** (la moins chère, assurance Chit Chats décochée). **Le paiement (« Pay for Shipment ») reste à toi**, après
+vérification ; ensuite, la fenêtre « Print Postage » lance l’impression toute seule. « Je fais à la main » arrête l’automatisme
+pour cet envoi, « ↻ Relancer » le reprend. Pour tout couper : icône de l’extension → interrupteur **« Automatisation Chit Chats »**
+en haut.
 
 ## Étiquette VAT (Etsy)
 

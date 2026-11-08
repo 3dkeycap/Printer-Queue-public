@@ -210,6 +210,31 @@
 
   let toast = null;
   const say = (text, tone = 'ok', diagnostic = null) => {
+    if (panel?.isConnected) {
+      const box = panel.querySelector('[data-msg]');
+      box.replaceChildren();
+      const line = document.createElement('div');
+      line.style.cssText = `padding:8px 10px;border-radius:10px;background:${tone === 'ok' ? '#e3f6ea' : '#fff3dc'};color:${tone === 'ok' ? '#16663a' : '#7a4b00'};`;
+      line.textContent = String(text).replace(/^Resin Queue\s*:?\s*/, '');
+      box.append(line);
+      if (diagnostic) {
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.textContent = 'Copier le diagnostic';
+        copy.style.cssText = 'all:unset;display:inline-block;margin-top:6px;padding:6px 10px;border-radius:8px;background:#7a4b00;color:#fff;cursor:pointer;font-size:12px;';
+        copy.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(diagnostic);
+            copy.textContent = 'Copié ✓ (colle-le dans la conversation)';
+          } catch {
+            copy.textContent = 'Copie impossible';
+          }
+        });
+        box.append(copy);
+      }
+      placePanel();
+      return;
+    }
     toast?.remove();
     toast = document.createElement('div');
     toast.setAttribute('data-resin-queue', '');
@@ -487,20 +512,29 @@
   let widgetProblems = [];
   const complete = async ({ force = false } = {}) => {
     // pas un formulaire d'envoi (aucun champ « HS Code ») : rien à faire
-    if (!fieldsByLabel('HS Code').length) return hideButton();
+    const firstHs = fieldsByLabel('HS Code')[0];
+    if (!firstHs) return hideButton();
     showButton();
+    // une fois par formulaire Description affiché (on peut y revenir depuis Package : il est alors refait)
+    const descForm = stepRoot(firstHs);
+    if (descForm.dataset.rqFilled && !force) return;
+    descForm.dataset.rqFilled = '1';
+    setStep('description', 'running', 'je remplis les champs vides…');
     // dernier recours : le nom cherché dans la page de recherche de Chit Chats (…/shipments/search?q=Alison%20Thompson)
     const name = new URL(window.top === window ? location.href : document.referrer || location.href).searchParams.get('q') ?? '';
     const ref = (await orderRef()) ?? (name ? `nom:${name}` : null);
     if (!ref) {
-      if (force) say('Resin Queue : je ne trouve pas la commande de cet envoi (ni « Order ID », ni lien Live, ni nom recherché).', 'warn');
+      setStep('description', 'warn', 'commande introuvable : remplis à la main');
+      say('Je ne trouve pas la commande de cet envoi (ni « Order ID », ni lien Live, ni nom recherché).', 'warn');
+      flow.descDone = true;
       return;
     }
-    // déjà complété pour cette commande (le bouton permet de refaire)
-    if (doneFor === ref && !force) return;
     doneFor = ref;
     const data = await send({ type: 'cc-customs', order: ref.startsWith('nom:') ? '' : ref, name });
+    if (data?.orderNumber && panel) panel.querySelector('[data-order]').textContent = `#${data.orderNumber}`;
     if (!data || data.error) {
+      setStep('description', 'warn', 'commande inconnue de l’app : remplis à la main');
+      flow.descDone = true;
       say(`Resin Queue : rien complété pour ${ref.replace(/^nom:/, '')} (${data?.error ?? 'app injoignable'}).`, 'warn');
       return;
     }
@@ -546,80 +580,127 @@
       );
     } else if (filled.length) say(`Resin Queue a complété ${data.orderNumber} : ${filled.join(', ')}. Vérifie puis enregistre.`);
     else if (force) say(`Resin Queue : rien à compléter pour ${data.orderNumber} (les champs sont déjà remplis, ou pas reconnus).`, 'warn');
+    flow.descDone = true;
+    setStep('description', widgetProblems.length ? 'warn' : 'done', widgetProblems.length ? 'province à choisir à la main' : filled.length ? filled.join(', ') : 'rien à compléter');
     // étape suivante toute seule (pas si une province manque : la personne la choisit d'abord, puis clique elle-même)
     if (!widgetProblems.length) await saveAndContinue('Description');
   };
 
   /*
-   * Bouton « Compléter » visible dès qu'un formulaire d'envoi est à l'écran : montre que l'extension l'a vu, et relance.
-   * Il occupe toute la zone libre à gauche de la fenêtre « Edit Shipment » (du haut jusqu'en bas), pour être impossible à rater.
+   * L'assistant d'envoi : UN seul panneau pour les 3 pages de Chit Chats (Description, Package, Postage) et la suite.
+   * Il montre où on en est (Description → Enveloppe → Livraison → Paiement (toi) → Impression), pose la question de
+   * l'enveloppe et affiche les messages. À gauche de la fenêtre « Edit Shipment » quand il y a la place, sinon en petit
+   * en bas à gauche (il s'agrandit seulement quand il pose une question).
    */
-  let button = null;
-  let bigText = null;
-  let smallText = null;
-  /*
-   * La taille suit la place libre à gauche de la fenêtre « Edit Shipment » : grand panneau quand il y a de la place,
-   * barre fine verticale dans une colonne étroite (écran partagé), petit bouton en bas à gauche quand il n'y a rien
-   * (jamais par-dessus le formulaire).
-   */
-  const placeButton = () => {
-    if (!button) return;
-    const dialog = fieldsByLabel('HS Code')[0]?.closest('[role="dialog"], .modal-dialog, .modal-content, .modal, dialog');
-    const free = dialog ? Math.round(dialog.getBoundingClientRect().left) : 0;
-    const base = {
-      top: '', bottom: '', left: '12px', width: '', height: '', padding: '', borderRadius: '', flexDirection: 'column', gap: '14px', writingMode: '', font: '',
-    };
-    if (free >= 260) {
-      Object.assign(button.style, base, { top: '12px', bottom: '12px', width: `${free - 24}px`, padding: '24px', borderRadius: '18px', font: '800 34px/1.15 system-ui,-apple-system,sans-serif' });
-      bigText.textContent = '✍ Compléter';
-      smallText.hidden = false;
-    } else if (free >= 64) {
-      Object.assign(button.style, base, {
-        top: '12px', bottom: '12px', left: '8px', width: `${Math.min(free - 16, 72)}px`, padding: '12px 0', borderRadius: '14px', gap: '10px',
-        font: '800 18px/1 system-ui,-apple-system,sans-serif',
-      });
-      bigText.textContent = '✍';
-      smallText.hidden = false;
-      smallText.style.writingMode = 'vertical-rl';
-      smallText.style.transform = 'rotate(180deg)';
-      smallText.textContent = 'Compléter (Resin Queue)';
-      smallText.style.font = '800 16px/1 system-ui,-apple-system,sans-serif';
-      return;
-    } else {
-      Object.assign(button.style, base, { bottom: '12px', padding: '10px 14px', borderRadius: '12px', flexDirection: 'row', gap: '8px', font: '800 14px/1 system-ui,-apple-system,sans-serif' });
-      bigText.textContent = '✍ Compléter';
-      smallText.hidden = true;
-    }
-    smallText.style.writingMode = '';
-    smallText.style.transform = '';
-    smallText.textContent = 'Resin Queue remplit les champs vides de cet envoi';
-    smallText.style.font = '600 16px/1.35 system-ui,-apple-system,sans-serif';
-  };
-  function showButton() {
-    if (button?.isConnected) return placeButton();
-    button = document.createElement('button');
-    button.type = 'button';
-    button.setAttribute('data-resin-queue', '');
-    button.title = 'Resin Queue : remplit les champs vides (IOSS pour l’Europe, code HS, pays d’origine, fabricant, poids 1 g, description, SKU)';
-    button.style.cssText =
-      'all:unset;box-sizing:border-box;position:fixed;z-index:2147483647;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-      'text-align:center;color:#fff;background:#1f5fd6;box-shadow:0 20px 50px -18px rgba(20,30,60,.6);';
-    bigText = document.createElement('span');
-    smallText = document.createElement('span');
-    smallText.style.cssText = 'opacity:.9;max-width:320px;';
-    button.append(bigText, smallText);
-    button.addEventListener('mouseenter', () => { button.style.background = '#174bb0'; });
-    button.addEventListener('mouseleave', () => { button.style.background = '#1f5fd6'; });
-    button.addEventListener('click', () => complete({ force: true }).catch((error) => say(`Resin Queue : ${error.message}`, 'warn')));
-    document.documentElement.append(button);
-    placeButton();
-  }
-  window.addEventListener('resize', placeButton);
-  function hideButton() {
-    button?.remove();
-    button = null;
-  }
+  const STEPS = [
+    ['description', 'Description'],
+    ['package', 'Enveloppe'],
+    ['postage', 'Livraison'],
+    ['pay', 'Paiement (toi)'],
+    ['print', 'Impression'],
+  ];
+  const ICONS = { todo: ['○', '#9aa8c4'], running: ['⏳', '#1f5fd6'], done: ['✓', '#167a43'], warn: ['⚠', '#b36b00'], you: ['👤', '#7a4fd0'], skip: ['–', '#9aa8c4'] };
+  // où en est l'envoi affiché : Description faite ? déjà renvoyé vers Description depuis Package ?
+  const flow = { descDone: false, jumped: false };
+  let panel = null;
+  let panelFor = null;
+  const steps = {};
+  let asking = false;
 
+  const shipmentId = () => {
+    for (const link of document.querySelectorAll('a[href*="/shipments/"]')) {
+      const match = /\/shipments\/([a-z0-9]{6,})\/(?:address|customs|package|postage)/i.exec(link.getAttribute('href') ?? '');
+      if (match) return match[1].toLowerCase();
+    }
+    return /SHIPMENT ID\s+([A-Z0-9]{6,})/i.exec(document.body.innerText ?? '')?.[1]?.toLowerCase() ?? 'envoi';
+  };
+
+  const modalLeft = () => {
+    const dialog = [...document.querySelectorAll('.modal-dialog, [role="dialog"], .modal-content')].find(visible);
+    return dialog ? Math.round(dialog.getBoundingClientRect().left) : 0;
+  };
+
+  const placePanel = () => {
+    if (!panel) return;
+    const free = modalLeft();
+    const roomy = free >= 300;
+    Object.assign(panel.style, roomy
+      ? { left: '12px', top: '12px', bottom: '', width: `${Math.min(free - 24, 340)}px` }
+      : { left: '12px', top: '', bottom: '12px', width: asking ? 'min(340px, calc(100vw - 24px))' : '260px' });
+    panel.querySelector('[data-steps]').style.display = roomy || asking ? '' : 'none';
+    panel.querySelector('[data-mini]').style.display = roomy || asking ? 'none' : '';
+  };
+  window.addEventListener('resize', placePanel);
+
+  const renderSteps = () => {
+    if (!panel) return;
+    const list = panel.querySelector('[data-steps]');
+    list.replaceChildren(
+      ...STEPS.map(([key, label]) => {
+        const state = steps[key]?.state ?? 'todo';
+        const [icon, color] = ICONS[state];
+        const row = document.createElement('div');
+        row.style.cssText = `display:flex;gap:8px;align-items:baseline;padding:3px 0;color:${state === 'todo' ? '#7b859a' : '#14213d'};`;
+        const mark = document.createElement('b');
+        mark.style.cssText = `width:18px;text-align:center;color:${color};flex:none;`;
+        mark.textContent = icon;
+        const text = document.createElement('span');
+        text.innerHTML = `<b style="font-weight:${state === 'running' ? 800 : 600}">${label}</b>${steps[key]?.detail ? `<br><span style="font-size:12px;color:#5b6a86">${steps[key].detail.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c])}</span>` : ''}`;
+        row.append(mark, text);
+        return row;
+      }),
+    );
+    // version réduite : l'étape en cours sur une ligne
+    const current = STEPS.find(([key]) => ['running', 'warn', 'you'].includes(steps[key]?.state)) ?? STEPS.filter(([key]) => steps[key]?.state === 'done').at(-1);
+    panel.querySelector('[data-mini]').textContent = current ? `${ICONS[steps[current[0]].state][0]} ${current[1]}${steps[current[0]].detail ? ` — ${steps[current[0]].detail}` : ''}` : 'Prêt';
+  };
+
+  const setStep = (key, state, detail = '') => {
+    steps[key] = { state, detail };
+    renderSteps();
+    placePanel();
+  };
+
+  const showPanel = (orderLabel = '') => {
+    const id = shipmentId();
+    if (panelFor !== id) {
+      // nouvel envoi : on repart de zéro
+      panelFor = id;
+      for (const key of Object.keys(steps)) delete steps[key];
+      flow.descDone = false;
+      flow.jumped = false;
+    }
+    if (!panel?.isConnected) {
+      panel = document.createElement('div');
+      panel.setAttribute('data-resin-queue', '');
+      panel.style.cssText =
+        'position:fixed;z-index:2147483647;box-sizing:border-box;max-height:calc(100vh - 24px);overflow:auto;padding:12px 14px;border-radius:14px;' +
+        'background:#fff;color:#14213d;border:2px solid #1f5fd6;box-shadow:0 20px 50px -18px rgba(20,30,60,.55);font:14px/1.35 system-ui,-apple-system,sans-serif;';
+      panel.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="font:800 15px system-ui;color:#1f5fd6">✍ Resin Queue · envoi</b>
+          <span data-order style="color:#5b6a86;font-size:12px"></span>
+          <button data-rerun type="button" title="Refaire l’étape affichée" style="all:unset;margin-left:auto;cursor:pointer;color:#1f5fd6;font:700 12px system-ui">↻ Relancer</button></div>
+        <div data-mini style="font-size:13px"></div>
+        <div data-steps></div>
+        <div data-form></div>
+        <div data-msg style="margin-top:6px;font-size:13px"></div>`;
+      // la fenêtre de Chit Chats reprend le curseur : on garde nos événements (sinon impossible de taper)
+      for (const type of ['focusin', 'focus', 'keydown', 'keypress', 'keyup', 'mousedown', 'click']) panel.addEventListener(type, (event) => event.stopPropagation());
+      panel.querySelector('[data-rerun]').addEventListener('click', () => rerun().catch((error) => say(error.message, 'warn')));
+      document.documentElement.append(panel);
+    }
+    if (orderLabel) panel.querySelector('[data-order]').textContent = orderLabel;
+    renderSteps();
+    placePanel();
+  };
+  const hidePanel = () => {
+    if (asking) return;
+    panel?.remove();
+    panel = null;
+  };
+  // compatibilité avec la complétion de la Description
+  const showButton = () => showPanel();
+  const hideButton = () => {};
 
   /* ---------------------------------------------- envoi de bout en bout (Description -> Package -> Postage) */
 
@@ -645,7 +726,8 @@
     // refusé par Chit Chats (champ manquant…) : on s'arrête et on le dit
     await sleep(2500);
     if (root.isConnected && /please review the error/i.test(root.innerText ?? '')) {
-      say(`Resin Queue : Chit Chats refuse l’étape « ${step} » (voir les erreurs en rouge). Corrige puis clique « Save and continue ».`, 'warn');
+      setStep(step.toLowerCase(), 'warn', 'refusé par Chit Chats (erreurs en rouge)');
+      say(`Chit Chats refuse l’étape « ${step} » (voir les erreurs en rouge). Corrige puis clique « Save and continue ».`, 'warn');
       return false;
     }
     return true;
@@ -657,69 +739,70 @@
     grosse: { label: 'Grosse', dims: [37, 30, null], askHeight: true },
   };
 
-  /** Fenêtre « Quelle enveloppe ? » : taille (petite / moyenne / grosse), hauteur si besoin, poids. null si annulé. */
+  /**
+   * Question de l'enveloppe, DANS le panneau de l'assistant : taille (Petite déjà choisie : 95 % des commandes), hauteur pour
+   * Moyenne / Grosse, poids. Entrée = Continuer. null si la personne préfère faire à la main.
+   */
   const askPackage = () =>
     new Promise((resolve) => {
-      const overlay = document.createElement('div');
-      overlay.setAttribute('data-resin-queue', '');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(15,25,45,.45);display:flex;align-items:center;justify-content:center;font:15px system-ui,-apple-system,sans-serif;';
-      const card = document.createElement('div');
-      card.style.cssText = 'background:#fff;color:#14213d;border-radius:16px;padding:22px;width:min(440px,92vw);box-shadow:0 30px 80px -20px rgba(0,0,0,.5);';
-      card.innerHTML = `
-        <div style="font:800 19px system-ui;margin-bottom:4px">Resin Queue — l’enveloppe (Thick Envelope)</div>
-        <div style="color:#5b6a86;margin-bottom:14px">Quelle taille, et combien ça pèse ?</div>
-        <div data-sizes style="display:flex;gap:8px;margin-bottom:14px"></div>
-        <label data-hwrap style="display:none;margin-bottom:12px">Hauteur (cm)<input data-h type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 5" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
-        <label style="display:block;margin-bottom:12px">Poids (g)<input data-w type="text" inputmode="numeric" autocomplete="off" placeholder="ex. 156" style="display:block;width:100%;margin-top:4px;padding:10px;border:2px solid #ccd5e5;border-radius:10px;font:inherit"></label>
-        <div data-err style="color:#a02828;min-height:1.2em;margin-bottom:8px"></div>
-        <div style="display:flex;gap:8px"><button data-cancel type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#eef2f8;font:700 15px system-ui;cursor:pointer">Annuler (je fais à la main)</button>
-        <button data-ok type="button" style="flex:1;padding:12px;border:0;border-radius:10px;background:#1f5fd6;color:#fff;font:700 15px system-ui;cursor:pointer">Continuer</button></div>`;
-      overlay.append(card);
-      let chosen = null;
-      const sizes = card.querySelector('[data-sizes]');
-      const hwrap = card.querySelector('[data-hwrap]');
+      asking = true;
+      showPanel();
+      const form = panel.querySelector('[data-form]');
+      form.innerHTML = `
+        <div style="margin:8px 0 6px;font-weight:800">Quelle enveloppe ? (Thick Envelope)</div>
+        <div data-sizes style="display:flex;gap:6px;margin-bottom:8px"></div>
+        <label data-hwrap style="display:none;margin-bottom:8px;font-size:13px">Hauteur (cm)<input data-h type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 5" style="display:block;box-sizing:border-box;width:100%;margin-top:3px;padding:9px;border:2px solid #ccd5e5;border-radius:9px;font:inherit"></label>
+        <label style="display:block;margin-bottom:6px;font-size:13px">Poids (g)<input data-w type="text" inputmode="numeric" autocomplete="off" placeholder="ex. 156" style="display:block;box-sizing:border-box;width:100%;margin-top:3px;padding:9px;border:2px solid #ccd5e5;border-radius:9px;font:inherit"></label>
+        <div data-err style="color:#a02828;min-height:1.1em;font-size:13px"></div>
+        <div style="display:flex;gap:6px;margin-top:4px"><button data-cancel type="button" style="flex:1;padding:10px;border:0;border-radius:9px;background:#eef2f8;font:700 13px system-ui;cursor:pointer">Je fais à la main</button>
+        <button data-ok type="button" style="flex:1;padding:10px;border:0;border-radius:9px;background:#1f5fd6;color:#fff;font:700 14px system-ui;cursor:pointer">Continuer</button></div>`;
+      let chosen = 'petite';
+      const sizes = form.querySelector('[data-sizes]');
+      const hwrap = form.querySelector('[data-hwrap]');
+      const paint = () => {
+        for (const button of sizes.children) {
+          const on = button.dataset.size === chosen;
+          button.style.borderColor = on ? '#1f5fd6' : '#ccd5e5';
+          button.style.background = on ? '#eaf1ff' : '#fff';
+        }
+        hwrap.style.display = SIZES[chosen].askHeight ? 'block' : 'none';
+      };
       for (const [key, size] of Object.entries(SIZES)) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.dataset.size = key;
-        b.innerHTML = `<b>${size.label}</b><br><span style="font-size:13px;color:#5b6a86">${size.askHeight ? `${size.dims[1]} × ${size.dims[0]}` : size.dims.join(' × ')} cm</span>`;
-        b.style.cssText = 'flex:1;padding:12px 6px;border:2px solid #ccd5e5;border-radius:12px;background:#fff;cursor:pointer;font:15px system-ui;color:#14213d;';
-        b.addEventListener('click', () => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.size = key;
+        button.innerHTML = `<b>${size.label}</b><br><span style="font-size:12px;color:#5b6a86">${size.askHeight ? `${size.dims[1]} × ${size.dims[0]}` : size.dims.join(' × ')}</span>`;
+        button.style.cssText = 'flex:1;padding:8px 4px;border:2px solid #ccd5e5;border-radius:10px;background:#fff;cursor:pointer;font:13px system-ui;color:#14213d;';
+        button.addEventListener('click', () => {
           chosen = key;
-          for (const other of sizes.children) other.style.borderColor = other === b ? '#1f5fd6' : '#ccd5e5';
-          hwrap.style.display = size.askHeight ? 'block' : 'none';
-          (size.askHeight ? card.querySelector('[data-h]') : card.querySelector('[data-w]')).focus();
+          paint();
+          form.querySelector(SIZES[key].askHeight ? '[data-h]' : '[data-w]').focus();
         });
-        sizes.append(b);
+        sizes.append(button);
       }
+      paint();
       const finish = (value) => {
-        overlay.remove();
+        asking = false;
+        form.replaceChildren();
+        placePanel();
         resolve(value);
       };
-      card.querySelector('[data-cancel]').addEventListener('click', () => finish(null));
+      form.querySelector('[data-cancel]').addEventListener('click', () => finish(null));
       const submit = () => {
-        const err = card.querySelector('[data-err]');
-        if (!chosen) return (err.textContent = 'Choisis la taille.');
+        const err = form.querySelector('[data-err]');
         const size = SIZES[chosen];
-        const height = size.askHeight ? Number(String(card.querySelector('[data-h]').value).replace(',', '.')) : size.dims[2];
-        const weight = Number(String(card.querySelector('[data-w]').value).replace(',', '.'));
+        const height = size.askHeight ? Number(String(form.querySelector('[data-h]').value).replace(',', '.')) : size.dims[2];
+        const weight = Number(String(form.querySelector('[data-w]').value).replace(',', '.'));
         if (!(height > 0)) return (err.textContent = 'Indique la hauteur (cm).');
         if (!(weight > 0)) return (err.textContent = 'Indique le poids (g).');
         finish({ length: size.dims[0], width: size.dims[1], height, weight: Math.round(weight) });
       };
-      card.querySelector('[data-ok]').addEventListener('click', submit);
-      card.addEventListener('keydown', (event) => {
+      form.querySelector('[data-ok]').addEventListener('click', submit);
+      form.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') submit();
       });
-      /*
-       * La fenêtre « Edit Shipment » de Chit Chats ramène le curseur chez elle dès qu'on clique ailleurs : on ne pouvait
-       * pas taper dans nos champs (seulement les flèches). On garde ces événements pour notre fenêtre.
-       */
-      for (const type of ['focusin', 'focus', 'keydown', 'keypress', 'keyup', 'mousedown', 'click']) {
-        overlay.addEventListener(type, (event) => event.stopPropagation());
-      }
-      document.documentElement.append(overlay);
-      setTimeout(() => card.querySelector('[data-w]').focus(), 50);
+      placePanel();
+      setTimeout(() => form.querySelector('[data-w]').focus(), 50);
     });
 
   /** Choisit l'option `value` (texte ou valeur) d'une liste, en remplaçant le choix actuel. */
@@ -735,8 +818,13 @@
     const root = stepRoot(radio);
     if (root.dataset.rqPackage) return;
     root.dataset.rqPackage = '1';
+    setStep('package', 'you', 'taille et poids ?');
     const answer = await askPackage();
-    if (!answer) return say('Resin Queue : enveloppe à remplir à la main.', 'warn');
+    if (!answer) {
+      setStep('package', 'skip', 'à la main');
+      return say('Enveloppe à remplir à la main.', 'warn');
+    }
+    setStep('package', 'running', 'je remplis…');
     if (!radio.checked) radio.click();
     // les champs poids / taille apparaissent après le choix du type
     let weight = null;
@@ -757,8 +845,12 @@
     put(one('Width'), answer.width, 'largeur');
     put(one('Height'), answer.height, 'hauteur');
     if (units.length > 1 && !forceSelect(units[units.length - 1], 'cm')) missing.push('unité de taille');
-    if (missing.length) return say(`Resin Queue : je ne trouve pas ${missing.join(', ')} sur cette page : remplis-les à la main.`, 'warn');
-    say(`Resin Queue : Thick Envelope ${answer.length} × ${answer.width} × ${answer.height} cm, ${answer.weight} g.`);
+    if (missing.length) {
+      setStep('package', 'warn', `${missing.join(', ')} à remplir à la main`);
+      return say(`Je ne trouve pas ${missing.join(', ')} sur cette page : remplis-les à la main.`, 'warn');
+    }
+    setStep('package', 'done', `Thick Envelope ${answer.length} × ${answer.width} × ${answer.height} cm, ${answer.weight} g`);
+    say('');
     await saveAndContinue('Package');
   };
 
@@ -776,6 +868,8 @@
   const postageStep = async (root) => {
     if (root.dataset.rqPostage) return;
     root.dataset.rqPostage = '1';
+    showPanel();
+    setStep('postage', 'running', 'je cherche la moins chère…');
     // les tarifs arrivent un peu après l'affichage de l'étape
     let rates = [];
     for (let attempt = 0; attempt < 40 && !rates.length; attempt += 1) {
@@ -799,7 +893,9 @@
     await sleep(300);
     done.push(insurance ? (insurance.checked ? 'assurance ENCORE cochée' : 'assurance décochée') : 'case assurance introuvable');
     const ok = done[0].endsWith('choisi') && done[1] === 'assurance décochée';
-    say(`Resin Queue : ${done.join(', ')}. Vérifie, puis clique toi-même « Pay for Shipment ».`, ok ? 'ok' : 'warn');
+    setStep('postage', ok ? 'done' : 'warn', done.join(', '));
+    setStep('pay', 'you', 'vérifie, puis clique « Pay for Shipment »');
+    say(ok ? 'Tout est prêt : vérifie, puis clique toi-même « Pay for Shipment ».' : `${done.join(', ')} : vérifie à la main avant de payer.`, ok ? 'ok' : 'warn');
   };
 
   /*
@@ -817,7 +913,10 @@
     modal.dataset.rqPrinted = '1';
     await sleep(600);
     print.click();
-    say('Resin Queue : « Print Postage » lancé.');
+    showPanel();
+    setStep('pay', 'done', 'payé');
+    setStep('print', 'done', '« Print Postage » lancé');
+    say('« Print Postage » lancé.');
     return true;
   };
 
@@ -827,22 +926,66 @@
     const thick = [...document.querySelectorAll('input[type="radio"]')].find(
       (radio) => visible(radio.closest('label, li, div')) && (/thick/i.test(radio.value) || /thick envelope/i.test(radio.closest('label, li, div')?.textContent ?? '')),
     );
-    if (thick) return packageStep(thick);
+    if (thick) {
+      showPanel();
+      // Chit Chats ouvre directement sur Package quand l'envoi a déjà des infos : on repasse d'abord par Description
+      if (!flow.descDone && !flow.jumped) {
+        const back = [...document.querySelectorAll('a')].find((link) => visible(link) && norm(link.textContent) === 'description' && link.closest('nav, .nav-steps'));
+        if (back) {
+          flow.jumped = true;
+          setStep('description', 'running', 'je vérifie la description d’abord…');
+          back.click();
+          return null;
+        }
+      }
+      return packageStep(thick);
+    }
     const insuranceBox = [...document.querySelectorAll('input[type="checkbox"]')].find((box) => /chit chats insurance/i.test(box.closest('label, div')?.textContent ?? ''));
     if (insuranceBox && visible(insuranceBox.closest('label, div'))) return postageStep(stepRoot(insuranceBox));
+    // plus aucune page d'envoi à l'écran (ni la fenêtre « Print Postage ») : l'assistant s'en va
+    const printing = [...document.querySelectorAll('.modal, [role="dialog"]')].some((modal) => visible(modal) && /ready to print/i.test(modal.innerText ?? ''));
+    if (!fieldsByLabel('HS Code').length && !printing) hidePanel();
     return null;
   };
 
+  /** « ↻ Relancer » : refait l'étape affichée. */
+  const rerun = async () => {
+    if (fieldsByLabel('HS Code').length) return complete({ force: true });
+    for (const element of document.querySelectorAll('[data-rq-package], [data-rq-postage], [data-rq-saved]')) {
+      delete element.dataset.rqPackage;
+      delete element.dataset.rqPostage;
+      delete element.dataset.rqSaved;
+    }
+    flow.descDone = true;
+    return advance();
+  };
+
+  // interrupteur de la fenêtre de l'extension (« Automatisation Chit Chats ») : coupé = on ne touche à rien
+  let enabled = true;
+  chrome.storage.sync.get('ccAuto').then(({ ccAuto }) => {
+    enabled = ccAuto !== false;
+  });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'sync' || !changes.ccAuto) return;
+    enabled = changes.ccAuto.newValue !== false;
+    if (!enabled) {
+      asking = false;
+      hidePanel();
+    }
+  });
+
   // le formulaire de Chit Chats se construit après le chargement (et change sans recharger la page)
   let timer = null;
+  const tick = () => {
+    if (!enabled) return;
+    complete().catch(() => {});
+    advance().catch((error) => say(error.message, 'warn'));
+  };
   new MutationObserver(() => {
     clearTimeout(timer);
-    timer = setTimeout(() => {
-      complete().catch(() => {});
-      advance().catch((error) => say(`Resin Queue : ${error.message}`, 'warn'));
-    }, 700);
+    timer = setTimeout(tick, 700);
   }).observe(document.documentElement, { childList: true, subtree: true });
-  setTimeout(() => complete().catch(() => {}), 1200);
+  setTimeout(tick, 1200);
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'link-changed') render();

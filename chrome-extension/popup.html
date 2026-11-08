@@ -19,10 +19,14 @@
       footer { display: flex; gap: 8px; padding: 0 14px 14px; }
       footer button { flex: 1; padding: 8px; border: 1px solid #ccd6e8; border-radius: 8px; background: #fff; color: #10203d; font: 600 12px system-ui; cursor: pointer; }
       #update.available { background: #fff4d6; border-color: #e3c56c; }
+      .toggle { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #dfe6f3; font-weight: 600; cursor: pointer; }
+      .toggle input { width: 18px; height: 18px; margin: 0; }
+      .toggle small { display: block; font-weight: 400; color: #5b6c8c; font-size: 11px; }
     </style>
   </head>
   <body>
     <header><img src="icon32.png" width="22" height="22" alt="" /><strong>Resin Queue</strong><span id="version"></span></header>
+    <label class="toggle"><input type="checkbox" id="ccAuto" /><span>Automatisation Chit Chats<small>Remplit l’envoi, demande l’enveloppe, choisit la livraison (jamais le paiement)</small></span></label>
     <main>
       <div class="order" id="order">Ouvre une commande dans l'admin Shopify.</div>
       <button class="big" id="open" disabled>Ouvrir sur Chit Chats</button>

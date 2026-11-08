@@ -6,6 +6,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.15.0 : un seul assistant pour tout l’envoi Chit Chats.** Le gros bouton et la fenêtre de l’enveloppe sont
+  remplacés par un **petit panneau** qui suit les étapes au même endroit : Description → Enveloppe → Livraison → Paiement (toi)
+  → Impression (✓ fait, 👤 à toi, ⚠ à vérifier, « ↻ Relancer »). En écran partagé il se réduit en bas à gauche et ne s’ouvre que
+  pour poser une question. Si Chit Chats ouvre l’envoi **directement à Package** (infos déjà présentes), l’extension revient
+  d’abord à **Description**, la complète, puis demande l’enveloppe. **« Petite » est présélectionnée** (il reste le poids).
+  Nouveau **interrupteur « Automatisation Chit Chats »** en haut de la fenêtre de l’extension (icône) pour l’activer ou la couper.
 - **Extension 1.14.0 : les commentaires de l'équipe Shopify en grand.** Les commentaires du fil « Timeline » en bas d'une commande
   Shopify (ex. « replacement reason: damaged package » + photo) s'affichent dans une **fenêtre bien visible** à l'ouverture de la
   commande : auteur, quand, texte et photos (clic = taille réelle). **« Vu ✓ »** la ferme jusqu'au prochain nouveau commentaire de
