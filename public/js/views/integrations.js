@@ -15,6 +15,7 @@ const TABS = [
   { key: 'synchro', label: 'Synchronisation', icon: 'refresh', desc: 'À quelle fréquence on va chercher les commandes.' },
   { key: 'apparence', label: 'Apparence & aide', icon: 'sun', desc: 'Thème, tutoriel et mode kiosque iPad.' },
   { key: 'api', label: 'API', icon: 'plug', desc: 'Piloter l’app depuis un script ou n8n (réseau local, sans jeton).' },
+  { key: 'sku', label: 'SKU', icon: 'receipt', desc: 'Tous les produits Shopify et Etsy déjà vendus, avec leur variante et leur SKU (d’après les commandes importées).' },
   { key: 'maj', label: 'Mises à jour', icon: 'save', desc: "Installer la dernière version de l'application." },
   { key: 'bugs', label: 'Bugs', icon: 'bug', desc: 'Les bugs signalés avec la coccinelle, et le webhook qui prévient à chaque nouveau bug.' },
 ];
@@ -1019,6 +1020,78 @@ const runRow = (run) =>
 const sharedDraft = {};
 
 /*
+ * Onglet « SKU » : les produits déjà vendus sur Shopify et Etsy (GET /api/orders/skus), en lecture seule. Recherche,
+ * filtre par boutique et « sans SKU » (pratique pour repérer ce qui manque).
+ */
+const skuSection = () => {
+  const SOURCES = { all: 'Tous', shopify: 'Shopify', etsy: 'Etsy', missing: 'Sans SKU' };
+  let items = [];
+  let filter = 'all';
+  let query = '';
+  const chips = el('div', { class: 'chips' });
+  const count = el('p', { class: 'field-hint' }, 'Chargement…');
+  const body = el('tbody');
+  const search = el('input', { type: 'search', class: 'cell-input', placeholder: 'Chercher un produit, une variante ou un SKU…' });
+
+  const paint = () => {
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const shown = items.filter((item) => {
+      if (filter === 'missing' ? item.sku : filter !== 'all' && item.source !== filter) return false;
+      const text = `${item.title} ${item.variant ?? ''} ${item.sku ?? ''}`.toLowerCase();
+      return words.every((word) => text.includes(word));
+    });
+    chips.replaceChildren(
+      ...Object.entries(SOURCES).map(([key, label]) => {
+        const total = key === 'all' ? items.length : key === 'missing' ? items.filter((item) => !item.sku).length : items.filter((item) => item.source === key).length;
+        return el('button', { class: `chip${filter === key ? ' is-on' : ''}`, onclick: () => { filter = key; paint(); } }, `${label} (${total})`);
+      }),
+    );
+    count.textContent = `${shown.length} produit(s) / variante(s) affiché(s) sur ${items.length}`;
+    body.replaceChildren(
+      ...shown.map((item) =>
+        el('tr', {}, [
+          el('td', {}, el('span', { class: `tag src-${item.source}` }, item.source === 'shopify' ? 'Shopify' : 'Etsy')),
+          el('td', {}, item.title),
+          el('td', {}, item.variant ?? '—'),
+          el('td', { class: 'mono' }, item.sku ?? el('span', { class: 'muted' }, '— aucun —')),
+          el('td', { class: 'num' }, `${item.units} (${item.orders} cmd)`),
+          el('td', {}, item.last_at ? fromNow(item.last_at) : '—'),
+        ]),
+      ),
+    );
+  };
+  search.addEventListener('input', () => {
+    query = search.value;
+    paint();
+  });
+  api
+    .skus()
+    .then((result) => {
+      items = result.items ?? [];
+      paint();
+    })
+    .catch((error) => {
+      count.textContent = `Liste impossible à charger : ${error.message}`;
+    });
+
+  return section(
+    'SKU des produits',
+    'Chaque produit vendu sur Shopify et Etsy, avec sa variante et son SKU, d’après les commandes déjà importées (un produit jamais commandé n’apparaît pas). Lecture seule : les SKU se changent dans Shopify ou Etsy.',
+    [
+      search,
+      chips,
+      count,
+      el('div', { class: 'table-wrap' }, [
+        el('table', { class: 'grid sku-table' }, [
+          el('thead', {}, el('tr', {}, [el('th', {}, 'Boutique'), el('th', {}, 'Produit'), el('th', {}, 'Variante'), el('th', {}, 'SKU'), el('th', {}, 'Vendus'), el('th', {}, 'Dernière vente')])),
+          body,
+        ]),
+      ]),
+    ],
+  );
+};
+
+/*
  * Onglet « Équipe » : nom + langue de chaque personne (team.members). Enregistré tout de suite à chaque changement.
  * La langue sert au sélecteur « Qui utilise l'app ? » (person.js) et à l'extension (GET /api/team).
  */
@@ -1104,6 +1177,7 @@ export const renderIntegrations = (root, actions) => {
     api: () => apiTab(section),
     maj: () => tabMaj(draft, touch, actions),
     equipe: () => tabEquipe(actions),
+    sku: () => [skuSection()],
     bugs: () => [bugsSection(), bugWebhookSection(draft, touch)],
   }[current.key]();
 

@@ -100,6 +100,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - **Les objets d'inventaire se créent depuis `/inventory/mobile`** (le téléphone) : le formulaire « Nouvel objet » a quitté le tableau de bord, qui garde le code QR, le bouton « Ouvrir la page d'inventaire » et l'impression de ce code. Le code QR (et ses étiquettes imprimables) mène maintenant à `/inventory/mobile` ; `/inventory/new` marche toujours (ouvre le formulaire d'ajout), donc les étiquettes déjà imprimées restent valides. Modifier, signaler, commander et supprimer restent aussi possibles sur l'ordinateur.
 
 ### Ajouté
+- **Réglages → SKU** : la liste des produits Shopify et Etsy déjà vendus, avec variante, SKU, quantité vendue et dernière
+  vente ; recherche et filtres Shopify / Etsy / « Sans SKU ». Lecture seule, d’après les commandes importées
+  (`GET /api/orders/skus`).
 - **L’interface en English, Español et Filipino.** Chaque personne choisit son nom en haut à droite (à côté de
   « Tutoriel », aussi sur le kiosque et l’inventaire du téléphone) : Resin Queue, la fiche, « Tout », « Échecs », le
   tutoriel, le kiosque, l’inventaire du téléphone, la page du code QR et l’extension Chrome (bac « J’ai packé », barre,

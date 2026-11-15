@@ -124,6 +124,9 @@ dans sa langue. On peut aussi choisir seulement une langue. Le choix est gardé 
   nouveautés, « Mise à jour en cours » étape par étape, ou l’erreur) avec un seul bouton ; dessous, l’interrupteur
   **Mise à jour automatique** (enregistré tout de suite) et la fréquence. La base est sauvegardée avant chaque mise à jour.
 - **Bugs** : les bugs signalés avec la coccinelle et leur webhook (avant, dans « Mises à jour »).
+- **SKU** : chaque produit Shopify et Etsy déjà vendu, avec sa variante, son SKU, combien ont été vendus et quand ;
+  recherche et filtres Shopify / Etsy / « Sans SKU ». Lecture seule (les SKU se changent dans Shopify ou Etsy) ; un
+  produit jamais commandé n’y apparaît pas.
 
 ## Suivi Etsy automatique
 

@@ -67,6 +67,7 @@ export const api = {
   blockImage: (url) => request('/api/parts/blocked-images', { method: 'POST', body: { url } }),
   createBug: (body) => request('/api/bugs', { method: 'POST', body }),
   bugs: () => request('/api/bugs'),
+  skus: () => request('/api/orders/skus'),
   bug: (id) => request(`/api/bugs/${id}`),
   setBugStatus: (id, status) => request(`/api/bugs/${id}`, { method: 'PATCH', body: { status } }),
   deleteBug: (id) => request(`/api/bugs/${id}`, { method: 'DELETE' }),

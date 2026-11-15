@@ -919,3 +919,10 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .person-item.is-on { background: color-mix(in srgb, var(--accent, #1f5fd6) 18%, transparent); font-weight: 700; }
 .person-item small { color: var(--muted, #6a7590); font-size: 12px; }
 .person-hint { margin: 4px 10px 8px; font-size: 13px; color: var(--muted, #6a7590); }
+
+/* Réglages → SKU */
+.settings-stack > .settings-panel:has(.sku-table) { grid-column: 1 / -1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sku-table td.mono { font-family: var(--mono); font-size: 12px; }
+.sku-table td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sku-table td.mono .muted { color: var(--muted); font-family: var(--font, system-ui, sans-serif); font-size: 12px; }
