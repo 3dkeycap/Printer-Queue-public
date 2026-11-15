@@ -108,7 +108,10 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 - **Atelier** : postes UV, tags suggérés, ce qu'on n'imprime pas ici, couleurs forcées selon le
   nom (ex. « Ore Keycap » = Nylon Grey).
 - **Résines** : couleurs, alias de détection, stock.
-- **Mises à jour** : bouton pour installer la dernière version (la base est sauvegardée avant).
+- **Mises à jour** : une carte dit où on en est (« Tout est à jour », « Nouvelle version disponible » avec la liste des
+  nouveautés, « Mise à jour en cours » étape par étape, ou l’erreur) avec un seul bouton ; dessous, l’interrupteur
+  **Mise à jour automatique** (enregistré tout de suite) et la fréquence. La base est sauvegardée avant chaque mise à jour.
+- **Bugs** : les bugs signalés avec la coccinelle et leur webhook (avant, dans « Mises à jour »).
 
 ## Suivi Etsy automatique
 

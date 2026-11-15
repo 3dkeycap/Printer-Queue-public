@@ -531,6 +531,45 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .update-commits { margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--text-soft); display: flex; flex-direction: column; gap: 2px; }
 .update-commits .mono, .update-row .mono { font-family: var(--mono); }
 .update-block code { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius: 5px; background: color-mix(in srgb, var(--text) 8%, transparent); }
+/* Onglet « Mises à jour » : une carte d'état + un interrupteur */
+.settings-stack > .upd-page { grid-column: 1 / -1; }
+.upd-page { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.upd-card { display: flex; flex-direction: column; gap: 16px; padding: 22px; --tone: var(--ok); border-color: color-mix(in srgb, var(--tone) 40%, var(--line)); }
+.upd-card.is-new { --tone: var(--accent); }
+.upd-card.is-busy, .upd-card.is-warn { --tone: var(--warn); }
+.upd-card.is-bad { --tone: var(--danger); }
+.upd-head { display: flex; align-items: center; gap: 16px; }
+.upd-icon { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 99px; background: color-mix(in srgb, var(--tone) 20%, transparent); color: var(--tone); }
+.upd-icon .icon { width: 26px; height: 26px; }
+.upd-card .upd-title { margin: 0; font-size: 20px; font-weight: 650; color: var(--text); }
+.upd-text { margin: 4px 0 0; font-size: 13.5px; color: var(--text-soft); }
+.upd-changes { margin: 0; padding: 12px 14px 12px 32px; border-radius: 10px; background: var(--surface-2); display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text); }
+.upd-more-changes { list-style: none; margin-left: -18px; color: var(--muted); }
+.upd-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.upd-btn { font-size: 15px; padding: 11px 20px; }
+.upd-code { align-self: flex-start; font-family: var(--mono); font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); }
+.upd-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.upd-steps li { flex: 1 1 110px; display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
+.upd-steps li.is-done { color: var(--text-soft); }
+.upd-steps li.is-now { color: var(--text); font-weight: 600; background: color-mix(in srgb, var(--warn) 16%, var(--surface-2)); }
+.upd-dot { flex: none; width: 10px; height: 10px; border-radius: 99px; border: 2px solid var(--line-strong, var(--line)); }
+.upd-steps li.is-done .upd-dot { background: var(--ok); border-color: var(--ok); }
+.upd-steps li.is-now .upd-dot { border-color: var(--warn); border-top-color: transparent; animation: spin 0.9s linear infinite; }
+.upd-auto { display: flex; flex-direction: column; gap: 12px; }
+.upd-switch { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.upd-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.upd-switch-track { flex: none; position: relative; width: 46px; height: 26px; border-radius: 99px; background: var(--surface-3); border: 1px solid var(--line); transition: background 0.15s; }
+.upd-switch-knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 99px; background: var(--muted); transition: transform 0.15s, background 0.15s; }
+.upd-switch input:checked + .upd-switch-track { background: color-mix(in srgb, var(--ok) 35%, var(--surface-3)); border-color: var(--ok); }
+.upd-switch input:checked + .upd-switch-track .upd-switch-knob { transform: translateX(20px); background: var(--ok); }
+.upd-switch input:focus-visible + .upd-switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+.upd-switch-text { display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--text-soft); }
+.upd-switch-text strong { font-size: 15px; color: var(--text); font-weight: 600; }
+.upd-every { display: flex; align-items: center; gap: 8px; padding-left: 60px; font-size: 13px; color: var(--text-soft); }
+.upd-every select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+.upd-more summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.upd-more[open] summary { margin-bottom: 12px; }
+@media (max-width: 560px) { .upd-card { padding: 16px; } .upd-head { gap: 12px; } .upd-icon { width: 42px; height: 42px; } .upd-card .upd-title { font-size: 17px; } .upd-every { padding-left: 0; } .upd-btn { flex: 1; justify-content: center; } }
 .update-log summary { cursor: pointer; font-size: 12px; color: var(--muted); }
 .update-log pre { margin: 8px 0 0; max-height: 260px; overflow: auto; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--text) 4%, transparent); font-family: var(--mono); font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 

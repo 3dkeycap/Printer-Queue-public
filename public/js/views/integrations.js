@@ -15,6 +15,7 @@ const TABS = [
   { key: 'apparence', label: 'Apparence & aide', icon: 'sun', desc: 'Thème, tutoriel et mode kiosque iPad.' },
   { key: 'api', label: 'API', icon: 'plug', desc: 'Piloter l’app depuis un script ou n8n (réseau local, sans jeton).' },
   { key: 'maj', label: 'Mises à jour', icon: 'save', desc: "Installer la dernière version de l'application." },
+  { key: 'bugs', label: 'Bugs', icon: 'bug', desc: 'Les bugs signalés avec la coccinelle, et le webhook qui prévient à chaque nouveau bug.' },
 ];
 
 // l'onglet ouvert survit à un rechargement de la page (F5)
@@ -516,27 +517,55 @@ const tabApparence = (actions) => [
   ]),
 ];
 
-const tabMaj = (draft, touch) => {
+/*
+ * Onglet « Mises à jour » : une seule grande carte qui dit où on en est (à jour, nouvelle version, en cours, erreur)
+ * avec UN bouton évident ; l'automatique en un interrupteur ; le technique (journal, dépôt, token) replié.
+ */
+const tabMaj = (draft, touch, actions) => {
   const defs = state.settings.filter((item) => item.group === 'update');
-  const simple = defs.filter((d) => ['update.autoEnabled', 'update.intervalMinutes'].includes(d.key));
-  const advanced = defs.filter((d) => !simple.includes(d));
+  const value = (key) => defs.find((item) => item.key === key)?.value;
+  const advanced = defs.filter((d) => !['update.autoEnabled', 'update.intervalMinutes'].includes(d.key));
+  const auto = Boolean(value('update.autoEnabled'));
+  const minutes = Number(value('update.intervalMinutes')) || 60;
+  const EVERY = [[15, '15 minutes'], [30, '30 minutes'], [60, 'heure'], [180, '3 heures'], [720, '12 heures'], [1440, 'jour']];
+  if (!EVERY.some(([m]) => m === minutes)) EVERY.push([minutes, `${minutes} minutes`]);
+
   return [
-    section(
-      'Mises à jour',
-      'Installe la dernière version depuis GitHub. Les données sont conservées et sauvegardées avant chaque mise à jour, avec retour arrière en cas d\'échec.',
-      [
-        updateBlock(),
-        el('div', { class: 'settings-grid' }, simple.map((d) => field(d, draft, touch))),
-        advanced.length
-          ? el('details', { class: 'advanced' }, [
-              el('summary', {}, 'Options avancées (dépôt, branche, token)'),
-              el('div', { class: 'settings-grid' }, advanced.map((d) => field(d, draft, touch))),
+    el('div', { class: 'upd-page' }, [
+      updateBlock(),
+      el('article', { class: 'panel upd-auto' }, [
+        el('label', { class: 'upd-switch' }, [
+          el('input', {
+            type: 'checkbox',
+            checked: auto,
+            onchange: (event) => actions.saveSettings({ 'update.autoEnabled': event.target.checked }),
+          }),
+          el('span', { class: 'upd-switch-track' }, el('span', { class: 'upd-switch-knob' })),
+          el('span', { class: 'upd-switch-text' }, [
+            el('strong', {}, 'Mise à jour automatique'),
+            el('span', {}, auto
+              ? 'Les nouvelles versions s’installent toutes seules (sauvegarde avant, retour arrière si ça ne marche pas).'
+              : 'Désactivée : les nouvelles versions attendent que tu cliques « Mettre à jour ».'),
+          ]),
+        ]),
+        auto
+          ? el('div', { class: 'upd-every' }, [
+              'Vérifier chaque ',
+              el(
+                'select',
+                { onchange: (event) => actions.saveSettings({ 'update.intervalMinutes': Number(event.target.value) }) },
+                EVERY.map(([m, label]) => el('option', { value: String(m), selected: m === minutes }, label)),
+              ),
             ])
           : null,
-      ],
-    ),
-    bugWebhookSection(draft, touch),
-    bugsSection(),
+      ]),
+      advanced.length
+        ? el('details', { class: 'panel upd-more' }, [
+            el('summary', {}, 'Options avancées (dépôt GitHub, branche, token)'),
+            el('div', { class: 'settings-grid' }, advanced.map((d) => field(d, draft, touch))),
+          ])
+        : null,
+    ]),
   ];
 };
 
@@ -758,24 +787,27 @@ const oauthBlock = (actions, { provider, label }) => {
 
 /* ---------------------------------------------------------- mises à jour - */
 
-const UPDATE_STATES = {
-  checking: { label: 'Vérification…', pill: 'var(--warn)' },
-  updating: { label: 'Mise à jour en cours…', pill: 'var(--warn)' },
-  available: { label: 'Mise à jour disponible', pill: 'var(--warn)' },
-  up_to_date: { label: 'À jour', pill: 'var(--ok)' },
-  success: { label: 'À jour', pill: 'var(--ok)' },
-  error: { label: 'Erreur', pill: 'var(--danger)' },
-};
-
 let updatePoll = 0;
 
+// étapes d'une mise à jour, lues dans le journal du service (scripts/update.sh)
+const UPDATE_STEPS = [
+  ['Vérification', /Vérification|Mise à jour disponible/],
+  ['Sauvegarde', /Sauvegarde/],
+  ['Construction', /Construction de l/],
+  ['Redémarrage', /Redémarrage|Attente du démarrage/],
+  ['Terminé', /Mise à jour terminée/],
+];
+const stepReached = (log) => UPDATE_STEPS.reduce((last, [, pattern], index) => (pattern.test(log ?? '') ? index : last), 0);
+
+/** « cec52a4 Message du commit » -> « Message du commit ». */
+const changeText = (line) => String(line).replace(/^[0-9a-f]{6,40}\s+/i, '');
+
 /**
- * Statut du service « updater » + boutons. Se repeint lui-même (sans toucher
- * au reste de la page, qui peut contenir une saisie en cours) et suit une
- * opération en cours, y compris pendant le redémarrage de l'app.
+ * La carte de mise à jour. Se repeint elle-même (sans toucher au reste de la page) et suit une mise à jour en cours :
+ * l'app redémarre, puis la page se recharge toute seule sur la nouvelle version.
  */
 const updateBlock = () => {
-  const root = el('div', { class: 'oauth-block update-block' });
+  const root = el('article', { class: 'panel upd-card' });
   // version chargée par cette page : si elle change, le JS doit être rechargé
   const pageBuild = state.meta?.build;
   let status = state.updateStatus;
@@ -820,60 +852,96 @@ const updateBlock = () => {
     if (busy()) updatePoll = setTimeout(poll, 2500);
   }
 
-  function paint() {
-    const meta = UPDATE_STATES[status?.state] ?? null;
-    const connected = status?.connected;
+  const big = (label, onclick, { primary = true, spin = false, iconName = 'refresh' } = {}) =>
+    el('button', { class: `${primary ? 'primary-btn' : 'ghost-btn'} upd-btn`, onclick }, [icon(iconName, `icon${spin ? ' spin' : ''}`), label]);
 
-    const children = [
-      el('div', { class: 'update-row' }, [
-        el('span', {}, ['Version installée : ', el('strong', { class: 'mono' }, status?.build ?? pageBuild ?? '—')]),
-        unreachable
-          ? el('span', { class: 'status-pill', style: { '--pill': 'var(--warn)' } }, [el('span', { class: 'dot' }), 'Redémarrage de l\'app…'])
-          : meta
-            ? el('span', { class: 'status-pill', style: { '--pill': meta.pill } }, [el('span', { class: 'dot' }), meta.label])
-            : null,
-      ]),
-      status?.message && !unreachable
-        ? el('p', { class: 'field-hint' }, [status.message, status.at ? ` · ${fromNow(status.at)}` : ''])
-        : null,
-      status?.pending?.length
-        ? el('ul', { class: 'update-commits' }, status.pending.map((line) => el('li', { class: 'mono' }, line)))
-        : null,
-      connected === false && !unreachable
-        ? el('p', { class: 'field-hint' }, [
-            'Le service de mise à jour ne tourne pas. Sur le serveur, une seule fois : ',
-            el('code', {}, 'git pull && docker compose up -d'),
+  function paint() {
+    const connected = status?.connected;
+    const version = status?.build ?? pageBuild ?? '—';
+    const checked = status?.at ? `vérifié ${fromNow(status.at)}` : null;
+    let tone = 'ok';
+    let symbol = 'check';
+    let title = 'Tout est à jour';
+    let text = [`Version ${version}`, checked].filter(Boolean).join(' · ');
+    let body = null;
+    let actionsRow = [big('Vérifier maintenant', () => trigger('check'), { primary: false, iconName: 'refresh' })];
+
+    if (unreachable) {
+      tone = 'busy';
+      symbol = 'refresh';
+      title = 'L’app redémarre…';
+      text = 'La nouvelle version démarre. Ne ferme pas la page : elle se recharge toute seule.';
+      body = stepper(3);
+      actionsRow = [];
+    } else if (connected === false) {
+      tone = 'warn';
+      symbol = 'alert';
+      title = 'Le service de mise à jour est arrêté';
+      text = `Version ${version}. Pour le relancer, une seule fois sur le serveur :`;
+      body = el('code', { class: 'upd-code' }, 'docker compose up -d');
+      actionsRow = [];
+    } else if (busy()) {
+      tone = 'busy';
+      symbol = 'refresh';
+      const checking = status?.state === 'checking' || (status?.requested ?? '').startsWith('check');
+      title = checking ? 'Vérification…' : 'Mise à jour en cours…';
+      text = checking ? 'On regarde s’il y a une nouvelle version.' : 'Sauvegarde, installation puis redémarrage. Ne ferme pas la page : elle se recharge toute seule à la fin.';
+      body = checking ? null : stepper(stepReached(status?.log));
+      actionsRow = [];
+    } else if (status?.state === 'available') {
+      tone = 'new';
+      symbol = 'bolt';
+      const changes = status.pending ?? [];
+      title = 'Nouvelle version disponible';
+      text = `${changes.length || 'Des'} nouveauté${changes.length > 1 ? 's' : ''} · version installée ${version}`;
+      body = changes.length
+        ? el('ul', { class: 'upd-changes' }, [
+            ...changes.slice(0, 6).map((line) => el('li', {}, changeText(line))),
+            changes.length > 6 ? el('li', { class: 'upd-more-changes' }, `et ${changes.length - 6} autre(s)`) : null,
           ])
-        : null,
-      el('div', { class: 'oauth-actions' }, [
-        el(
-          'button',
-          { class: 'primary-btn', disabled: !connected || busy(), onclick: () => trigger('update') },
-          [icon('refresh', `icon${busy() ? ' spin' : ''}`), status?.state === 'available' ? 'Mettre à jour maintenant' : 'Mettre à jour'],
-        ),
-        el(
-          'button',
-          { class: 'ghost-btn', disabled: !connected || busy(), onclick: () => trigger('check') },
-          [icon('check'), 'Vérifier'],
-        ),
-      ]),
-      status?.log
-        ? el('details', {
-            class: 'update-log',
-            open: status.state === 'error',
-            // le résumé (et l'erreur éventuelle) est à la fin du journal
-            ontoggle: (event) => {
-              const pre = event.currentTarget.querySelector('pre');
-              pre.scrollTop = pre.scrollHeight;
-            },
-          }, [
-            el('summary', {}, 'Journal de la dernière opération'),
-            el('pre', {}, status.log),
-          ])
-        : null,
-    ];
-    root.replaceChildren(...children.filter(Boolean));
+        : null;
+      actionsRow = [big('Mettre à jour maintenant', () => trigger('update'))];
+    } else if (status?.state === 'error') {
+      tone = 'bad';
+      symbol = 'alert';
+      title = 'La dernière mise à jour n’a pas marché';
+      text = `${String(status.message ?? 'Erreur inconnue').replace(/[.\s]+$/, '')}. La version ${version} tourne toujours, rien n’est perdu.`;
+      actionsRow = [big('Réessayer', () => trigger('update')), big('Vérifier', () => trigger('check'), { primary: false })];
+    }
+
+    root.className = `panel upd-card is-${tone}`;
+    root.replaceChildren(
+      ...[
+        el('div', { class: 'upd-head' }, [
+          el('span', { class: 'upd-icon' }, icon(symbol, `icon${tone === 'busy' ? ' spin' : ''}`)),
+          el('div', {}, [el('h3', { class: 'upd-title' }, title), el('p', { class: 'upd-text' }, text)]),
+        ]),
+        body,
+        actionsRow.length ? el('div', { class: 'upd-actions' }, actionsRow) : null,
+        status?.log
+          ? el('details', {
+              class: 'update-log',
+              open: status.state === 'error',
+              // le résumé (et l'erreur éventuelle) est à la fin du journal
+              ontoggle: (event) => {
+                const pre = event.currentTarget.querySelector('pre');
+                pre.scrollTop = pre.scrollHeight;
+              },
+            }, [el('summary', {}, 'Détails techniques'), el('pre', {}, status.log)])
+          : null,
+      ].filter(Boolean),
+    );
   }
+
+  /** Les étapes d'une mise à jour : faites, en cours, à venir. */
+  const stepper = (current) =>
+    el(
+      'ol',
+      { class: 'upd-steps' },
+      UPDATE_STEPS.map(([label], index) =>
+        el('li', { class: index < current ? 'is-done' : index === current ? 'is-now' : '' }, [el('span', { class: 'upd-dot' }), label]),
+      ),
+    );
 
   paint();
   schedule();
@@ -986,7 +1054,8 @@ export const renderIntegrations = (root, actions) => {
     synchro: () => tabSynchro(draft, touch, actions),
     apparence: () => tabApparence(actions),
     api: () => apiTab(section),
-    maj: () => tabMaj(draft, touch),
+    maj: () => tabMaj(draft, touch, actions),
+    bugs: () => [bugsSection(), bugWebhookSection(draft, touch)],
   }[current.key]();
 
   root.append(

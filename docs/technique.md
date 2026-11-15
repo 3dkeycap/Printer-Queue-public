@@ -664,7 +664,7 @@ mise à jour en un clic depuis GitHub (icône → Mettre à jour).
 
 **Extension v1.2 — lien live** : Shopify et Chit Chats côte à côte ; « 🔗 Link » sur Shopify puis
 « 🔗 Link » sur l'onglet Chit Chats, et chaque commande ouverte dans Shopify s'affiche dans Chit
-Chats. Clic sur « ● Live » pour couper ; le bouton « 🐞 Bug » ouvre `/#bug` (fenêtre « Signaler un bug » de l'app) ; `/#bugs` ouvre la liste des bugs (Réglages → Mises à jour). Détails dans [`chrome-extension/README.md`](chrome-extension/README.md).
+Chats. Clic sur « ● Live » pour couper ; le bouton « 🐞 Bug » ouvre `/#bug` (fenêtre « Signaler un bug » de l'app) ; `/#bugs` ouvre la liste des bugs (Réglages → Bugs). Détails dans [`chrome-extension/README.md`](chrome-extension/README.md).
 
 **Etsy : Shared secret obligatoire** — Etsy exige maintenant sur chaque appel l'en-tête
 `x-api-key: <keystring>:<shared secret>` (sinon 403). Renseigne le **Shared secret** (Etsy →
@@ -719,7 +719,7 @@ ou en coller une avec Ctrl/Cmd + V), la personne **explique ce qui se passe** et
 Les **journaux** sont joints : navigateur (erreurs, requêtes à l'API, changements de vue) et
 serveur (dernières lignes), plus le contexte (vue, mode, filtres, écran, version, dernières synchros).
 
-Les signalements se consultent dans **Réglages → Mises à jour → Bugs signalés** : capture,
+Les signalements se consultent dans **Réglages → Bugs** : capture,
 journaux, « **Copier pour Claude** » (rapport Markdown complet à coller dans une conversation),
 téléchargement `.md` et de la capture, « Marquer résolu », supprimer.
 

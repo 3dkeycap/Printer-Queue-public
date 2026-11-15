@@ -933,12 +933,12 @@ const updateNavCounts = () => {
 
 /**
  * Vue demandée par l'adresse. « #bug » (bouton Bug de l'extension) ouvre la fenêtre pour signaler un
- * bug (la coccinelle) ; « #bugs » ouvre la liste des bugs signalés (Réglages → Mises à jour).
+ * bug (la coccinelle) ; « #bugs » ouvre la liste des bugs signalés (Réglages → Bugs).
  */
 const viewFromHash = () => {
   const hash = location.hash.replace('#', '');
   if (hash === 'bugs') {
-    openSettingsTab('maj');
+    openSettingsTab('bugs');
     return 'integrations';
   }
   if (hash === 'bug') return 'board';

@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Réglages → Mises à jour refait, simple** : une grande carte d’état (à jour / nouvelle version avec la liste des nouveautés
+  / mise à jour en cours avec les étapes Vérification → Sauvegarde → Construction → Redémarrage → Terminé / erreur, sans
+  jargon) et UN bouton ; l’interrupteur « Mise à jour automatique » et la fréquence s’enregistrent tout de suite ; le journal
+  et les options (dépôt, branche, token) sont repliés. Les **bugs** (liste + webhook) ont leur propre onglet **Bugs** ;
+  `/#bugs` (bouton de l’extension) l’ouvre.
 - **Extension 1.18.0 (Chit Chats)** :
   - **suivi Etsy automatique** : dès le paiement (fenêtre « Print Postage »), l’extension demande à l’app de relire les
     envois tout de suite (et encore 2 min plus tard) : la commande passe en « Expédié » et le numéro de suivi part vers la
