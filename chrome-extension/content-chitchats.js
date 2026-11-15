@@ -173,6 +173,7 @@
   // les champs de Chit Chats sont gérés par leur propre code : on passe par le « setter » natif puis on prévient
   const setValue = (control, value) => {
     const proto = control instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : control instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+    globalThis.RQRec?.trace('rq-set', { el: globalThis.RQRec.describe(control), value: control.type === 'password' ? '•••' : String(value).slice(0, 200) });
     Object.getOwnPropertyDescriptor(proto, 'value').set.call(control, value);
     control.dispatchEvent(new Event('input', { bubbles: true }));
     control.dispatchEvent(new Event('change', { bubbles: true }));
@@ -210,6 +211,7 @@
 
   let toast = null;
   const say = (text, tone = 'ok', diagnostic = null) => {
+    if (text) globalThis.RQRec?.trace('rq-say', { text: String(text).slice(0, 400), tone });
     if (panel?.isConnected) {
       const box = panel.querySelector('[data-msg]');
       box.replaceChildren();
@@ -768,6 +770,7 @@
   };
 
   const setStep = (key, state, detail = '') => {
+    globalThis.RQRec?.trace('rq-step', { key, state, detail });
     steps[key] = { state, detail };
     renderSteps();
     placePanel();
@@ -797,12 +800,22 @@
         <div data-steps></div>
         <div data-form></div>
         <div data-msg style="margin-top:6px;font-size:13px"></div>
-        <label data-auto style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:8px;font:600 11px system-ui;color:#5b6a86;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+          <button data-rec type="button" title="Enregistre tout ce qui se passe sur la page, puis télécharge un fichier à envoyer pour corriger les bugs" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:7px;background:#fdecec;color:#b42318;font:700 11px system-ui"></button>
+          <label data-auto style="display:flex;align-items:center;gap:6px;margin-left:auto;font:600 11px system-ui;color:#5b6a86;cursor:pointer">
           <span style="padding:1px 6px;border-radius:6px;background:#fff1c9;color:#8a6414;font-weight:800;letter-spacing:.04em">BETA</span>
-          Auto <input type="checkbox" checked style="margin:0;cursor:pointer" /></label>`;
+          Auto <input type="checkbox" checked style="margin:0;cursor:pointer" /></label></div>`;
       // la fenêtre de Chit Chats reprend le curseur : on garde nos événements (sinon impossible de taper)
       for (const type of ['focusin', 'focus', 'keydown', 'keypress', 'keyup', 'mousedown', 'click']) panel.addEventListener(type, (event) => event.stopPropagation());
       panel.querySelector('[data-rerun]').addEventListener('click', () => rerun().catch((error) => say(error.message, 'warn')));
+      // ⏺ Enregistrer / ■ Stop : voir chitchats-recorder.js
+      const recButton = panel.querySelector('[data-rec]');
+      const paintRec = () => {
+        recButton.textContent = globalThis.RQRec?.isOn() ? '■ Stop & télécharger' : '⏺ Enregistrer';
+      };
+      paintRec();
+      globalThis.RQRec?.onChange(paintRec);
+      recButton.addEventListener('click', () => (globalThis.RQRec?.isOn() ? globalThis.RQRec.stop() : globalThis.RQRec?.start()));
       // même réglage que l'interrupteur de la fenêtre de l'extension : décoché = plus rien d'automatique (le panneau part)
       panel.querySelector('[data-auto] input').addEventListener('change', (event) => {
         if (!event.target.checked) chrome.storage.sync.set({ ccAuto: false });

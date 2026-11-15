@@ -141,6 +141,13 @@ vérification ; ensuite, la fenêtre « Print Postage » lance l’impression to
 pour cet envoi, « ↻ Relancer » le reprend. Pour tout couper : la case **« Auto »** (marquée BETA) en bas à droite du panneau, ou icône de l’extension → interrupteur
 **« Automatisation Chit Chats »** en haut (c’est le même réglage ; on le rallume depuis l’icône).
 
+**Quelque chose cloche ? Enregistre-le** : bouton **⏺ Enregistrer** en bas du panneau. Une pastille rouge « REC »
+apparaît en haut de la page ; fais l’envoi normalement (l’enregistrement continue même si la page se recharge), puis
+**■ Stop & télécharger** : un fichier `chitchats-enregistrement-….json` se télécharge. Envoie-le pour qu’on corrige.
+Il contient les clics, ce qui est tapé, ce que l’assistant a fait et une copie du formulaire à chaque changement ; jamais
+les mots de passe, cartes ni jetons (remplacés par « ••• »). Il contient les adresses des clients : ne l’envoie qu’à la
+personne qui corrige.
+
 **Custom sets** : l’app ne sait pas où un custom set est fait ; le panneau demande **Québec**, **Hong Kong** ou **Chine**
 et remplit le fabricant et le pays d’origine de cette ligne.
 
