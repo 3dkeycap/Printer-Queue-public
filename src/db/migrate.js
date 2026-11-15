@@ -204,6 +204,36 @@ const printPackedParts = (db) => {
   setSetting(PACKED_PRINTED_KEY, '1');
 };
 
+const SHIPPED_ORDERS_KEY = 'internal.shippedOrdersPartsShipped';
+
+/**
+ * Une seule fois : une commande marquée expédiée ne doit plus avoir de pièce sur le tableau. Avant, avec le réglage
+ * « Expédier toutes les pièces du colis » décoché, les pièces pas encore imprimées d'un colis parti restaient « À
+ * imprimer » pour toujours (et l'équipe les réimprimait). Elles passent en « Expédié », avec une trace dans l'historique.
+ */
+const shipPartsOfShippedOrders = (db) => {
+  if (getSetting(SHIPPED_ORDERS_KEY)) return;
+  const rows = db
+    .prepare(
+      `SELECT p.id, p.status FROM parts p JOIN orders o ON o.id = p.order_id
+        WHERE o.shipped_at IS NOT NULL AND o.cancelled_at IS NULL AND p.cancelled = 0 AND p.status <> 'SHIPPED'`,
+    )
+    .all();
+  const ts = nowIso();
+  db.transaction(() => {
+    for (const row of rows) {
+      db.prepare(
+        `UPDATE parts SET status = 'SHIPPED', status_changed_at = ?, shipped_at = ?, printed_at = COALESCE(printed_at, ?), updated_at = ? WHERE id = ?`,
+      ).run(ts, ts, ts, ts, row.id);
+      db.prepare(`INSERT INTO part_events (part_id, from_status, to_status, actor, note, created_at) VALUES (?, ?, 'SHIPPED', 'system', ?, ?)`).run(
+        row.id, row.status, 'Commande déjà expédiée : retirée du tableau', ts,
+      );
+    }
+  })();
+  if (rows.length) log.info('parts of shipped orders marked shipped', { parts: rows.length });
+  setSetting(SHIPPED_ORDERS_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -264,6 +294,7 @@ export const migrate = () => {
   migrateFailedColumn(db);
   tagFailedParts(db);
   printPackedParts(db);
+  shipPartsOfShippedOrders(db);
 
   const insertColor = db.prepare(
     `INSERT INTO resin_colors (key, name, hex, aliases, sort_order, updated_at)

@@ -24,11 +24,9 @@ describe('intégration Chit Chats', () => {
     assert.equal(fromRest.tracking_number, 'CC1');
   });
 
-  it('ne considère expédiés que les statuts de sortie', () => {
-    assert.ok(isShippedStatus('in_transit'));
-    assert.ok(isShippedStatus('Delivered'));
-    assert.ok(!isShippedStatus('ready'));
-    assert.ok(!isShippedStatus('unfulfilled'));
+  it('expédié dès l’affranchissement payé (ready), pas avant (pending)', () => {
+    for (const status of ['ready', 'received', 'released', 'inducted', 'in_transit', 'Delivered']) assert.ok(isShippedStatus(status), status);
+    for (const status of ['pending', 'canceled', 'voided', 'unfulfilled', null]) assert.ok(!isShippedStatus(status), String(status));
   });
 
   it('retrouve la commande locale via le numéro Chit Chats', () => {
@@ -72,7 +70,7 @@ describe('intégration Chit Chats', () => {
 
   it('ignore un colis qui n\'est pas encore parti', () => {
     ingestOrder(makeOrder({ externalId: '2002', orderNumber: '#2002' }));
-    const result = applyShipment({ id: 'cc_2', status: 'ready', order_id: '#2002' });
+    const result = applyShipment({ id: 'cc_2', status: 'pending', order_id: '#2002' });
     assert.equal(result.matched, false);
     const parts = getDb()
       .prepare(`SELECT p.status FROM parts p JOIN orders o ON o.id = p.order_id WHERE o.order_number = '#2002'`)
@@ -94,5 +92,24 @@ describe('intégration Chit Chats', () => {
     }
     const result = applyShipment({ id: 'cc_4', status: 'delivered', order_id: '#3003' });
     assert.equal(result.shipped, 3);
+  });
+
+  it('affranchissement payé : TOUTES les pièces quittent le tableau, même pas imprimées, quel que soit l’ancien réglage', () => {
+    getDb().prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('chitchats.shipAllParts', 'false', 'x') ON CONFLICT (key) DO UPDATE SET value = 'false'`).run();
+    const order = ingestOrder(makeOrder({ externalId: '4004', orderNumber: '#4004' }));
+    const result = applyShipment({ id: 'cc_5', status: 'ready', order_id: '#4004' });
+    assert.equal(result.matched, true);
+    const statuses = getDb().prepare('SELECT status FROM parts WHERE order_id = ?').all(order.orderId).map((row) => row.status);
+    assert.deepEqual([...new Set(statuses)], ['SHIPPED']);
+  });
+
+  it('une resynchronisation ne remet jamais de pièce « À imprimer » sur une commande expédiée', () => {
+    const shippedOrder = makeOrder({ externalId: '4004', orderNumber: '#4004' });
+    shippedOrder.items = [...shippedOrder.items, { externalId: 'extra-line', title: 'Ligne ajoutée après coup', quantity: 2 }];
+    shippedOrder.items[0] = { ...shippedOrder.items[0], quantity: Number(shippedOrder.items[0].quantity ?? 1) + 3 };
+    const again = ingestOrder(shippedOrder);
+    assert.equal(again.partsCreated, 0);
+    const open = getDb().prepare(`SELECT COUNT(*) AS n FROM parts WHERE order_id = ? AND status <> 'SHIPPED'`).get(again.orderId).n;
+    assert.equal(open, 0);
   });
 });

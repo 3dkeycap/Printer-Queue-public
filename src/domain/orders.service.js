@@ -1,7 +1,6 @@
 import { getDb, nowIso } from '../db/index.js';
 import { notFound } from '../lib/errors.js';
 import { createLogger } from '../lib/logger.js';
-import { getSettings } from './settings.service.js';
 
 const log = createLogger('orders');
 
@@ -89,17 +88,15 @@ export const findOrderForShipment = (shipment) => {
   return null;
 };
 
-const SHIPPABLE_FROM_PRODUCTION = ['DONE'];
-
 /**
  * Marks every part of an order as SHIPPED and stores the tracking info.
- * Parts still in production are only shipped when SHIP_ALL_PARTS_ON_SHIPMENT
- * is enabled; otherwise they stay on the board and the mismatch is reported.
+ * TOUTES les pièces, même pas encore imprimées : une commande expédiée ne doit JAMAIS rester dans « À imprimer »
+ * (sinon l'équipe la réimprime). Avant, le réglage « Expédier toutes les pièces du colis » pouvait laisser les pièces
+ * non imprimées sur le tableau pour toujours ; il est retiré.
  */
-export const markOrderShipped = (orderId, shipment, { actor = 'chitchats', shipAll: forceAll = false } = {}) => {
+export const markOrderShipped = (orderId, shipment, { actor = 'chitchats' } = {}) => {
   const db = getDb();
   const ts = nowIso();
-  const shipAll = forceAll || getSettings()['chitchats.shipAllParts'];
 
   const run = db.transaction(() => {
     const parts = db
@@ -107,13 +104,8 @@ export const markOrderShipped = (orderId, shipment, { actor = 'chitchats', shipA
       .all(orderId);
 
     const shipped = [];
-    const skipped = [];
 
     for (const part of parts) {
-      if (!shipAll && !SHIPPABLE_FROM_PRODUCTION.includes(part.status)) {
-        skipped.push(part);
-        continue;
-      }
       db.prepare(
         `UPDATE parts SET status = 'SHIPPED', status_changed_at = @ts, shipped_at = @ts,
                           printed_at = COALESCE(printed_at, @ts), updated_at = @ts
@@ -148,12 +140,8 @@ export const markOrderShipped = (orderId, shipment, { actor = 'chitchats', shipA
       ts,
     });
 
-    return { orderId, shipped: shipped.length, skipped: skipped.length };
+    return { orderId, shipped: shipped.length };
   });
 
-  const result = run();
-  if (result.skipped) {
-    log.warn('order shipped while parts were still in production', result);
-  }
-  return result;
+  return run();
 };

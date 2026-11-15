@@ -98,6 +98,5 @@ export const config = {
     accessToken: process.env.CHITCHATS_ACCESS_TOKEN || '',
     apiBase: process.env.CHITCHATS_API_BASE || 'https://chitchats.com/api/v1',
     webhookSecret: process.env.CHITCHATS_WEBHOOK_SECRET || '',
-    shipAllParts: bool(process.env.SHIP_ALL_PARTS_ON_SHIPMENT, true),
   },
 };

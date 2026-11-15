@@ -6,7 +6,19 @@ import { getSettings } from '../domain/settings.service.js';
 const log = createLogger('chitchats');
 
 /** Statuts Chit Chats signifiant « le colis a quitté l'atelier ». */
+/*
+ * Statuts Chit Chats qui veulent dire « ce colis est parti de l'atelier » : dès que l'affranchissement est payé
+ * (`ready`, étiquette prête), puis reçu / pris en charge par Chit Chats (`received`, `released`, `inducted`), en route,
+ * livré… Avant, seuls « en route » et « livré » comptaient : une commande payée restait plusieurs jours dans
+ * « À imprimer » et l'équipe la réimprimait. `pending` (pas encore payé), `canceled` et `voided` ne comptent pas.
+ */
 export const SHIPPED_STATUSES = new Set([
+  'ready',
+  'received',
+  'released',
+  'inducted',
+  'resolved',
+  'exception',
   'shipped',
   'in_transit',
   'out_for_delivery',
@@ -51,25 +63,30 @@ export const verifyWebhookSecret = (providedSecret) => {
 };
 
 /** Relit les expéditions récentes : filet de sécurité si un webhook est perdu. */
-export const fetchShipments = async ({ since } = {}) => {
+export const fetchShipments = async ({ since, pages = 5 } = {}) => {
   const settings = getSettings();
   if (!isConfigured(settings)) {
     log.warn('chit chats credentials missing, skipping');
     return [];
   }
 
-  const url = new URL(`${settings['chitchats.apiBase']}/clients/${settings['chitchats.clientId']}/shipments`);
-  url.searchParams.set('limit', '100');
-  if (since) url.searchParams.set('since', since);
-
-  const payload = await requestJson(url.toString(), {
-    headers: {
-      Authorization: settings['chitchats.accessToken'],
-      'Content-Type': 'application/json',
-    },
-  });
-
-  const shipments = payload?.shipments ?? payload?.data ?? [];
+  // plusieurs pages : l'import automatique crée beaucoup d'envois « pending », les envois payés peuvent être plus loin
+  const shipments = [];
+  for (let page = 1; page <= pages; page += 1) {
+    const url = new URL(`${settings['chitchats.apiBase']}/clients/${settings['chitchats.clientId']}/shipments`);
+    url.searchParams.set('limit', '100');
+    url.searchParams.set('page', String(page));
+    if (since) url.searchParams.set('since', since);
+    const payload = await requestJson(url.toString(), {
+      headers: {
+        Authorization: settings['chitchats.accessToken'],
+        'Content-Type': 'application/json',
+      },
+    });
+    const batch = Array.isArray(payload) ? payload : payload?.shipments ?? payload?.data ?? [];
+    shipments.push(...batch);
+    if (batch.length < 100) break;
+  }
   log.info('shipments fetched', { count: shipments.length });
   return shipments.map(normalizeShipment);
 };

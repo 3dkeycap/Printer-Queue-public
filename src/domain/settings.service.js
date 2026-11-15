@@ -98,7 +98,6 @@ export const DEFINITIONS = [
     hint: "Adresse ouverte par « Ouvrir sur Chit Chats » quand une commande est ouverte sur Shopify. {order} = numéro de commande (sans #), {clientId} = Client ID ci-dessus. Le numéro est aussi copié dans le presse-papiers.",
     fallback: () => 'https://chitchats.com/clients/{clientId}/shipments/search?locale=en&q={order}',
   },
-  { key: 'chitchats.shipAllParts', group: 'chitchats', label: 'Expédier toutes les pièces du colis', type: 'boolean', hint: 'Sinon, seules les pièces déjà imprimées passent à Expédié.', fallback: () => config.chitchats.shipAllParts },
 
   // --- Planification ------------------------------------------------------
   { key: 'schedule.syncCron', group: 'schedule', label: 'Cron des commandes', type: 'text', hint: 'Par défaut toutes les 5 minutes.', fallback: () => config.jobs.syncCron },

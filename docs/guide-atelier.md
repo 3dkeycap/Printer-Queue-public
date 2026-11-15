@@ -113,6 +113,11 @@ Le sélecteur en haut de la page (ordinateur seulement) :
 ## Suivi Etsy automatique
 
 Quand une commande Etsy part avec Chit Chats, le numéro de suivi est envoyé à Etsy tout seul : plus rien à copier-coller.
+
+**Une commande expédiée quitte le tableau, toujours** : dès que l'envoi est **payé dans Chit Chats** (« Pay for Shipment »),
+ou que la commande est **traitée dans Shopify** (ou expédiée dans Etsy), toutes ses pièces passent en « Expédié », même
+celles pas encore imprimées. La vérification se fait à chaque synchro (toutes les 5 min par défaut). Une commande
+expédiée ne revient jamais dans « À imprimer », même si la boutique la modifie ensuite.
 Première fois seulement : Réglages → Boutiques → Etsy → « Reconnecter via OAuth » (autorisation d'écriture).
 
 ## Envoi Chit Chats : champs complétés tout seuls

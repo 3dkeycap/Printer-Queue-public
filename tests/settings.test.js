@@ -23,20 +23,17 @@ describe('réglages pilotés depuis la page Intégrations', () => {
     assert.equal(settings['schedule.syncCron'], '*/5 * * * *');
     assert.deepEqual(settings['production.uvOptions'], ['Standard', 'A', 'B', 'C']);
     assert.ok(settings['production.commentOptions'].length > 0);
-    assert.equal(settings['chitchats.shipAllParts'], true);
   });
 
   it('enregistre et relit chaque type de réglage', () => {
     updateSettings({
       'schedule.syncCron': '*/10 * * * *',
       'schedule.lookbackDays': 30,
-      'chitchats.shipAllParts': false,
       'production.uvOptions': ['Standard', 'A', 'B', 'C', 'Double'],
     });
     const settings = getSettings();
     assert.equal(settings['schedule.syncCron'], '*/10 * * * *');
     assert.equal(settings['schedule.lookbackDays'], 30);
-    assert.equal(settings['chitchats.shipAllParts'], false);
     assert.equal(settings['production.uvOptions'].length, 5);
   });
 

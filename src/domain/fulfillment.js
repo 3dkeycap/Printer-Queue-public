@@ -57,7 +57,7 @@ export const syncMarketplaceFulfillment = async (source, { fetchers = {} } = {})
     markOrderShipped(
       order.id,
       { tracking_number: entry.trackingNumber, carrier: entry.carrier, note: `Commande traitée dans ${label}` },
-      { actor: source, shipAll: true },
+      { actor: source },
     );
     shipped += 1;
   }

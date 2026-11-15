@@ -196,6 +196,10 @@ export const ingestOrder = (order) => {
         itemId = Number(info.lastInsertRowid);
       }
 
+      // Commande déjà expédiée : on met à jour ses articles, mais AUCUNE nouvelle pièce « À imprimer » (une ligne ajoutée
+      // ou une quantité augmentée après coup dans la boutique ne doit pas faire réimprimer un colis parti).
+      if (existing?.shipped_at) continue;
+
       // --- granularity: one row per physical object ---------------------
       {
         const known = db

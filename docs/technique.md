@@ -447,10 +447,12 @@ La couleur vient de la variation dont le nom vaut `Color` / `Couleur` / `Resin`.
    passent à `SHIPPED`, le numéro de suivi est stocké et les pièces disparaissent du
    tableau de production.
 
-Les statuts considérés comme « parti » : `shipped`, `in_transit`, `out_for_delivery`,
-`delivered`, `ready_for_pickup`, `picked_up`, `completed`.
-Décocher « Expédier toutes les pièces du colis » limite le passage à `SHIPPED` aux pièces
-déjà `DONE` et signale l'incohérence dans les logs.
+Les statuts considérés comme « parti » : dès l'affranchissement payé (`ready`), puis `received`, `released`,
+`inducted`, `resolved`, `exception`, `shipped`, `in_transit`, `out_for_delivery`, `delivered`, `ready_for_pickup`,
+`picked_up`, `completed` (`pending`, `canceled`, `voided` : pas parti). La relecture lit jusqu'à 5 pages de 100 envois
+(l'API renvoie un tableau). Une commande expédiée (Chit Chats, Shopify ou Etsy) passe **toutes** ses pièces à `SHIPPED`,
+même celles pas encore imprimées : elle ne reste jamais dans « À imprimer » (l'ancien réglage « Expédier toutes les
+pièces du colis » est retiré). Une resynchronisation ne crée plus de pièce sur une commande déjà expédiée.
 
 ---
 

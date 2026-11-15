@@ -185,6 +185,14 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Commandes expédiées encore dans « À imprimer » (réimprimées par l’équipe).** Plusieurs trous, tous bouchés :
+  la relecture des envois Chit Chats ne lisait **aucun** envoi (Chit Chats renvoie une liste, l’app attendait un objet) et
+  seulement les 100 derniers (maintenant jusqu’à 500) ; un envoi ne comptait qu’une fois « en route » : il compte maintenant
+  **dès l’affranchissement payé** (`ready`, puis reçu / pris en charge par Chit Chats) ; une commande expédiée passe
+  **toutes** ses pièces en « Expédié », même pas imprimées (le réglage « Expédier toutes les pièces du colis », qui pouvait
+  les laisser sur le tableau pour toujours, est retiré, avec `SHIP_ALL_PARTS_ON_SHIPMENT`) ; une resynchronisation ne crée
+  plus de pièce à imprimer sur une commande déjà expédiée. Réparation ponctuelle au démarrage : les pièces des commandes
+  déjà marquées expédiées quittent le tableau (`internal.shippedOrdersPartsShipped`).
 - **Fenêtre des commentaires Shopify qui ne s’affichait jamais.** Shopify refuse souvent de donner l’auteur d’un commentaire
   (membre du personnel, scope `read_users`) et cette seule erreur annulait toute la réponse. L’app réessaie maintenant sans
   l’auteur, puis sans les photos, et garde les données partielles : les commentaires s’affichent (auteur seulement quand
