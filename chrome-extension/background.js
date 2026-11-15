@@ -410,6 +410,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     appFetch(`/api/packing/etsy/${encodeURIComponent(message.orderExternalId)}/vat`).then(sendResponse);
     return true;
   }
+  // envoi payé dans Chit Chats : l'app relit les envois tout de suite (commande expédiée, suivi envoyé à Etsy)
+  if (message?.type === 'shipments-sync') {
+    appFetch('/api/sync/run?source=chitchats', { method: 'POST' }).then(sendResponse);
+    return true;
+  }
   // impression directe par QZ Tray (étiquette VAT ; choix de l'imprimante dans les options)
   if (message?.type === 'qz-printers') {
     qzPrinters().then(sendResponse);

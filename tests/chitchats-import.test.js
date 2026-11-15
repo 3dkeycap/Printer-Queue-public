@@ -155,6 +155,17 @@ describe('compléter le formulaire Chit Chats (extension)', () => {
     assert.equal(manufacturerFor({ title: 'Keycap', color_key: 'nylon-grey' }).key, 'hongkong');
     assert.equal(manufacturerFor({ title: 'Artisan', variant_title: 'Material & Color Nylon (Black)' }).key, 'hongkong');
     assert.equal(manufacturerFor({ title: 'Gateron Switches (10 pack)' }).key, 'dongguan');
+    // custom set : l'extension demande (Québec / Hong Kong / Chine) ; pas les descriptions « Custom Keyboards »
+    const { isCustomSet } = await import('../src/domain/chitchatsImport.js');
+    assert.equal(isCustomSet({ title: 'Custom Keycap Set' }), true);
+    assert.equal(isCustomSet({ title: 'Keycaps', variant_title: 'Custom set (3 keys)' }), true);
+    assert.equal(isCustomSet({ title: 'DES Modifiers (Pack of 2) | Keycap Set for Split & Custom Keyboards' }), false);
+    assert.equal(isCustomSet({ title: 'DSA Convex Keycaps | Custom Keycaps for Split Keyboards' }), false);
+    ingestOrder(makeOrder({ source: 'etsy', externalId: '4212304299', orderNumber: '4212304299', shippingCountry: 'US', items: [{ externalId: 'cs1', title: 'Custom Keycap Set', quantity: 1, unitPrice: 40 }] }));
+    const custom = customsFor('4212304299');
+    assert.equal(custom.items[0].askManufacturer, true);
+    assert.deepEqual(Object.keys(custom.manufacturers), ['quebec', 'hongkong', 'dongguan']);
+    assert.equal(custom.manufacturers.dongguan.countryCode, 'CN');
     assert.equal(manufacturerFor({ title: 'Mechanical Keyboard Switch Covers' }).key, 'quebec');
     assert.equal(manufacturerFor({ title: 'MX Tilters Adapters (10 Pack)' }).key, 'quebec');
     assert.equal(manufacturerFor({ title: 'X' }).contact, 'Innov3d inc.');

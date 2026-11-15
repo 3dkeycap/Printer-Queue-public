@@ -132,11 +132,19 @@ déjà rempli n'est pas touché. Vérifie, puis enregistre dans Chit Chats.
 
 En ouvrant un envoi (« Edit Shipment »), un **petit panneau Resin Queue** (à gauche) montre les étapes et les fait une à une :
 **Description** (se complète et passe toute seule à Package — si Chit Chats ouvre directement à Package, il revient d’abord à
-Description), **Enveloppe** (il demande la taille — **Petite** déjà choisie, sinon moyenne ou grosse + hauteur — et le poids),
+Description), **Enveloppe** (il demande la taille — **Petite** déjà choisie, 3 cm de haut par défaut et modifiable ; sinon moyenne ou grosse + hauteur — et le poids),
 **Livraison** (la moins chère, assurance Chit Chats décochée). **Le paiement (« Pay for Shipment ») reste à toi**, après
 vérification ; ensuite, la fenêtre « Print Postage » lance l’impression toute seule. « Je fais à la main » arrête l’automatisme
 pour cet envoi, « ↻ Relancer » le reprend. Pour tout couper : la case **« Auto »** (marquée BETA) en bas à droite du panneau, ou icône de l’extension → interrupteur
 **« Automatisation Chit Chats »** en haut (c’est le même réglage ; on le rallume depuis l’icône).
+
+**Custom sets** : l’app ne sait pas où un custom set est fait ; le panneau demande **Québec**, **Hong Kong** ou **Chine**
+et remplit le fabricant et le pays d’origine de cette ligne.
+
+**Après la page de paiement, l’assistant ne touche plus à rien** sur cet envoi : si tu reviens à Description ou Package,
+c’est pour corriger à la main (« ↻ Relancer » remet l’automatique). Dès que l’envoi est payé (« Print Postage »), l’app
+relit les envois tout de suite : la commande passe en « Expédié » et, pour Etsy, **le numéro de suivi est envoyé à la
+commande Etsy tout seul** (plus de copier-coller).
 
 **Commandes Etsy vers l’Europe (VAT / IOSS)** : la Description est réduite à **une seule ligne** — les autres lignes sont
 supprimées (corbeille), et celle qui reste devient « Keyboard keycaps », SKU et « Manufacturer product / model ID » **3DK**,

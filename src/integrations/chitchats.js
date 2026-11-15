@@ -42,7 +42,7 @@ export const normalizeShipment = (payload = {}) => {
     status: shipment.status ?? shipment.shipment_status ?? null,
     order_id: shipment.order_id ?? shipment.reference ?? shipment.name ?? null,
     to_name: shipment.to_name ?? shipment.recipient_name ?? null,
-    tracking_number: shipment.tracking_number ?? shipment.tracking_code ?? null,
+    tracking_number: shipment.tracking_number ?? shipment.carrier_tracking_code ?? shipment.tracking_code ?? null,
     carrier: shipment.postage_type ?? shipment.carrier ?? null,
     shipped_at: shipment.shipped_at ?? shipment.updated_at ?? null,
     raw: shipment,

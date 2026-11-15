@@ -613,6 +613,15 @@
     const count = (label, fill) => fieldsByLabel(label).reduce((n, control, index) => n + (fill(control, index) ? 1 : 0), 0);
     const hs = count('HS Code', (control) => fillText(control, data.hsCode));
     if (hs) filled.push(`code HS ×${hs}`);
+    // custom set : l'app ne sait pas où il est fait -> on demande (Québec, Hong Kong ou Chine), article par article
+    if (!data.vatGroup) {
+      for (const item of data.items.filter((entry) => entry.askManufacturer)) {
+        setStep('description', 'you', 'custom set : fabriqué où ?');
+        const key = await askMaker(item.title);
+        item.manufacturer = key ? data.manufacturers?.[key] ?? null : null;
+        setStep('description', 'running', 'je remplis les champs vides…');
+      }
+    }
     // pays d'origine = pays du fabricant de l'article (Canada, Hong Kong pour le nylon, Chine pour les switchs)
     const origins = fieldsByLabel('Origin Country');
     const sameMaker = data.items.every((item) => item.manufacturer?.key === data.items[0]?.manufacturer?.key);
@@ -679,7 +688,32 @@
   ];
   const ICONS = { todo: ['○', '#9aa8c4'], running: ['⏳', '#1f5fd6'], done: ['✓', '#167a43'], warn: ['⚠', '#b36b00'], you: ['👤', '#7a4fd0'], skip: ['–', '#9aa8c4'] };
   // où en est l'envoi affiché : Description faite ? déjà renvoyé vers Description depuis Package ?
-  const flow = { descDone: false, jumped: false };
+  const flow = { descDone: false, jumped: false, locked: false };
+
+  /*
+   * Une fois la page de paiement (Postage) atteinte pour un envoi, l'assistant ne touche PLUS à rien sur cet envoi : si la
+   * personne revient à Description ou Package, c'est pour corriger à la main. Gardé pour l'onglet (sessionStorage), par
+   * envoi. Seule exception : la fenêtre « Print Postage » après le paiement. « ↻ Relancer » lève le verrou.
+   */
+  const lockKey = () => `rq-locked-${shipmentId()}`;
+  const isLocked = () => {
+    if (flow.locked) return true;
+    try {
+      return shipmentId() !== 'envoi' && sessionStorage.getItem(lockKey()) === '1';
+    } catch {
+      return false;
+    }
+  };
+  const setLocked = (on) => {
+    flow.locked = on;
+    try {
+      if (shipmentId() === 'envoi') return;
+      if (on) sessionStorage.setItem(lockKey(), '1');
+      else sessionStorage.removeItem(lockKey());
+    } catch {
+      /* stockage indisponible : le verrou reste en mémoire */
+    }
+  };
   let panel = null;
   let panelFor = null;
   const steps = {};
@@ -747,6 +781,7 @@
       for (const key of Object.keys(steps)) delete steps[key];
       flow.descDone = false;
       flow.jumped = false;
+      flow.locked = false;
     }
     if (!panel?.isConnected) {
       panel = document.createElement('div');
@@ -819,9 +854,10 @@
   };
 
   const SIZES = {
-    petite: { label: 'Petite', dims: [22, 17, 4], askHeight: false },
-    moyenne: { label: 'Moyenne', dims: [30, 21, null], askHeight: true },
-    grosse: { label: 'Grosse', dims: [37, 30, null], askHeight: true },
+    // petite : 3 cm de haut par défaut, modifiable avant de continuer ; moyenne / grosse : hauteur à taper
+    petite: { label: 'Petite', dims: [22, 17, 3] },
+    moyenne: { label: 'Moyenne', dims: [30, 21, null] },
+    grosse: { label: 'Grosse', dims: [37, 30, null] },
   };
 
   /**
@@ -836,7 +872,7 @@
       form.innerHTML = `
         <div style="margin:8px 0 6px;font-weight:800">Quelle enveloppe ? (Thick Envelope)</div>
         <div data-sizes style="display:flex;gap:6px;margin-bottom:8px"></div>
-        <label data-hwrap style="display:none;margin-bottom:8px;font-size:13px">Hauteur (cm)<input data-h type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 5" style="display:block;box-sizing:border-box;width:100%;margin-top:3px;padding:9px;border:2px solid #ccd5e5;border-radius:9px;font:inherit"></label>
+        <label data-hwrap style="display:block;margin-bottom:8px;font-size:13px">Hauteur (cm)<input data-h type="text" inputmode="decimal" autocomplete="off" placeholder="ex. 5" style="display:block;box-sizing:border-box;width:100%;margin-top:3px;padding:9px;border:2px solid #ccd5e5;border-radius:9px;font:inherit"></label>
         <label style="display:block;margin-bottom:6px;font-size:13px">Poids (g)<input data-w type="text" inputmode="numeric" autocomplete="off" placeholder="ex. 156" style="display:block;box-sizing:border-box;width:100%;margin-top:3px;padding:9px;border:2px solid #ccd5e5;border-radius:9px;font:inherit"></label>
         <div data-err style="color:#a02828;min-height:1.1em;font-size:13px"></div>
         <div style="display:flex;gap:6px;margin-top:4px"><button data-cancel type="button" style="flex:1;padding:10px;border:0;border-radius:9px;background:#eef2f8;font:700 13px system-ui;cursor:pointer">Je fais à la main</button>
@@ -850,22 +886,27 @@
           button.style.borderColor = on ? '#1f5fd6' : '#ccd5e5';
           button.style.background = on ? '#eaf1ff' : '#fff';
         }
-        hwrap.style.display = SIZES[chosen].askHeight ? 'block' : 'none';
+      };
+      // la hauteur suit la taille choisie (3 cm pour la petite) ; la personne peut la changer
+      const height = form.querySelector('[data-h]');
+      const choose = (key) => {
+        chosen = key;
+        height.value = SIZES[key].dims[2] ?? '';
+        paint();
       };
       for (const [key, size] of Object.entries(SIZES)) {
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.size = key;
-        button.innerHTML = `<b>${size.label}</b><br><span style="font-size:12px;color:#5b6a86">${size.askHeight ? `${size.dims[1]} × ${size.dims[0]}` : size.dims.join(' × ')}</span>`;
+        button.innerHTML = `<b>${size.label}</b><br><span style="font-size:12px;color:#5b6a86">${size.dims[2] ? size.dims.join(' × ') : `${size.dims[1]} × ${size.dims[0]}`}</span>`;
         button.style.cssText = 'flex:1;padding:8px 4px;border:2px solid #ccd5e5;border-radius:10px;background:#fff;cursor:pointer;font:13px system-ui;color:#14213d;';
         button.addEventListener('click', () => {
-          chosen = key;
-          paint();
-          form.querySelector(SIZES[key].askHeight ? '[data-h]' : '[data-w]').focus();
+          choose(key);
+          form.querySelector(SIZES[key].dims[2] ? '[data-w]' : '[data-h]').focus();
         });
         sizes.append(button);
       }
-      paint();
+      choose('petite');
       const finish = (value) => {
         asking = false;
         form.replaceChildren();
@@ -876,7 +917,7 @@
       const submit = () => {
         const err = form.querySelector('[data-err]');
         const size = SIZES[chosen];
-        const height = size.askHeight ? Number(String(form.querySelector('[data-h]').value).replace(',', '.')) : size.dims[2];
+        const height = Number(String(form.querySelector('[data-h]').value).replace(',', '.'));
         const weight = Number(String(form.querySelector('[data-w]').value).replace(',', '.'));
         if (!(height > 0)) return (err.textContent = 'Indique la hauteur (cm).');
         if (!(weight > 0)) return (err.textContent = 'Indique le poids (g).');
@@ -888,6 +929,44 @@
       });
       placePanel();
       setTimeout(() => form.querySelector('[data-w]').focus(), 50);
+    });
+
+  /**
+   * « Custom set » : fabriqué où ? Trois boutons dans le panneau (Québec, Hong Kong, Chine) ; « Je fais à la main » =
+   * on ne remplit pas le fabricant ni le pays d'origine de cet article. Renvoie la clé de MANUFACTURERS (app) ou null.
+   */
+  const MAKERS = [
+    ['quebec', 'Québec', 'Innov3d'],
+    ['hongkong', 'Hong Kong', 'JLC (nylon)'],
+    ['dongguan', 'Chine', 'Dongguan Gaote'],
+  ];
+  const askMaker = (title) =>
+    new Promise((resolve) => {
+      asking = true;
+      showPanel();
+      const form = panel.querySelector('[data-form]');
+      form.innerHTML = `
+        <div style="margin:8px 0 2px;font-weight:800">Custom set : fabriqué où ?</div>
+        <div data-title style="margin-bottom:8px;font-size:12px;color:#5b6a86"></div>
+        <div data-makers style="display:flex;gap:6px;margin-bottom:8px"></div>
+        <button data-cancel type="button" style="width:100%;padding:9px;border:0;border-radius:9px;background:#eef2f8;font:700 13px system-ui;cursor:pointer">Je fais à la main</button>`;
+      form.querySelector('[data-title]').textContent = title;
+      const finish = (value) => {
+        asking = false;
+        form.replaceChildren();
+        placePanel();
+        resolve(value);
+      };
+      for (const [key, label, detail] of MAKERS) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerHTML = `<b>${label}</b><br><span style="font-size:11px;color:#5b6a86">${detail}</span>`;
+        button.style.cssText = 'flex:1;padding:9px 4px;border:2px solid #ccd5e5;border-radius:10px;background:#fff;cursor:pointer;font:13px system-ui;color:#14213d;';
+        button.addEventListener('click', () => finish(key));
+        form.querySelector('[data-makers]').append(button);
+      }
+      form.querySelector('[data-cancel]').addEventListener('click', () => finish(null));
+      placePanel();
     });
 
   /** Choisit l'option `value` (texte ou valeur) d'une liste, en remplaçant le choix actuel. */
@@ -980,6 +1059,7 @@
     const ok = done[0].endsWith('choisi') && done[1] === 'assurance décochée';
     setStep('postage', ok ? 'done' : 'warn', done.join(', '));
     setStep('pay', 'you', 'vérifie, puis clique « Pay for Shipment »');
+    setLocked(true);
     say(ok ? 'Tout est prêt : vérifie, puis clique toi-même « Pay for Shipment ».' : `${done.join(', ')} : vérifie à la main avant de payer.`, ok ? 'ok' : 'warn');
   };
 
@@ -1001,7 +1081,11 @@
     showPanel();
     setStep('pay', 'done', 'payé');
     setStep('print', 'done', '« Print Postage » lancé');
-    say('« Print Postage » lancé.');
+    say('« Print Postage » lancé. Le suivi part vers la commande (Etsy) dans la minute.');
+    // l'envoi est payé : l'app relit les envois maintenant (commande expédiée, suivi envoyé à Etsy), puis encore dans
+    // 2 minutes au cas où Chit Chats n'avait pas encore le numéro de suivi
+    send({ type: 'shipments-sync' });
+    setTimeout(() => send({ type: 'shipments-sync' }), 120000);
     return true;
   };
 
@@ -1033,8 +1117,22 @@
     return null;
   };
 
+  /** Envoi verrouillé (page de paiement déjà atteinte) : rien d'automatique, sauf la fenêtre « Print Postage ». */
+  const lockedTick = async () => {
+    if (await printPostage()) return;
+    const onShipment = fieldsByLabel('HS Code').length || [...document.querySelectorAll('.nav-steps, nav')].some((nav) => visible(nav) && /description/i.test(nav.textContent ?? '') && /postage/i.test(nav.textContent ?? ''));
+    if (!onShipment) return hidePanel();
+    showPanel();
+    // sur la page de paiement elle-même, le message « vérifie, puis paie » reste affiché
+    const insurance = [...document.querySelectorAll('input[type="checkbox"]')].find((box) => /chit chats insurance/i.test(box.closest('label, div')?.textContent ?? ''));
+    if (insurance && visible(insurance.closest('label, div'))) return;
+    const box = panel.querySelector('[data-msg]');
+    if (!/je ne touche plus/.test(box.textContent ?? '')) say('Page de paiement déjà atteinte : je ne touche plus à rien sur cet envoi (modifie à la main). « ↻ Relancer » pour refaire l’automatique.', 'warn');
+  };
+
   /** « ↻ Relancer » : refait l'étape affichée. */
   const rerun = async () => {
+    setLocked(false);
     if (fieldsByLabel('HS Code').length) return complete({ force: true });
     for (const element of document.querySelectorAll('[data-rq-package], [data-rq-postage], [data-rq-saved]')) {
       delete element.dataset.rqPackage;
@@ -1063,6 +1161,10 @@
   let timer = null;
   const tick = () => {
     if (!enabled) return;
+    if (isLocked()) {
+      lockedTick().catch(() => {});
+      return;
+    }
     complete().catch(() => {});
     advance().catch((error) => say(error.message, 'warn'));
   };

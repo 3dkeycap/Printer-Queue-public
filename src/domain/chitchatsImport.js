@@ -300,6 +300,14 @@ export const MANUFACTURERS = {
   dongguan: { contact: 'Dongguan Gaote Electronics Co, Ltd.', address1: 'Building 1, No. 1 , Tangxia Town', address2: 'Zhenxingwei Industrial Zone', city: 'Dongguan', postalCode: '523710', country: 'China', countryCode: 'CN', province: 'Guangdong (GD)' },
 };
 
+/*
+ * « Custom set » : fait sur mesure, l'app ne peut pas savoir où (Québec, Hong Kong ou Chine). L'extension demande à la
+ * personne au moment de compléter la douane. Seulement « custom … set » dans le titre ou la variante (pas « Custom
+ * Keyboards » ni « Custom Keycaps for … », qui sont des descriptions de produits faits ici).
+ */
+export const isCustomSet = (item) =>
+  /\bcustom\b[^|()]{0,20}?\bsets?\b/i.test([item.title, item.variant_title].filter(Boolean).join(' | '));
+
 /** Le fabricant d'un article : nylon (couleur, titre ou variante) -> Hong Kong ; switchs (pas les « switch covers ») -> Dongguan. */
 export const manufacturerFor = (item) => {
   const text = [item.title, item.variant_title, item.sku, item.color_key, item.color_name].filter(Boolean).join(' ').toLowerCase();
@@ -390,7 +398,17 @@ export const customsFor = (ref, { name } = {}) => {
     ioss: order.source === 'etsy' && eu ? String(settings['etsy.iossNumber'] ?? '').trim() || null : null,
     hsCode: String(settings['chitchats.hsTariffCode'] ?? '').trim() || null,
     originCountry: 'Canada',
-    items: items.map((item) => ({ title: item.title, sku: item.sku ?? null, variant: item.variant_title ?? null, quantity: item.quantity, unitValue: item.unit_price, manufacturer: manufacturerFor(item) })),
+    items: items.map((item) => ({
+      title: item.title,
+      sku: item.sku ?? null,
+      variant: item.variant_title ?? null,
+      quantity: item.quantity,
+      unitValue: item.unit_price,
+      manufacturer: manufacturerFor(item),
+      // custom set : l'extension demande Québec / Hong Kong / Chine (voir `manufacturers`)
+      askManufacturer: isCustomSet(item),
+    })),
+    manufacturers: Object.fromEntries(Object.entries(MANUFACTURERS).map(([key, maker]) => [key, { key, ...maker }])),
     vatGroup: vatGroupFor(order, eu, items),
   };
 };

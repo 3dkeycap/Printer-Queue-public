@@ -6,6 +6,15 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.18.0 (Chit Chats)** :
+  - **suivi Etsy automatique** : dès le paiement (fenêtre « Print Postage »), l’extension demande à l’app de relire les
+    envois tout de suite (et encore 2 min plus tard) : la commande passe en « Expédié » et le numéro de suivi part vers la
+    commande Etsy sans attendre (il ne partait pas avant à cause de la relecture des envois corrigée plus haut) ;
+  - **custom sets** : le panneau demande où le set est fait (Québec, Hong Kong ou Chine) et remplit le fabricant et le pays
+    d’origine de la ligne (`isCustomSet`, `askManufacturer` et `manufacturers` dans `GET /api/packing/customs`) ;
+  - **petite enveloppe : 3 cm** de haut par défaut, modifiable dans la même question ;
+  - **page de paiement atteinte = plus rien d’automatique** sur cet envoi : revenir à Description ou Package ne change
+    rien (corrections à la main) ; « ↻ Relancer » remet l’automatique.
 - **Extension 1.15.0 : un seul assistant pour tout l’envoi Chit Chats.** Le gros bouton et la fenêtre de l’enveloppe sont
   remplacés par un **petit panneau** qui suit les étapes au même endroit : Description → Enveloppe → Livraison → Paiement (toi)
   → Impression (✓ fait, 👤 à toi, ⚠ à vérifier, « ↻ Relancer »). En écran partagé il se réduit en bas à gauche et ne s’ouvre que
