@@ -252,6 +252,13 @@ const NEW_CSS = `
   .tabs { display: flex; gap: 8px; margin-bottom: 10px; }
   .tabs button { flex: 1; padding: 12px; border: 2px solid #d5dbe8; border-radius: 12px; background: #fff; font: 700 16px system-ui; color: #1c2230; cursor: pointer; }
   .tabs button.on { background: #1f5fd6; border-color: #1f5fd6; color: #fff; }
+  .tabs .person-btn { flex: 0 0 auto; display: flex; gap: 4px; align-items: center; font-size: 14px; padding: 12px 10px; }
+  .person-menu { position: fixed; z-index: 10; min-width: 220px; max-height: 70vh; overflow: auto; padding: 6px; border-radius: 12px; border: 1px solid #d5dbe8; background: #fff; box-shadow: 0 20px 50px -18px rgba(0,0,0,.45); font: 16px system-ui, sans-serif; }
+  .person-title { padding: 8px 10px 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #6a7590; }
+  .person-item { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 12px 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; color: #1c2230; text-align: left; }
+  .person-item.is-on { background: #eaf1ff; font-weight: 700; }
+  .person-item small { color: #6a7590; }
+  .person-hint { margin: 4px 10px 8px; font-size: 14px; color: #6a7590; }
   .f { margin-top: 12px; }
   label { display: block; margin: 0 0 6px; font-weight: 700; font-size: 15px; }
   .opt { font-weight: 400; color: #7b859a; }
@@ -306,7 +313,9 @@ const mobilePage = (start) => (req, res) => {
   res.type('html').send(`<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>Inventaire</title><style>${NEW_CSS}</style></head>
-<body data-start="${start}"><main id="box"></main><script type="module" src="/js/inventory-mobile.js"></script></body></html>`);
+<body data-start="${start}"><main id="box"></main>
+<script src="/js/i18n-phone.js"></script><script src="/js/i18n-table.js"></script><script src="/js/i18n.js"></script>
+<script type="module" src="/js/inventory-mobile.js"></script></body></html>`);
 };
 
 /** Inventaire sur le téléphone : /inventory/new (ouvre le formulaire d'ajout) et /inventory/mobile (la liste). */
@@ -320,6 +329,12 @@ export const scanRouter = Router();
 scanRouter.get('/scan.js', (req, res) => {
   res.type('application/javascript').sendFile(path.join(config.publicDir, 'js', 'scan.js'));
 });
+// traduction de la page du code QR (publique : /js est derrière le mot de passe de l'app)
+for (const file of ['i18n-phone.js', 'i18n-table.js', 'i18n.js']) {
+  scanRouter.get(`/${file}`, (req, res) => {
+    res.type('application/javascript').sendFile(path.join(config.publicDir, 'js', file));
+  });
+}
 
 const SCAN_CSS = `
   * { box-sizing: border-box; }
@@ -343,12 +358,16 @@ const SCAN_CSS = `
   input[type=text], input[type=number] { width: 100%; padding: 12px; border: 2px solid #d5dbe8; border-radius: 12px; font: inherit; }
   .send { width: 100%; background: #1f5fd6; color: #fff; font-size: 18px; padding: 14px; }
   .err { color: #a02828; font-size: 15px; margin: 0 0 8px; }
+  .langs { position: fixed; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; gap: 6px; }
+  .langs button { margin: 0; padding: 6px 10px; font-size: 13px; background: #fff; border: 1px solid #d5dbe8; }
+  .langs button.on { background: #1f5fd6; color: #fff; border-color: #1f5fd6; }
 `;
 
 const scanPage = ({ token, title, body, tone = 'soft', questions = null }) => `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>${esc(title)}</title><style>${SCAN_CSS}</style></head>
-<body data-token="${esc(token)}"${questions ? ` data-questions="${esc(JSON.stringify(questions))}"` : ''}><main id="box" class="${tone}">${body}</main><script src="/r/scan.js"></script></body></html>`;
+<body data-token="${esc(token)}"${questions ? ` data-questions="${esc(JSON.stringify(questions))}"` : ''}><main id="box" class="${tone}">${body}</main>
+<script src="/r/i18n-phone.js"></script><script src="/r/i18n-table.js"></script><script src="/r/i18n.js"></script><script src="/r/scan.js"></script></body></html>`;
 
 /**
  * Ouvrir l'adresse du code ne change RIEN (les aperçus de lien et les antivirus la

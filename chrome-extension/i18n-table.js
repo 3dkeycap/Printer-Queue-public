@@ -1,0 +1,3080 @@
+/*
+ * Table de traduction de l'interface — GÉNÉRÉE par scripts/i18n-table.py (ne pas modifier à la main).
+ * [français, English, Español, Filipino] ; modèles : [regex sur le français, en, es, fil].
+ */
+globalThis.RQI18nTable = [
+[
+"À imprimer",
+"To print",
+"Por imprimir",
+"Ipi-print"
+],
+[
+"En impression",
+"Printing",
+"Imprimiendo",
+"Nagpi-print"
+],
+[
+"Imprimé",
+"Printed",
+"Impreso",
+"Na-print na"
+],
+[
+"Expédié",
+"Shipped",
+"Enviado",
+"Naipadala na"
+],
+[
+"Échec",
+"Failed",
+"Fallo",
+"Pumalya"
+],
+[
+"Échecs",
+"Failures",
+"Fallos",
+"Mga pumalya"
+],
+[
+"Resin Queue",
+"Resin Queue",
+"Resin Queue",
+"Resin Queue"
+],
+[
+"Tout",
+"All",
+"Todo",
+"Lahat"
+],
+[
+"Inventaire",
+"Inventory",
+"Inventario",
+"Imbentaryo"
+],
+[
+"Réglages",
+"Settings",
+"Ajustes",
+"Settings"
+],
+[
+"Atelier · 3D résine",
+"Workshop · 3D resin",
+"Taller · resina 3D",
+"Workshop · 3D resin"
+],
+[
+"Chaque carte = une pièce physique à imprimer.",
+"Each card = one physical part to print.",
+"Cada tarjeta = una pieza física por imprimir.",
+"Bawat card = isang piyesang ipi-print."
+],
+[
+"Toutes les pièces, tous statuts confondus.",
+"All parts, every status.",
+"Todas las piezas, de cualquier estado.",
+"Lahat ng piyesa, kahit anong status."
+],
+[
+"Chaque impression ratée est gardée ici, avec le taux d’échec par fichier.",
+"Every failed print is kept here, with the failure rate per file.",
+"Cada impresión fallida se guarda aquí, con la tasa de fallos por archivo.",
+"Nandito ang bawat pumalyang print, kasama ang failure rate ng bawat file."
+],
+[
+"Un objet = une carte avec un code QR : on le scanne quand il faut en racheter.",
+"One item = one card with a QR code: scan it when we need to buy more.",
+"Un objeto = una tarjeta con código QR: se escanea cuando hay que volver a comprar.",
+"Isang item = isang card na may QR code: i-scan kapag kailangan nang bumili ulit."
+],
+[
+"Tout ce qui se configure, rangé par thème.",
+"Everything you can configure, sorted by topic.",
+"Todo lo configurable, ordenado por tema.",
+"Lahat ng puwedeng i-setup, ayon sa paksa."
+],
+[
+"Rechercher pièce, SKU, commande, client…",
+"Search part, SKU, order, customer…",
+"Buscar pieza, SKU, pedido, cliente…",
+"Hanapin ang piyesa, SKU, order, customer…"
+],
+[
+"Annuler",
+"Undo",
+"Deshacer",
+"I-undo"
+],
+[
+"Rien à annuler",
+"Nothing to undo",
+"Nada que deshacer",
+"Walang i-undo"
+],
+[
+"Tutoriel",
+"Tutorial",
+"Tutorial",
+"Tutorial"
+],
+[
+"Tutoriel : visite guidée de cette page",
+"Tutorial: guided tour of this page",
+"Tutorial: visita guiada de esta página",
+"Tutorial: gabay sa page na ito"
+],
+[
+"Simple",
+"Simple",
+"Simple",
+"Simple"
+],
+[
+"Avancé",
+"Advanced",
+"Avanzado",
+"Advanced"
+],
+[
+"Mode d'affichage",
+"Display mode",
+"Modo de vista",
+"Display mode"
+],
+[
+"Vue épurée : sans UV, Rush, provenance ni n° de commande",
+"Clean view: no UV, Rush, source or order number",
+"Vista limpia: sin UV, Rush, origen ni n.º de pedido",
+"Malinis na view: walang UV, Rush, source o order number"
+],
+[
+"Pièce",
+"Part",
+"Pieza",
+"Piyesa"
+],
+[
+"Synchroniser",
+"Sync",
+"Sincronizar",
+"I-sync"
+],
+[
+"Résine",
+"Resin",
+"Resina",
+"Resin"
+],
+[
+"Non assigné",
+"Unassigned",
+"Sin asignar",
+"Walang kulay"
+],
+[
+"En retard",
+"Late",
+"Atrasado",
+"Late na"
+],
+[
+"Grouper par couleur",
+"Group by color",
+"Agrupar por color",
+"I-grupo ayon sa kulay"
+],
+[
+"Grouper par commande",
+"Group by order",
+"Agrupar por pedido",
+"I-grupo ayon sa order"
+],
+[
+"Grouper par UV",
+"Group by UV",
+"Agrupar por UV",
+"I-grupo ayon sa UV"
+],
+[
+"Aucun regroupement",
+"No grouping",
+"Sin agrupar",
+"Walang grupo"
+],
+[
+"Tri : priorité",
+"Sort: priority",
+"Orden: prioridad",
+"Ayos: priority"
+],
+[
+"Tri : plus anciennes",
+"Sort: oldest",
+"Orden: más antiguas",
+"Ayos: pinakaluma"
+],
+[
+"Tri : plus récentes",
+"Sort: newest",
+"Orden: más recientes",
+"Ayos: pinakabago"
+],
+[
+"Tri : couleur",
+"Sort: color",
+"Orden: color",
+"Ayos: kulay"
+],
+[
+"Tri : activité",
+"Sort: activity",
+"Orden: actividad",
+"Ayos: activity"
+],
+[
+"Rien ici",
+"Nothing here",
+"Nada aquí",
+"Wala dito"
+],
+[
+"Agrandir cette colonne pour tout voir d'un coup",
+"Expand this column to see everything at once",
+"Ampliar esta columna para verlo todo",
+"Palakihin ang column para makita lahat"
+],
+[
+"Revenir à la vue complète",
+"Back to the full view",
+"Volver a la vista completa",
+"Bumalik sa buong view"
+],
+[
+"Regrouper les cartes",
+"Stack the cards",
+"Agrupar las tarjetas",
+"I-stack ang mga card"
+],
+[
+"Commande",
+"Order",
+"Pedido",
+"Order"
+],
+[
+"Séparées",
+"Separate",
+"Separadas",
+"Hiwa-hiwalay"
+],
+[
+"Identiques",
+"Identical",
+"Idénticas",
+"Magkakapareho"
+],
+[
+"une carte par commande (les pièces d’une même commande ensemble)",
+"one card per order (parts of the same order together)",
+"una tarjeta por pedido (las piezas del mismo pedido juntas)",
+"isang card bawat order (magkakasama ang piyesa ng iisang order)"
+],
+[
+"une carte par pièce",
+"one card per part",
+"una tarjeta por pieza",
+"isang card bawat piyesa"
+],
+[
+"les pièces identiques fusionnées (ex. 3× MX Tilters Adapters)",
+"identical parts merged (e.g. 3× MX Tilters Adapters)",
+"piezas idénticas juntas (ej. 3× MX Tilters Adapters)",
+"pinagsama ang magkaparehong piyesa (hal. 3× MX Tilters Adapters)"
+],
+[
+"Déjà en inventaire : marquer comme expédié",
+"Already in stock: mark as shipped",
+"Ya en inventario: marcar como enviado",
+"Meron nang stock: markahan na naipadala"
+],
+[
+"Impression ratée : la pièce retourne dans « À imprimer » et l'échec est gardé dans « Échecs »",
+"Print failed: the part goes back to “To print” and the failure is kept in “Failures”",
+"Impresión fallida: la pieza vuelve a «Por imprimir» y el fallo se guarda en «Fallos»",
+"Pumalya ang print: babalik ang piyesa sa “Ipi-print” at naka-save ang palya sa “Mga pumalya”"
+],
+[
+"Marquer en rush",
+"Mark as rush",
+"Marcar como urgente",
+"Gawing rush"
+],
+[
+"Rush",
+"Rush",
+"Urgente",
+"Rush"
+],
+[
+"Interne",
+"Internal",
+"Interno",
+"Internal"
+],
+[
+"Toutes les sources",
+"All sources",
+"Todas las fuentes",
+"Lahat ng source"
+],
+[
+"Couleurs masquées",
+"Hidden colors",
+"Colores ocultos",
+"Nakatagong kulay"
+],
+[
+"Passer en plein écran",
+"Go full screen",
+"Pantalla completa",
+"Full screen"
+],
+[
+"Plein écran",
+"Full screen",
+"Pantalla completa",
+"Full screen"
+],
+[
+"Quitter le plein écran",
+"Exit full screen",
+"Salir de pantalla completa",
+"Umalis sa full screen"
+],
+[
+"Changer de thème",
+"Change theme",
+"Cambiar tema",
+"Palitan ang theme"
+],
+[
+"Thème",
+"Theme",
+"Tema",
+"Theme"
+],
+[
+"Nuit",
+"Night",
+"Noche",
+"Gabi"
+],
+[
+"Beige",
+"Beige",
+"Beige",
+"Beige"
+],
+[
+"Blanc & bleu",
+"White & blue",
+"Blanco y azul",
+"Puti at asul"
+],
+[
+"Forêt",
+"Forest",
+"Bosque",
+"Gubat"
+],
+[
+"Lavande",
+"Lavender",
+"Lavanda",
+"Lavender"
+],
+[
+"Signaler un bug",
+"Report a bug",
+"Reportar un error",
+"Mag-report ng bug"
+],
+[
+"Un problème ?",
+"A problem?",
+"¿Un problema?",
+"May problema?"
+],
+[
+"Pas encore de synchro",
+"No sync yet",
+"Aún sin sincronizar",
+"Wala pang sync"
+],
+[
+"Connecteurs actifs",
+"Active connectors",
+"Conectores activos",
+"Mga aktibong connector"
+],
+[
+"Aucune pièce",
+"No parts",
+"Ninguna pieza",
+"Walang piyesa"
+],
+[
+"Aucune pièce ne correspond aux filtres",
+"No part matches the filters",
+"Ninguna pieza coincide con los filtros",
+"Walang piyesang tugma sa filter"
+],
+[
+"Retire un filtre ou clique « Réinitialiser » dans la barre au-dessus.",
+"Remove a filter or click “Reset” in the bar above.",
+"Quita un filtro o pulsa «Restablecer» en la barra de arriba.",
+"Mag-alis ng filter o pindutin ang “I-reset” sa itaas."
+],
+[
+"Rien à imprimer",
+"Nothing to print",
+"Nada por imprimir",
+"Walang ipi-print"
+],
+[
+"Connecte Shopify ou Etsy dans Intégrations, ou ajoute une pièce manuellement.",
+"Connect Shopify or Etsy in Integrations, or add a part by hand.",
+"Conecta Shopify o Etsy en Integraciones, o añade una pieza a mano.",
+"I-connect ang Shopify o Etsy sa Integrations, o magdagdag ng piyesa nang mano-mano."
+],
+[
+"Réinitialiser",
+"Reset",
+"Restablecer",
+"I-reset"
+],
+[
+"Désélectionner",
+"Deselect",
+"Deseleccionar",
+"Alisin ang pili"
+],
+[
+"Appliquer",
+"Apply",
+"Aplicar",
+"I-apply"
+],
+[
+"— vider —",
+"— clear —",
+"— vaciar —",
+"— burahin —"
+],
+[
+"Tag ajouté",
+"Tag added",
+"Etiqueta añadida",
+"Naidagdag ang tag"
+],
+[
+"UV appliqué",
+"UV applied",
+"UV aplicado",
+"Na-apply ang UV"
+],
+[
+"Pièce mise à jour",
+"Part updated",
+"Pieza actualizada",
+"Na-update ang piyesa"
+],
+[
+"Synchronisation terminée",
+"Sync finished",
+"Sincronización terminada",
+"Tapos na ang sync"
+],
+[
+"Aucune modification",
+"No changes",
+"Sin cambios",
+"Walang binago"
+],
+[
+"Confirmer",
+"Confirm",
+"Confirmar",
+"Kumpirmahin"
+],
+[
+"OK",
+"OK",
+"OK",
+"OK"
+],
+[
+"Fermer",
+"Close",
+"Cerrar",
+"Isara"
+],
+[
+"Enregistrer",
+"Save",
+"Guardar",
+"I-save"
+],
+[
+"Supprimer",
+"Delete",
+"Eliminar",
+"Burahin"
+],
+[
+"Ajouter",
+"Add",
+"Añadir",
+"Idagdag"
+],
+[
+"Créer",
+"Create",
+"Crear",
+"Gumawa"
+],
+[
+"Chercher",
+"Search",
+"Buscar",
+"Hanapin"
+],
+[
+"Réessayer",
+"Try again",
+"Reintentar",
+"Subukan ulit"
+],
+[
+"Chargement…",
+"Loading…",
+"Cargando…",
+"Naglo-load…"
+],
+[
+"à l'instant",
+"just now",
+"ahora mismo",
+"ngayon lang"
+],
+[
+"à l’instant",
+"just now",
+"ahora mismo",
+"ngayon lang"
+],
+[
+"Ajouter une pièce à produire",
+"Add a part to produce",
+"Añadir una pieza a producir",
+"Magdagdag ng piyesang gagawin"
+],
+[
+"Pièce(s) ajoutée(s) à la file",
+"Part(s) added to the queue",
+"Pieza(s) añadida(s) a la cola",
+"Naidagdag sa pila ang piyesa"
+],
+[
+"Quantité",
+"Quantity",
+"Cantidad",
+"Dami"
+],
+[
+"Pour qui",
+"For whom",
+"Para quién",
+"Para kanino"
+],
+[
+"Quand tu appuies sur le triangle rouge d'une carte, la pièce retourne dans « À imprimer » et l'échec est gardé ici, avec le taux d'échec par fichier.",
+"When you press a card's red triangle, the part goes back to “To print” and the failure is kept here, with the failure rate per file.",
+"Cuando pulsas el triángulo rojo de una tarjeta, la pieza vuelve a «Por imprimir» y el fallo se guarda aquí, con la tasa de fallos por archivo.",
+"Kapag pinindot mo ang pulang tatsulok ng card, babalik ang piyesa sa “Ipi-print” at naka-save dito ang palya, kasama ang failure rate bawat file."
+],
+[
+"Pour qui (facultatif)",
+"For whom (optional)",
+"Para quién (opcional)",
+"Para kanino (opsyonal)"
+],
+[
+"Aucun tag",
+"No tag",
+"Sin etiqueta",
+"Walang tag"
+],
+[
+"Tag",
+"Tag",
+"Etiqueta",
+"Tag"
+],
+[
+"Tags",
+"Tags",
+"Etiquetas",
+"Mga tag"
+],
+[
+"Ajouter un commentaire",
+"Add a comment",
+"Añadir un comentario",
+"Magdagdag ng comment"
+],
+[
+"Commentaire",
+"Comment",
+"Comentario",
+"Comment"
+],
+[
+"Le commentaire est obligatoire",
+"The comment is required",
+"El comentario es obligatorio",
+"Kailangan ang comment"
+],
+[
+"Commentaire ajouté",
+"Comment added",
+"Comentario añadido",
+"Naidagdag ang comment"
+],
+[
+"Attente client, pièce cassée…",
+"Waiting on customer, broken part…",
+"Esperando al cliente, pieza rota…",
+"Hinihintay ang customer, sirang piyesa…"
+],
+[
+"Commande reçue, pas encore lancée sur une machine",
+"Order received, not on a machine yet",
+"Pedido recibido, aún no está en una máquina",
+"Natanggap ang order, wala pa sa makina"
+],
+[
+"Sur une imprimante en ce moment",
+"On a printer right now",
+"En una impresora ahora mismo",
+"Nasa printer ngayon"
+],
+[
+"Imprimé, lavé, post-durci, prêt à être emballé",
+"Printed, washed, cured, ready to pack",
+"Impreso, lavado, curado, listo para empacar",
+"Na-print, nahugasan, na-cure, handa nang i-pack"
+],
+[
+"Ouvert sur Shopify",
+"Open in Shopify",
+"Abierto en Shopify",
+"Bukas sa Shopify"
+],
+[
+"Faire avancer une pièce",
+"Move a part forward",
+"Avanzar una pieza",
+"Isulong ang piyesa"
+],
+[
+"Changer le statut",
+"Change status",
+"Cambiar estado",
+"Palitan ang status"
+],
+[
+"Agrandir",
+"Enlarge",
+"Ampliar",
+"Palakihin"
+],
+[
+"Fiche",
+"Details",
+"Ficha",
+"Detalye"
+],
+[
+"Toutes les informations",
+"All the details",
+"Toda la información",
+"Lahat ng detalye"
+],
+[
+"Statut",
+"Status",
+"Estado",
+"Status"
+],
+[
+"Couleur de résine",
+"Resin color",
+"Color de resina",
+"Kulay ng resin"
+],
+[
+"Choisir une couleur",
+"Choose a color",
+"Elegir un color",
+"Pumili ng kulay"
+],
+[
+"Poste UV",
+"UV station",
+"Puesto UV",
+"UV station"
+],
+[
+"Aucun poste UV",
+"No UV station",
+"Sin puesto UV",
+"Walang UV station"
+],
+[
+"UV non défini",
+"UV not set",
+"UV sin definir",
+"Walang UV"
+],
+[
+"UV…",
+"UV…",
+"UV…",
+"UV…"
+],
+[
+"Priorité",
+"Priority",
+"Prioridad",
+"Priority"
+],
+[
+"Rush activé",
+"Rush on",
+"Urgente activado",
+"Naka-rush"
+],
+[
+"Note",
+"Note",
+"Nota",
+"Note"
+],
+[
+"Notes de production…",
+"Production notes…",
+"Notas de producción…",
+"Production notes…"
+],
+[
+"Ajouter un tag…",
+"Add a tag…",
+"Añadir una etiqueta…",
+"Magdagdag ng tag…"
+],
+[
+"Retirer ce tag",
+"Remove this tag",
+"Quitar esta etiqueta",
+"Alisin ang tag na ito"
+],
+[
+"Client",
+"Customer",
+"Cliente",
+"Customer"
+],
+[
+"Reçue",
+"Received",
+"Recibido",
+"Natanggap"
+],
+[
+"Suivi",
+"Tracking",
+"Seguimiento",
+"Tracking"
+],
+[
+"SKU",
+"SKU",
+"SKU",
+"SKU"
+],
+[
+"Variante",
+"Variant",
+"Variante",
+"Variant"
+],
+[
+"Historique",
+"History",
+"Historial",
+"History"
+],
+[
+"Création → ",
+"Created → ",
+"Creación → ",
+"Ginawa → "
+],
+[
+"Création →",
+"Created →",
+"Creación →",
+"Ginawa →"
+],
+[
+"Ouvrir sur Etsy",
+"Open on Etsy",
+"Abrir en Etsy",
+"Buksan sa Etsy"
+],
+[
+"Ouvrir sur Shopify",
+"Open in Shopify",
+"Abrir en Shopify",
+"Buksan sa Shopify"
+],
+[
+"Ouvrir la photo en grand",
+"Open the photo full size",
+"Abrir la foto en grande",
+"Buksan nang malaki ang litrato"
+],
+[
+"Photo masquée",
+"Photo hidden",
+"Foto oculta",
+"Nakatagong litrato"
+],
+[
+"Pas la bonne photo",
+"Wrong photo",
+"No es la foto correcta",
+"Maling litrato"
+],
+[
+"Image générique ou mauvaise photo : ne plus l'afficher (pour toutes les pièces)",
+"Generic image or wrong photo: stop showing it (for all parts)",
+"Imagen genérica o foto incorrecta: no mostrarla más (para todas las piezas)",
+"Generic o maling litrato: huwag nang ipakita (sa lahat ng piyesa)"
+],
+[
+"Commande annulée",
+"Order cancelled",
+"Pedido cancelado",
+"Kinansela ang order"
+],
+[
+"Annulée dans la boutique : cette pièce n'est plus dans « Resin Queue » (elle reste ici pour l'historique).",
+"Cancelled in the shop: this part is no longer in “Resin Queue” (it stays here for the history).",
+"Cancelado en la tienda: esta pieza ya no está en «Resin Queue» (se queda aquí para el historial).",
+"Kinansela sa shop: wala na sa “Resin Queue” ang piyesa (nandito pa rin para sa history)."
+],
+[
+"Note / personnalisation du client",
+"Customer note / customization",
+"Nota / personalización del cliente",
+"Note / customization ng customer"
+],
+[
+"Note du bac (interne)",
+"Bin note (internal)",
+"Nota de la caja (interna)",
+"Note ng bin (internal)"
+],
+[
+"Suivi Etsy",
+"Etsy tracking",
+"Seguimiento Etsy",
+"Etsy tracking"
+],
+[
+"Pas encore envoyé",
+"Not sent yet",
+"Aún no enviado",
+"Hindi pa naipapadala"
+],
+[
+"Pas envoyé",
+"Not sent",
+"No enviado",
+"Hindi naipadala"
+],
+[
+"Pas imprimé ici (en stock)",
+"Not printed here (in stock)",
+"No se imprime aquí (en stock)",
+"Hindi dito pini-print (may stock)"
+],
+[
+"Pas imprimé ici",
+"Not printed here",
+"No se imprime aquí",
+"Hindi dito pini-print"
+],
+[
+"Remettre cette pièce dans « Resin Queue »",
+"Put this part back in “Resin Queue”",
+"Volver a poner esta pieza en «Resin Queue»",
+"Ibalik ang piyesa sa “Resin Queue”"
+],
+[
+"Pas imprimé ici — remettre dans « Resin Queue »",
+"Not printed here — put back in “Resin Queue”",
+"No se imprime aquí — volver a «Resin Queue»",
+"Hindi dito pini-print — ibalik sa “Resin Queue”"
+],
+[
+"Article en stock / pas imprimé ici : le retirer de « Resin Queue » (il reste dans « Tout »)",
+"Item in stock / not printed here: remove it from “Resin Queue” (it stays in “All”)",
+"Artículo en stock / no se imprime aquí: quitarlo de «Resin Queue» (sigue en «Todo»)",
+"May stock / hindi dito pini-print: alisin sa “Resin Queue” (nasa “Lahat” pa rin)"
+],
+[
+"Photo",
+"Photo",
+"Foto",
+"Litrato"
+],
+[
+"Annulée",
+"Cancelled",
+"Cancelado",
+"Kinansela"
+],
+[
+"Commande annulée dans la boutique : retirée de « Resin Queue »",
+"Order cancelled in the shop: removed from “Resin Queue”",
+"Pedido cancelado en la tienda: quitado de «Resin Queue»",
+"Kinansela sa shop: inalis sa “Resin Queue”"
+],
+[
+"Expédié d'ici mais pas imprimé ici (article en stock, supplément, autre usine) : absent de « Resin Queue »",
+"Shipped from here but not printed here (in stock, add-on, other factory): not in “Resin Queue”",
+"Se envía desde aquí pero no se imprime aquí (en stock, extra, otra fábrica): no está en «Resin Queue»",
+"Dito ipinapadala pero hindi dito pini-print (may stock, add-on, ibang pabrika): wala sa “Resin Queue”"
+],
+[
+"raison non précisée",
+"no reason given",
+"sin motivo",
+"walang dahilan"
+],
+[
+"Les pièces importées de Shopify et Etsy apparaîtront ici.",
+"Parts imported from Shopify and Etsy will show up here.",
+"Las piezas importadas de Shopify y Etsy aparecerán aquí.",
+"Lalabas dito ang mga piyesa mula sa Shopify at Etsy."
+],
+[
+"Aucun échec pour l'instant",
+"No failures yet",
+"Ningún fallo por ahora",
+"Wala pang pumalya"
+],
+[
+"Taux d’échec par fichier",
+"Failure rate per file",
+"Tasa de fallos por archivo",
+"Failure rate bawat file"
+],
+[
+"Fichier",
+"File",
+"Archivo",
+"File"
+],
+[
+"Taux d’échec",
+"Failure rate",
+"Tasa de fallos",
+"Failure rate"
+],
+[
+"Par résine (échecs / impressions)",
+"By resin (failures / prints)",
+"Por resina (fallos / impresiones)",
+"Ayon sa resin (palya / print)"
+],
+[
+"Dernier échec",
+"Last failure",
+"Último fallo",
+"Huling palya"
+],
+[
+"Voir seulement les échecs de ce fichier",
+"Show only this file's failures",
+"Ver solo los fallos de este archivo",
+"Ipakita lang ang palya ng file na ito"
+],
+[
+"Remettre ce fichier dans la liste",
+"Put this file back in the list",
+"Volver a poner este archivo en la lista",
+"Ibalik ang file sa listahan"
+],
+[
+"Masquer ce fichier de la liste (fichier corrigé, cas réglé…). Ses échecs restent gardés.",
+"Hide this file from the list (file fixed, case solved…). Its failures are kept.",
+"Ocultar este archivo de la lista (archivo corregido, caso resuelto…). Sus fallos se guardan.",
+"Itago ang file sa listahan (naayos na…). Naka-save pa rin ang mga palya."
+],
+[
+"Réafficher",
+"Show again",
+"Mostrar de nuevo",
+"Ipakita ulit"
+],
+[
+"Masquer",
+"Hide",
+"Ocultar",
+"Itago"
+],
+[
+"Historique des échecs",
+"Failure history",
+"Historial de fallos",
+"History ng palya"
+],
+[
+"Quand",
+"When",
+"Cuándo",
+"Kailan"
+],
+[
+"Par",
+"By",
+"Por",
+"Ni"
+],
+[
+"Une impression compte quand elle est « Imprimé » ou en échec ; celles en cours ne comptent pas encore. Un fichier sans aucun échec n'apparaît pas ici.",
+"A print counts once it is “Printed” or failed; prints in progress don't count yet. A file with no failures doesn't show here.",
+"Una impresión cuenta cuando está «Impreso» o fallida; las que están en curso aún no cuentan. Un archivo sin fallos no aparece aquí.",
+"Bilang ang print kapag “Na-print na” o pumalya; hindi pa bilang ang mga nagpi-print. Hindi lalabas dito ang file na walang palya."
+],
+[
+"Bienvenue 👋",
+"Welcome 👋",
+"Bienvenido 👋",
+"Maligayang pagdating 👋"
+],
+[
+"Ici, tu vois tout ce qu'il y a à imprimer. Une carte = une pièce à fabriquer. Les commandes arrivent toutes seules, il n'y a rien à configurer. Visite de 1 minute : utilise « Suivant ».",
+"Here you see everything to print. One card = one part to make. Orders come in by themselves, nothing to set up. 1-minute tour: use “Next”.",
+"Aquí ves todo lo que hay que imprimir. Una tarjeta = una pieza por fabricar. Los pedidos llegan solos, no hay nada que configurar. Visita de 1 minuto: usa «Siguiente».",
+"Dito mo makikita lahat ng ipi-print. Isang card = isang piyesang gagawin. Kusang dumarating ang mga order, walang kailangang i-setup. 1 minutong tour: pindutin ang “Susunod”."
+],
+[
+"Suivant",
+"Next",
+"Siguiente",
+"Susunod"
+],
+[
+"Précédent",
+"Previous",
+"Anterior",
+"Nakaraan"
+],
+[
+"Quitter",
+"Exit",
+"Salir",
+"Umalis"
+],
+[
+"Terminer",
+"Finish",
+"Terminar",
+"Tapusin"
+],
+[
+"Les colonnes",
+"The columns",
+"Las columnas",
+"Ang mga column"
+],
+[
+"Une pièce avance de gauche à droite : À imprimer → En impression → Imprimé. Si l'impression rate, appuie sur le triangle rouge : la pièce retourne dans « À imprimer » pour être refaite, et l'échec est gardé dans la page « Échecs ».",
+"A part moves left to right: To print → Printing → Printed. If a print fails, press the red triangle: the part goes back to “To print” to be redone, and the failure is kept on the “Failures” page.",
+"Una pieza avanza de izquierda a derecha: Por imprimir → Imprimiendo → Impreso. Si la impresión falla, pulsa el triángulo rojo: la pieza vuelve a «Por imprimir» para rehacerla, y el fallo se guarda en la página «Fallos».",
+"Umuusad ang piyesa mula kaliwa pakanan: Ipi-print → Nagpi-print → Na-print na. Kapag pumalya, pindutin ang pulang tatsulok: babalik ang piyesa sa “Ipi-print” para ulitin, at naka-save ang palya sa page na “Mga pumalya”."
+],
+[
+"Le bouton avec la flèche (ex. « En impression ›) passe la pièce à l'étape suivante. « Expédié » sert quand la pièce est déjà en stock : inutile de l'imprimer. Tu peux aussi glisser la carte dans une autre colonne. Touche la carte pour voir ses détails.",
+"The button with the arrow (e.g. “Printing ›”) moves the part to the next step. “Shipped” is for parts already in stock: no need to print them. You can also drag the card to another column. Tap the card to see its details.",
+"El botón con la flecha (ej. «Imprimiendo ›») pasa la pieza al siguiente paso. «Enviado» sirve cuando la pieza ya está en stock: no hace falta imprimirla. También puedes arrastrar la tarjeta a otra columna. Toca la tarjeta para ver sus detalles.",
+"Ang button na may arrow (hal. “Nagpi-print ›”) ay naglilipat sa susunod na hakbang. Ang “Naipadala na” ay para sa piyesang may stock na: hindi na kailangang i-print. Puwede mo ring i-drag ang card sa ibang column. Pindutin ang card para makita ang detalye."
+],
+[
+"Ce bouton change la façon de ranger la colonne, à chaque clic : « Commande » (une carte par commande, avec la liste de ses pièces), « Séparées » (une carte par pièce) ou « Identiques » (les pièces identiques fusionnées en « ×3 »). Tu peux annuler une erreur avec le bouton « Annuler » ou Ctrl+Z.",
+"This button changes how the column is arranged, on each click: “Order” (one card per order, with its parts), “Separate” (one card per part) or “Identical” (identical parts merged as “×3”). You can undo a mistake with the “Undo” button or Ctrl+Z.",
+"Este botón cambia cómo se ordena la columna, en cada clic: «Pedido» (una tarjeta por pedido, con sus piezas), «Separadas» (una tarjeta por pieza) o «Idénticas» (piezas idénticas juntas como «×3»). Puedes deshacer un error con el botón «Deshacer» o Ctrl+Z.",
+"Binabago ng button na ito ang ayos ng column bawat pindot: “Order” (isang card bawat order, kasama ang mga piyesa), “Hiwa-hiwalay” (isang card bawat piyesa) o “Magkakapareho” (pinagsama bilang “×3”). Puwedeng i-undo ang mali gamit ang “I-undo” o Ctrl+Z."
+],
+[
+"Touche une couleur pour ne voir que ces pièces : pratique pour remplir un plateau avec la même résine. Le chiffre, c'est le nombre de pièces. Retouche pour enlever le filtre.",
+"Tap a color to see only those parts: handy to fill a build plate with the same resin. The number is the number of parts. Tap again to remove the filter.",
+"Toca un color para ver solo esas piezas: práctico para llenar una placa con la misma resina. El número es la cantidad de piezas. Vuelve a tocar para quitar el filtro.",
+"Pindutin ang kulay para iyon lang ang makita: madali para mapuno ang plate ng parehong resin. Ang numero ay dami ng piyesa. Pindutin ulit para alisin ang filter."
+],
+[
+"Montre seulement les commandes qui attendent depuis trop longtemps. Un badge rouge sur une carte veut dire : à faire en premier.",
+"Shows only orders that have been waiting too long. A red badge on a card means: do it first.",
+"Muestra solo los pedidos que esperan demasiado. Una etiqueta roja en una tarjeta significa: hacerlo primero.",
+"Ipinapakita lang ang mga order na matagal nang naghihintay. Ang pulang badge sa card ay ibig sabihin: unahin ito."
+],
+[
+"Tape un nom de pièce, un numéro de commande ou un client. Astuce : la touche « / » du clavier va directement ici.",
+"Type a part name, an order number or a customer. Tip: the “/” key jumps straight here.",
+"Escribe un nombre de pieza, un número de pedido o un cliente. Truco: la tecla «/» te trae directo aquí.",
+"I-type ang pangalan ng piyesa, order number o customer. Tip: ang “/” key ay diretso dito."
+],
+[
+"Touche ce bouton rouge, écris ce qui ne va pas en une phrase, et envoie. La capture de l'écran part avec : pas besoin d'expliquer plus.",
+"Tap this red button, write what's wrong in one sentence, and send. A screenshot is sent along: no need to explain more.",
+"Toca este botón rojo, escribe en una frase qué va mal y envía. La captura de pantalla se envía también: no hace falta explicar más.",
+"Pindutin ang pulang button, isulat sa isang pangungusap ang problema, at i-send. Kasama na ang screenshot: hindi na kailangang magpaliwanag pa."
+],
+[
+"C'est tout ! 🎉",
+"That's it! 🎉",
+"¡Eso es todo! 🎉",
+"Iyon na lahat! 🎉"
+],
+[
+"Tu sais l'essentiel : regarder la file, avancer les pièces, filtrer par couleur. Le bouton « Tutoriel » en haut permet de refaire cette visite quand tu veux.",
+"You know the basics: watch the queue, move parts forward, filter by color. The “Tutorial” button at the top lets you redo this tour any time.",
+"Ya sabes lo esencial: mirar la cola, avanzar las piezas, filtrar por color. El botón «Tutorial» arriba te deja repetir esta visita cuando quieras.",
+"Alam mo na ang pinakamahalaga: tingnan ang pila, isulong ang piyesa, i-filter ayon sa kulay. Ang “Tutorial” button sa itaas ay para ulitin ang tour kahit kailan."
+],
+[
+"Pour que l'écran serve seulement à la file d'impression. Touche « Quitter » pour revenir.",
+"So the screen only shows the print queue. Tap “Exit” to come back.",
+"Para que la pantalla muestre solo la cola de impresión. Toca «Salir» para volver.",
+"Para print queue lang ang nasa screen. Pindutin ang “Umalis” para bumalik."
+],
+[
+"Plus tard seulement : connecter les boutiques, changer les couleurs ou installer les mises à jour. Pour travailler, tu n'en as pas besoin.",
+"Only later: connect the shops, change colors or install updates. You don't need it to work.",
+"Solo más adelante: conectar las tiendas, cambiar colores o instalar actualizaciones. Para trabajar no lo necesitas.",
+"Para sa ibang pagkakataon lang: i-connect ang shops, palitan ang kulay o mag-update. Hindi mo ito kailangan sa trabaho."
+],
+[
+"Qu'est-ce qui se passe ?",
+"What's happening?",
+"¿Qué pasa?",
+"Ano ang nangyayari?"
+],
+[
+"Qui signale ?",
+"Who is reporting?",
+"¿Quién reporta?",
+"Sino ang nagre-report?"
+],
+[
+"Les journaux de l'app (erreurs, dernières actions) sont joints automatiquement pour aider à corriger.",
+"The app logs (errors, last actions) are attached automatically to help fix it.",
+"Los registros de la app (errores, últimas acciones) se adjuntan automáticamente para ayudar a corregir.",
+"Kusang kasama ang logs ng app (errors, huling ginawa) para makatulong sa pag-ayos."
+],
+[
+"Envoyer",
+"Send",
+"Enviar",
+"I-send"
+],
+[
+"capture indisponible",
+"screenshot unavailable",
+"captura no disponible",
+"walang screenshot"
+],
+[
+"📋 Objets",
+"📋 Items",
+"📋 Objetos",
+"📋 Mga item"
+],
+[
+"➕ Ajouter",
+"➕ Add",
+"➕ Añadir",
+"➕ Idagdag"
+],
+[
+"Chercher un objet…",
+"Search an item…",
+"Buscar un objeto…",
+"Maghanap ng item…"
+],
+[
+"Aucun objet ne correspond.",
+"No item matches.",
+"Ningún objeto coincide.",
+"Walang tugmang item."
+],
+[
+"Aucun objet pour l’instant : ajoute le premier.",
+"No items yet: add the first one.",
+"Aún no hay objetos: añade el primero.",
+"Wala pang item: idagdag ang una."
+],
+[
+"Ajouter à l’inventaire",
+"Add to inventory",
+"Añadir al inventario",
+"Idagdag sa imbentaryo"
+],
+[
+"Un objet = une étiquette avec un code QR à imprimer plus tard.",
+"One item = one label with a QR code to print later.",
+"Un objeto = una etiqueta con código QR para imprimir después.",
+"Isang item = isang label na may QR code na ipi-print mamaya."
+],
+[
+"Nom de l’objet",
+"Item name",
+"Nombre del objeto",
+"Pangalan ng item"
+],
+[
+"Ex. Ruban d’emballage",
+"E.g. Packing tape",
+"Ej. Cinta de embalaje",
+"Hal. Packing tape"
+],
+[
+"Minimum : scanner quand il en reste",
+"Minimum: scan when this many are left",
+"Mínimo: escanear cuando queden",
+"Minimum: i-scan kapag ganito na lang ang natira"
+],
+[
+"Unité",
+"Unit",
+"Unidad",
+"Unit"
+],
+[
+"Ex. rouleaux, bac, boîtes…",
+"E.g. rolls, bin, boxes…",
+"Ej. rollos, caja, cajas…",
+"Hal. rolyo, bin, kahon…"
+],
+[
+"Quantité à commander",
+"Quantity to order",
+"Cantidad a pedir",
+"Dami ng ioorder"
+],
+[
+"Ex. 4200",
+"E.g. 4200",
+"Ej. 4200",
+"Hal. 4200"
+],
+[
+"Commander chez",
+"Order from",
+"Pedir a",
+"Umorder sa"
+],
+[
+"Ex. Sticker Mule",
+"E.g. Sticker Mule",
+"Ej. Sticker Mule",
+"Hal. Sticker Mule"
+],
+[
+"Notes libres",
+"Free notes",
+"Notas libres",
+"Notes"
+],
+[
+"Ex. étagère du haut, marque, lien…",
+"E.g. top shelf, brand, link…",
+"Ej. estante de arriba, marca, enlace…",
+"Hal. itaas na shelf, brand, link…"
+],
+[
+"📷 Prendre / choisir",
+"📷 Take / choose",
+"📷 Tomar / elegir",
+"📷 Kumuha / pumili"
+],
+[
+"Retirer la photo",
+"Remove the photo",
+"Quitar la foto",
+"Alisin ang litrato"
+],
+[
+"Questions au scan (facultatif)",
+"Questions when scanning (optional)",
+"Preguntas al escanear (opcional)",
+"Mga tanong sa pag-scan (opsyonal)"
+],
+[
+"Une seule étiquette, mais la personne qui scanne choisit ce qui manque : une ou plusieurs couleurs de résine, un nombre, un texte.",
+"One label, but whoever scans picks what's missing: one or more resin colors, a number, a text.",
+"Una sola etiqueta, pero quien escanea elige lo que falta: uno o varios colores de resina, un número, un texto.",
+"Iisang label, pero ang nag-scan ang pipili kung ano ang kulang: isa o higit pang kulay ng resin, numero, o text."
+],
+[
+"➕ Ajouter une question",
+"➕ Add a question",
+"➕ Añadir una pregunta",
+"➕ Magdagdag ng tanong"
+],
+[
+"(facultatif)",
+"(optional)",
+"(opcional)",
+"(opsyonal)"
+],
+[
+"Ex. Quelle résine manque ?",
+"E.g. Which resin is missing?",
+"Ej. ¿Qué resina falta?",
+"Hal. Anong resin ang kulang?"
+],
+[
+"Choix dans une liste",
+"Pick from a list",
+"Elegir de una lista",
+"Pumili sa listahan"
+],
+[
+"Un nombre",
+"A number",
+"Un número",
+"Numero"
+],
+[
+"Texte libre",
+"Free text",
+"Texto libre",
+"Text"
+],
+[
+"Couleurs de résine",
+"Resin colors",
+"Colores de resina",
+"Mga kulay ng resin"
+],
+[
+"Ma liste de choix",
+"My list of choices",
+"Mi lista de opciones",
+"Sariling listahan"
+],
+[
+"Choix séparés par des virgules : S, M, L",
+"Choices separated by commas: S, M, L",
+"Opciones separadas por comas: S, M, L",
+"Mga pagpipilian na may kuwit: S, M, L"
+],
+[
+"Plusieurs réponses possibles",
+"Several answers allowed",
+"Varias respuestas posibles",
+"Puwedeng maraming sagot"
+],
+[
+"Retirer cette question",
+"Remove this question",
+"Quitar esta pregunta",
+"Alisin ang tanong"
+],
+[
+"unités",
+"units",
+"unidades",
+"piraso"
+],
+[
+"boîtes",
+"boxes",
+"cajas",
+"kahon"
+],
+[
+"rouleaux",
+"rolls",
+"rollos",
+"rolyo"
+],
+[
+"bouteilles",
+"bottles",
+"botellas",
+"bote"
+],
+[
+"paquets",
+"packs",
+"paquetes",
+"pakete"
+],
+[
+"sacs",
+"bags",
+"bolsas",
+"supot"
+],
+[
+"← Tous les objets",
+"← All items",
+"← Todos los objetos",
+"← Lahat ng item"
+],
+[
+"✏️ Modifier",
+"✏️ Edit",
+"✏️ Editar",
+"✏️ I-edit"
+],
+[
+"🛒 Il faut en racheter",
+"🛒 We need to buy more",
+"🛒 Hay que comprar más",
+"🛒 Kailangang bumili ulit"
+],
+[
+"➕ Il manque aussi…",
+"➕ Also missing…",
+"➕ También falta…",
+"➕ Kulang din…"
+],
+[
+"Noté : à racheter.",
+"Noted: to buy again.",
+"Anotado: a recomprar.",
+"Nai-note: bibilhin ulit."
+],
+[
+"Signaler",
+"Report",
+"Avisar",
+"I-report"
+],
+[
+"✅ Commandé",
+"✅ Ordered",
+"✅ Pedido",
+"✅ Na-order na"
+],
+[
+"Commande notée.",
+"Order noted.",
+"Pedido anotado.",
+"Nai-note ang order."
+],
+[
+"💾 Télécharger l’étiquette (image)",
+"💾 Download the label (image)",
+"💾 Descargar la etiqueta (imagen)",
+"💾 I-download ang label (image)"
+],
+[
+"🖨 Étiquette 2×1 po",
+"🖨 2×1 in label",
+"🖨 Etiqueta 2×1 pulg.",
+"🖨 2×1 in na label"
+],
+[
+"🖨 Grande étiquette (4 par feuille)",
+"🖨 Large label (4 per sheet)",
+"🖨 Etiqueta grande (4 por hoja)",
+"🖨 Malaking label (4 bawat sheet)"
+],
+[
+"🗑 Supprimer cet objet",
+"🗑 Delete this item",
+"🗑 Eliminar este objeto",
+"🗑 Burahin ang item"
+],
+[
+"Modifier l’objet",
+"Edit item",
+"Editar objeto",
+"I-edit ang item"
+],
+[
+"Enregistré.",
+"Saved.",
+"Guardado.",
+"Na-save."
+],
+[
+"Ajouté !",
+"Added!",
+"¡Añadido!",
+"Naidagdag!"
+],
+[
+"➕ Ajouter un autre objet",
+"➕ Add another item",
+"➕ Añadir otro objeto",
+"➕ Magdagdag ng isa pang item"
+],
+[
+"📋 Voir l’objet",
+"📋 See the item",
+"📋 Ver el objeto",
+"📋 Tingnan ang item"
+],
+[
+"🖨 Voir la grande étiquette",
+"🖨 See the large label",
+"🖨 Ver la etiqueta grande",
+"🖨 Tingnan ang malaking label"
+],
+[
+"C’est noté !",
+"Got it!",
+"¡Anotado!",
+"Nai-note na!"
+],
+[
+"Il faut racheter",
+"We need to buy",
+"Hay que comprar",
+"Kailangang bilhin ulit ang"
+],
+[
+"Tu n’as rien d’autre à faire, merci.",
+"Nothing else to do, thanks.",
+"No tienes que hacer nada más, gracias.",
+"Wala ka nang ibang gagawin, salamat."
+],
+[
+"Je me suis trompé : annuler",
+"I made a mistake: undo",
+"Me equivoqué: deshacer",
+"Nagkamali ako: i-undo"
+],
+[
+"Signaler autre chose",
+"Report something else",
+"Avisar otra cosa",
+"Mag-report ng iba pa"
+],
+[
+"Déjà signalé",
+"Already reported",
+"Ya avisado",
+"Nai-report na"
+],
+[
+"Annulé",
+"Undone",
+"Deshecho",
+"Na-undo"
+],
+[
+"Rien n’a été signalé pour",
+"Nothing was reported for",
+"No se avisó nada para",
+"Walang nai-report para sa"
+],
+[
+"Impossible d’annuler",
+"Can't undo",
+"No se puede deshacer",
+"Hindi ma-undo"
+],
+[
+"Cette carte ne marche plus",
+"This card doesn't work anymore",
+"Esta tarjeta ya no funciona",
+"Hindi na gumagana ang card na ito"
+],
+[
+"Elle ne correspond à aucun objet de l’inventaire (il a peut-être été supprimé). Préviens la personne qui gère l’inventaire.",
+"It doesn't match any inventory item (it may have been deleted). Tell the person who manages the inventory.",
+"No corresponde a ningún objeto del inventario (quizá se eliminó). Avisa a quien gestiona el inventario.",
+"Walang katugmang item sa imbentaryo (baka nabura na). Sabihan ang namamahala ng imbentaryo."
+],
+[
+"Carte inconnue",
+"Unknown card",
+"Tarjeta desconocida",
+"Hindi kilalang card"
+],
+[
+"Qu’est-ce qui manque ?",
+"What's missing?",
+"¿Qué falta?",
+"Ano ang kulang?"
+],
+[
+"Un instant…",
+"One moment…",
+"Un momento…",
+"Sandali lang…"
+],
+[
+"On note qu’il faut racheter",
+"Noting that we need to buy",
+"Anotamos que hay que comprar",
+"Nino-note na kailangang bilhin ang"
+],
+[
+"Code inconnu : cette carte ne correspond plus à aucun objet.",
+"Unknown code: this card no longer matches any item.",
+"Código desconocido: esta tarjeta ya no corresponde a ningún objeto.",
+"Hindi kilalang code: wala nang katugmang item ang card na ito."
+],
+[
+"Ce n’est pas ta faute. Vérifie que tu es bien sur le réseau de l’atelier, puis scanne à nouveau.",
+"It's not your fault. Check you're on the workshop network, then scan again.",
+"No es tu culpa. Comprueba que estás en la red del taller y vuelve a escanear.",
+"Hindi mo kasalanan. Siguraduhing nasa network ka ng workshop, tapos i-scan ulit."
+],
+[
+"Active JavaScript pour répondre.",
+"Turn on JavaScript to answer.",
+"Activa JavaScript para responder.",
+"I-on ang JavaScript para sumagot."
+],
+[
+"Active JavaScript pour que le signalement soit envoyé.",
+"Turn on JavaScript so the report is sent.",
+"Activa JavaScript para enviar el aviso.",
+"I-on ang JavaScript para maipadala ang report."
+],
+[
+"Noir",
+"Black",
+"Negro",
+"Itim"
+],
+[
+"Blanc",
+"White",
+"Blanco",
+"Puti"
+],
+[
+"Gris",
+"Gray",
+"Gris",
+"Abo"
+],
+[
+"Rouge",
+"Red",
+"Rojo",
+"Pula"
+],
+[
+"Bleu",
+"Blue",
+"Azul",
+"Asul"
+],
+[
+"Bleu nuit",
+"Midnight blue",
+"Azul noche",
+"Dark blue"
+],
+[
+"Bleu ciel",
+"Sky blue",
+"Azul cielo",
+"Sky blue"
+],
+[
+"Vert",
+"Green",
+"Verde",
+"Berde"
+],
+[
+"Jaune",
+"Yellow",
+"Amarillo",
+"Dilaw"
+],
+[
+"Orange",
+"Orange",
+"Naranja",
+"Orange"
+],
+[
+"Rose",
+"Pink",
+"Rosa",
+"Pink"
+],
+[
+"Violet",
+"Purple",
+"Morado",
+"Violet"
+],
+[
+"Menthe",
+"Mint",
+"Menta",
+"Mint"
+],
+[
+"Marbre",
+"Marble",
+"Mármol",
+"Marble"
+],
+[
+"Or",
+"Gold",
+"Oro",
+"Ginto"
+],
+[
+"Argent",
+"Silver",
+"Plata",
+"Pilak"
+],
+[
+"Transparent",
+"Clear",
+"Transparente",
+"Transparent"
+],
+[
+"Nylon Noir",
+"Nylon Black",
+"Nailon negro",
+"Nylon na itim"
+],
+[
+"Nylon Gris",
+"Nylon Gray",
+"Nailon gris",
+"Nylon na abo"
+],
+[
+"J'ai packé la commande",
+"I packed the order",
+"Empaqué el pedido",
+"Na-pack ko ang order"
+],
+[
+"📦 J'ai packé ▾",
+"📦 I packed ▾",
+"📦 Empaqué ▾",
+"📦 Na-pack ko ▾"
+],
+[
+"📦 J'ai packé ▴",
+"📦 I packed ▴",
+"📦 Empaqué ▴",
+"📦 Na-pack ko ▴"
+],
+[
+"📦 J’ai packé ▾",
+"📦 I packed ▾",
+"📦 Empaqué ▾",
+"📦 Na-pack ko ▾"
+],
+[
+"📦 J’ai packé ▴",
+"📦 I packed ▴",
+"📦 Empaqué ▴",
+"📦 Na-pack ko ▴"
+],
+[
+"Indiquer ce qui est dans le bac de cette commande",
+"Record what is in this order's bin",
+"Indicar qué hay en la caja de este pedido",
+"Ilagay kung ano ang nasa bin ng order"
+],
+[
+"Extension rechargée : recharge la page",
+"Extension reloaded: reload the page",
+"Extensión recargada: recarga la página",
+"Na-reload ang extension: i-reload ang page"
+],
+[
+"à imprimer",
+"to print",
+"por imprimir",
+"ipi-print"
+],
+[
+"en impression",
+"printing",
+"imprimiendo",
+"nagpi-print"
+],
+[
+"échec",
+"failed",
+"fallo",
+"pumalya"
+],
+[
+"imprimée",
+"printed",
+"impresa",
+"na-print"
+],
+[
+"expédiée",
+"shipped",
+"enviada",
+"naipadala"
+],
+[
+"Nom de la pièce",
+"Part name",
+"Nombre de la pieza",
+"Pangalan ng piyesa"
+],
+[
+"Variante / couleur (facultatif)",
+"Variant / color (optional)",
+"Variante / color (opcional)",
+"Variant / kulay (opsyonal)"
+],
+[
+"Ajouter à la commande",
+"Add to the order",
+"Añadir al pedido",
+"Idagdag sa order"
+],
+[
+"➕ Ajouter une pièce à la commande",
+"➕ Add a part to the order",
+"➕ Añadir una pieza al pedido",
+"➕ Magdagdag ng piyesa sa order"
+],
+[
+"Donne un nom à la pièce.",
+"Give the part a name.",
+"Pon un nombre a la pieza.",
+"Lagyan ng pangalan ang piyesa."
+],
+[
+"Le bac n'est pas disponible pour cette commande pour l'instant.",
+"The bin isn't available for this order right now.",
+"La caja no está disponible para este pedido por ahora.",
+"Hindi pa available ang bin para sa order na ito."
+],
+[
+"Tu n'as rien fait de mal. Réessaie dans un instant ; si ça continue, préviens la personne qui gère l'app.",
+"You did nothing wrong. Try again in a moment; if it keeps happening, tell the person who manages the app.",
+"No hiciste nada mal. Reinténtalo en un momento; si sigue pasando, avisa a quien gestiona la app.",
+"Wala kang ginawang mali. Subukan ulit mamaya; kung tuloy pa rin, sabihan ang namamahala ng app."
+],
+[
+"Autre…",
+"Other…",
+"Otro…",
+"Iba pa…"
+],
+[
+"Raison",
+"Reason",
+"Motivo",
+"Dahilan"
+],
+[
+"en stock",
+"in stock",
+"en stock",
+"may stock"
+],
+[
+"Une de moins",
+"One less",
+"Una menos",
+"Bawasan ng isa"
+],
+[
+"Une de plus",
+"One more",
+"Una más",
+"Dagdagan ng isa"
+],
+[
+"Qui es-tu ?",
+"Who are you?",
+"¿Quién eres?",
+"Sino ka?"
+],
+[
+"+ Ajouter une personne…",
+"+ Add a person…",
+"+ Añadir una persona…",
+"+ Magdagdag ng tao…"
+],
+[
+"Nom de la personne",
+"Person's name",
+"Nombre de la persona",
+"Pangalan ng tao"
+],
+[
+"Enregistrer le bac",
+"Save the bin",
+"Guardar la caja",
+"I-save ang bin"
+],
+[
+"👆 Il manque juste ton nom : choisis-le dans « Qui es-tu ? », puis appuie encore sur « Enregistrer le bac ».",
+"👆 Just your name is missing: pick it in “Who are you?”, then press “Save the bin” again.",
+"👆 Solo falta tu nombre: elígelo en «¿Quién eres?» y vuelve a pulsar «Guardar la caja».",
+"👆 Pangalan mo na lang ang kulang: piliin sa “Sino ka?”, tapos pindutin ulit ang “I-save ang bin”."
+],
+[
+"✓ Bac complet enregistré.",
+"✓ Full bin saved.",
+"✓ Caja completa guardada.",
+"✓ Na-save ang kumpletong bin."
+],
+[
+"✓ Enregistré — bac incomplet (raisons notées).",
+"✓ Saved — bin incomplete (reasons noted).",
+"✓ Guardado — caja incompleta (motivos anotados).",
+"✓ Na-save — kulang ang bin (naitala ang dahilan)."
+],
+[
+"Tags ajoutés dans Shopify.",
+"Tags added in Shopify.",
+"Etiquetas añadidas en Shopify.",
+"Naidagdag ang tags sa Shopify."
+],
+[
+"Tout est dans le bac",
+"Everything is in the bin",
+"Todo está en la caja",
+"Kumpleto ang laman ng bin"
+],
+[
+"Ex. bac 4, la keycap rouge est dans le sac à part…",
+"E.g. bin 4, the red keycap is in the separate bag…",
+"Ej. caja 4, la keycap roja está en la bolsa aparte…",
+"Hal. bin 4, nasa hiwalay na supot ang pulang keycap…"
+],
+[
+"Mis dans le bac",
+"Put in the bin",
+"Puesto en la caja",
+"Nailagay sa bin"
+],
+[
+"Aucun article",
+"No items",
+"Ningún artículo",
+"Walang item"
+],
+[
+"Notes (internes, pas envoyées à la boutique)",
+"Notes (internal, not sent to the shop)",
+"Notas (internas, no se envían a la tienda)",
+"Notes (internal, hindi ipinapadala sa shop)"
+],
+[
+"Pas de réponse de l'app",
+"No answer from the app",
+"Sin respuesta de la app",
+"Walang sagot ang app"
+],
+[
+"Glisser pour déplacer",
+"Drag to move",
+"Arrastrar para mover",
+"I-drag para ilipat"
+],
+[
+"🐞 Bug",
+"🐞 Bug",
+"🐞 Error",
+"🐞 Bug"
+],
+[
+"Signaler un bug (ouvre l’app sur la fenêtre de signalement)",
+"Report a bug (opens the app on the report window)",
+"Reportar un error (abre la app en la ventana de aviso)",
+"Mag-report ng bug (bubuksan ang app sa report window)"
+],
+[
+"🔗 Link",
+"🔗 Link",
+"🔗 Vincular",
+"🔗 I-link"
+],
+[
+"Clique « Link » sur Chit Chats… ✕",
+"Click “Link” on Chit Chats… ✕",
+"Pulsa «Vincular» en Chit Chats… ✕",
+"Pindutin ang “I-link” sa Chit Chats… ✕"
+],
+[
+"Lier un onglet Chit Chats : il suivra les commandes ouvertes ici",
+"Link a Chit Chats tab: it will follow the orders opened here",
+"Vincular una pestaña de Chit Chats: seguirá los pedidos abiertos aquí",
+"I-link ang Chit Chats tab: susundan nito ang mga order na binuksan dito"
+],
+[
+"Lier un onglet Chit Chats : il suivra la commande sélectionnée ici",
+"Link a Chit Chats tab: it will follow the order selected here",
+"Vincular una pestaña de Chit Chats: seguirá el pedido seleccionado aquí",
+"I-link ang Chit Chats tab: susundan nito ang napiling order dito"
+],
+[
+"Clique une commande",
+"Click an order",
+"Pulsa un pedido",
+"Pumili ng order"
+],
+[
+"Clique la ligne d’une commande pour la sélectionner",
+"Click an order's row to select it",
+"Pulsa la fila de un pedido para seleccionarlo",
+"Pindutin ang row ng order para piliin"
+],
+[
+"🏷 VAT",
+"🏷 VAT",
+"🏷 IVA",
+"🏷 VAT"
+],
+[
+"Vu ✓",
+"Seen ✓",
+"Visto ✓",
+"Nakita ✓"
+],
+[
+"Quelqu’un",
+"Someone",
+"Alguien",
+"May isang tao"
+],
+[
+"Shopify veut lier cet onglet",
+"Shopify wants to link this tab",
+"Shopify quiere vincular esta pestaña",
+"Gustong i-link ng Shopify ang tab na ito"
+],
+[
+"✍ Resin Queue · envoi",
+"✍ Resin Queue · shipment",
+"✍ Resin Queue · envío",
+"✍ Resin Queue · padala"
+],
+[
+"↻ Relancer",
+"↻ Restart",
+"↻ Reiniciar",
+"↻ Ulitin"
+],
+[
+"Refaire l’étape affichée",
+"Redo the step shown",
+"Rehacer el paso mostrado",
+"Ulitin ang hakbang"
+],
+[
+"Prêt",
+"Ready",
+"Listo",
+"Handa"
+],
+[
+"Description",
+"Description",
+"Descripción",
+"Description"
+],
+[
+"Enveloppe",
+"Envelope",
+"Sobre",
+"Sobre"
+],
+[
+"Livraison",
+"Shipping",
+"Envío",
+"Padala"
+],
+[
+"Paiement (toi)",
+"Payment (you)",
+"Pago (tú)",
+"Bayad (ikaw)"
+],
+[
+"Impression",
+"Printing",
+"Impresión",
+"Pag-print"
+],
+[
+"BETA",
+"BETA",
+"BETA",
+"BETA"
+],
+[
+"Auto",
+"Auto",
+"Auto",
+"Auto"
+],
+[
+"⏺ Enregistrer",
+"⏺ Record",
+"⏺ Grabar",
+"⏺ I-record"
+],
+[
+"■ Stop & télécharger",
+"■ Stop & download",
+"■ Parar y descargar",
+"■ Itigil at i-download"
+],
+[
+"Quelle enveloppe ? (Thick Envelope)",
+"Which envelope? (Thick Envelope)",
+"¿Qué sobre? (Thick Envelope)",
+"Anong sobre? (Thick Envelope)"
+],
+[
+"Petite",
+"Small",
+"Pequeño",
+"Maliit"
+],
+[
+"Moyenne",
+"Medium",
+"Mediano",
+"Katamtaman"
+],
+[
+"Grosse",
+"Large",
+"Grande",
+"Malaki"
+],
+[
+"Hauteur (cm)",
+"Height (cm)",
+"Altura (cm)",
+"Taas (cm)"
+],
+[
+"Poids (g)",
+"Weight (g)",
+"Peso (g)",
+"Timbang (g)"
+],
+[
+"Je fais à la main",
+"I'll do it by hand",
+"Lo hago a mano",
+"Mano-mano ko gagawin"
+],
+[
+"Continuer",
+"Continue",
+"Continuar",
+"Ituloy"
+],
+[
+"Indique la hauteur (cm).",
+"Enter the height (cm).",
+"Indica la altura (cm).",
+"Ilagay ang taas (cm)."
+],
+[
+"Indique le poids (g).",
+"Enter the weight (g).",
+"Indica el peso (g).",
+"Ilagay ang timbang (g)."
+],
+[
+"Custom set : fabriqué où ?",
+"Custom set: made where?",
+"Custom set: ¿fabricado dónde?",
+"Custom set: saan ginawa?"
+],
+[
+"custom set : fabriqué où ?",
+"custom set: made where?",
+"custom set: ¿fabricado dónde?",
+"custom set: saan ginawa?"
+],
+[
+"Québec",
+"Quebec",
+"Quebec",
+"Quebec"
+],
+[
+"Chine",
+"China",
+"China",
+"China"
+],
+[
+"Hong Kong",
+"Hong Kong",
+"Hong Kong",
+"Hong Kong"
+],
+[
+"je remplis les champs vides…",
+"filling the empty fields…",
+"relleno los campos vacíos…",
+"pinupunan ang mga blangko…"
+],
+[
+"je remplis…",
+"filling in…",
+"relleno…",
+"pinupunan…"
+],
+[
+"taille et poids ?",
+"size and weight?",
+"¿tamaño y peso?",
+"laki at timbang?"
+],
+[
+"à la main",
+"by hand",
+"a mano",
+"mano-mano"
+],
+[
+"Enveloppe à remplir à la main.",
+"Fill the envelope in by hand.",
+"Rellena el sobre a mano.",
+"Punan nang mano-mano ang sobre."
+],
+[
+"je cherche la moins chère…",
+"looking for the cheapest…",
+"busco la más barata…",
+"hinahanap ang pinakamura…"
+],
+[
+"assurance décochée",
+"insurance unchecked",
+"seguro desmarcado",
+"naka-uncheck ang insurance"
+],
+[
+"assurance ENCORE cochée",
+"insurance STILL checked",
+"seguro TODAVÍA marcado",
+"naka-check PA ang insurance"
+],
+[
+"case assurance introuvable",
+"insurance box not found",
+"casilla de seguro no encontrada",
+"hindi makita ang insurance box"
+],
+[
+"livraison NON choisie",
+"shipping NOT chosen",
+"envío NO elegido",
+"HINDI napili ang padala"
+],
+[
+"aucun tarif trouvé",
+"no rate found",
+"ninguna tarifa encontrada",
+"walang nakitang rate"
+],
+[
+"vérifie, puis clique « Pay for Shipment »",
+"check, then click “Pay for Shipment”",
+"revisa y pulsa «Pay for Shipment»",
+"i-check, tapos pindutin ang “Pay for Shipment”"
+],
+[
+"Tout est prêt : vérifie, puis clique toi-même « Pay for Shipment ».",
+"All set: check, then click “Pay for Shipment” yourself.",
+"Todo listo: revisa y pulsa tú mismo «Pay for Shipment».",
+"Handa na lahat: i-check, tapos ikaw ang pumindot ng “Pay for Shipment”."
+],
+[
+"payé",
+"paid",
+"pagado",
+"bayad na"
+],
+[
+"« Print Postage » lancé",
+"“Print Postage” started",
+"«Print Postage» lanzado",
+"Sinimulan ang “Print Postage”"
+],
+[
+"« Print Postage » lancé. Le suivi part vers la commande (Etsy) dans la minute.",
+"“Print Postage” started. The tracking goes to the order (Etsy) within a minute.",
+"«Print Postage» lanzado. El seguimiento llega al pedido (Etsy) en un minuto.",
+"Sinimulan ang “Print Postage”. Mapupunta ang tracking sa order (Etsy) sa loob ng isang minuto."
+],
+[
+"je vérifie la description d’abord…",
+"checking the description first…",
+"reviso la descripción primero…",
+"tinitingnan muna ang description…"
+],
+[
+"Page de paiement déjà atteinte : je ne touche plus à rien sur cet envoi (modifie à la main). « ↻ Relancer » pour refaire l’automatique.",
+"Payment page already reached: I won't touch this shipment anymore (edit by hand). “↻ Restart” to redo it automatically.",
+"Página de pago ya alcanzada: no toco nada más en este envío (modifica a mano). «↻ Reiniciar» para rehacerlo automático.",
+"Naabot na ang payment page: hindi ko na gagalawin ang padalang ito (i-edit nang mano-mano). “↻ Ulitin” para gawin ulit nang automatic."
+],
+[
+"commande introuvable : remplis à la main",
+"order not found: fill in by hand",
+"pedido no encontrado: rellena a mano",
+"hindi makita ang order: punan nang mano-mano"
+],
+[
+"commande inconnue de l’app : remplis à la main",
+"order unknown to the app: fill in by hand",
+"pedido desconocido para la app: rellena a mano",
+"hindi kilala ng app ang order: punan nang mano-mano"
+],
+[
+"Je ne trouve pas la commande de cet envoi (ni « Order ID », ni lien Live, ni nom recherché).",
+"I can't find this shipment's order (no “Order ID”, no Live link, no searched name).",
+"No encuentro el pedido de este envío (ni «Order ID», ni enlace Live, ni nombre buscado).",
+"Hindi ko makita ang order ng padalang ito (walang “Order ID”, Live link, o hinanap na pangalan)."
+],
+[
+"province à choisir à la main",
+"pick the province by hand",
+"elige la provincia a mano",
+"piliin nang mano-mano ang province"
+],
+[
+"rien à compléter",
+"nothing to fill in",
+"nada que completar",
+"walang kailangang punan"
+],
+[
+"Copier le diagnostic",
+"Copy the diagnostic",
+"Copiar el diagnóstico",
+"Kopyahin ang diagnostic"
+],
+[
+"Copié ✓ (colle-le dans la conversation)",
+"Copied ✓ (paste it in the conversation)",
+"Copiado ✓ (pégalo en la conversación)",
+"Nakopya ✓ (i-paste sa usapan)"
+],
+[
+"Copie impossible",
+"Can't copy",
+"No se puede copiar",
+"Hindi makopya"
+],
+[
+"Automatisation Chit Chats",
+"Chit Chats automation",
+"Automatización de Chit Chats",
+"Chit Chats automation"
+],
+[
+"Remplit l’envoi, demande l’enveloppe, choisit la livraison (jamais le paiement)",
+"Fills the shipment, asks for the envelope, picks the shipping (never pays)",
+"Rellena el envío, pide el sobre, elige el envío (nunca paga)",
+"Pinupunan ang padala, tinatanong ang sobre, pinipili ang padala (hindi nagbabayad)"
+],
+[
+"Ouvre une commande dans l'admin Shopify.",
+"Open an order in the Shopify admin.",
+"Abre un pedido en el admin de Shopify.",
+"Magbukas ng order sa Shopify admin."
+],
+[
+"Ouvrir sur Chit Chats",
+"Open on Chit Chats",
+"Abrir en Chit Chats",
+"Buksan sa Chit Chats"
+],
+[
+"Mettre à jour",
+"Update",
+"Actualizar",
+"I-update"
+],
+[
+"Le bouton s'active sur la page d'une commande Shopify.",
+"The button turns on on a Shopify order page.",
+"El botón se activa en la página de un pedido de Shopify.",
+"Gagana ang button sa page ng Shopify order."
+],
+[
+"Pas sur une commande",
+"Not on an order",
+"No estás en un pedido",
+"Wala sa order"
+],
+[
+"Le numéro de commande est aussi copié : colle-le si besoin.",
+"The order number is copied too: paste it if needed.",
+"El número de pedido también se copia: pégalo si hace falta.",
+"Nakopya rin ang order number: i-paste kung kailangan."
+],
+[
+"Numéro de commande introuvable sur la page.",
+"Order number not found on the page.",
+"Número de pedido no encontrado en la página.",
+"Hindi makita ang order number sa page."
+],
+[
+"App pas encore jointe",
+"App not reached yet",
+"App aún no contactada",
+"Hindi pa naaabot ang app"
+],
+[
+"Qui utilise l’app ?",
+"Who is using the app?",
+"¿Quién usa la app?",
+"Sino ang gumagamit ng app?"
+],
+[
+"Langue seulement",
+"Language only",
+"Solo idioma",
+"Wika lang"
+],
+[
+"Personne choisie",
+"No one chosen",
+"Nadie elegido",
+"Walang napili"
+],
+[
+"Ajoute l’équipe dans Réglages → Équipe.",
+"Add the team in Settings → Team.",
+"Añade el equipo en Ajustes → Equipo.",
+"Idagdag ang team sa Settings → Team."
+]
+];
+globalThis.RQI18nPatterns = [
+[
+"il y a (\\d+) min",
+"$1 min ago",
+"hace $1 min",
+"$1 min ang nakalipas"
+],
+[
+"il y a (\\d+) h",
+"$1 h ago",
+"hace $1 h",
+"$1 oras ang nakalipas"
+],
+[
+"il y a (\\d+) j",
+"$1 d ago",
+"hace $1 d",
+"$1 araw ang nakalipas"
+],
+[
+"il y a (\\d+) minutes?",
+"$1 minute(s) ago",
+"hace $1 minuto(s)",
+"$1 minuto ang nakalipas"
+],
+[
+"il y a (\\d+) heures?",
+"$1 hour(s) ago",
+"hace $1 hora(s)",
+"$1 oras ang nakalipas"
+],
+[
+"il y a (\\d+) jours?",
+"$1 day(s) ago",
+"hace $1 día(s)",
+"$1 araw ang nakalipas"
+],
+[
+"(il y a .+?) — (.+)",
+"$1 — $2",
+"$1 — $2",
+"$1 — $2"
+],
+[
+"(\\d+) j",
+"$1 d",
+"$1 d",
+"$1 araw"
+],
+[
+"Commande reçue il y a (\\d+) jour\\(s\\)",
+"Order received $1 day(s) ago",
+"Pedido recibido hace $1 día(s)",
+"Natanggap ang order $1 araw na ang nakalipas"
+],
+[
+"Commande · (\\d+) pièces",
+"Order · $1 parts",
+"Pedido · $1 piezas",
+"Order · $1 piyesa"
+],
+[
+"(\\d+) pièces regroupées",
+"$1 parts stacked",
+"$1 piezas agrupadas",
+"$1 piyesang pinagsama"
+],
+[
+"(\\d+) pièce\\(s\\)",
+"$1 part(s)",
+"$1 pieza(s)",
+"$1 piyesa"
+],
+[
+"(\\d+) pièce\\(s\\) affichée\\(s\\)",
+"$1 part(s) shown",
+"$1 pieza(s) mostrada(s)",
+"$1 piyesang ipinapakita"
+],
+[
+"(\\d+) pièce\\(s\\) sélectionnée\\(s\\)",
+"$1 part(s) selected",
+"$1 pieza(s) seleccionada(s)",
+"$1 piyesang napili"
+],
+[
+"(\\d+) pièce\\(s\\) → (.+)",
+"$1 part(s) → $2",
+"$1 pieza(s) → $2",
+"$1 piyesa → $2"
+],
+[
+"(\\d+) commande\\(s\\)",
+"$1 order(s)",
+"$1 pedido(s)",
+"$1 order"
+],
+[
+"(\\d+) échec\\(s\\)",
+"$1 failure(s)",
+"$1 fallo(s)",
+"$1 palya"
+],
+[
+"(\\d+) échec\\(s\\) affiché\\(s\\)(.*)",
+"$1 failure(s) shown$2",
+"$1 fallo(s) mostrado(s)$2",
+"$1 palyang ipinapakita$2"
+],
+[
+"(\\d+) échec\\(s\\) enregistré\\(s\\) : remis dans « À imprimer »",
+"$1 failure(s) saved: back in “To print”",
+"$1 fallo(s) guardado(s): de vuelta en «Por imprimir»",
+"$1 palyang na-save: bumalik sa “Ipi-print”"
+],
+[
+"(\\d+) sur (\\d+)",
+"$1 of $2",
+"$1 de $2",
+"$1 sa $2"
+],
+[
+"(\\d+) transition\\(s\\) refusée\\(s\\)",
+"$1 move(s) refused",
+"$1 cambio(s) rechazado(s)",
+"$1 galaw na tinanggihan"
+],
+[
+"(\\d+) nouvelle\\(s\\) pièce\\(s\\) importée\\(s\\)",
+"$1 new part(s) imported",
+"$1 pieza(s) nueva(s) importada(s)",
+"$1 bagong piyesang na-import"
+],
+[
+"Passer à (.+)",
+"Move to $1",
+"Pasar a $1",
+"Ilipat sa $1"
+],
+[
+"(.+) →",
+"$1 →",
+"$1 →",
+"$1 →"
+],
+[
+"Dans le bac · (.+)",
+"In the bin · $1",
+"En la caja · $1",
+"Nasa bin · $1"
+],
+[
+"Manque au bac( : .+?)?( — .+)?",
+"Missing from the bin$1$2",
+"Falta en la caja$1$2",
+"Kulang sa bin$1$2"
+],
+[
+"Ouvert sur Shopify · (.+)",
+"Open in Shopify · $1",
+"Abierto en Shopify · $1",
+"Bukas sa Shopify · $1"
+],
+[
+"Ouvert par (.+)",
+"Opened by $1",
+"Abierto por $1",
+"Binuksan ni $1"
+],
+[
+"Pièce #(\\d+) · unité (\\d+)",
+"Part #$1 · unit $2",
+"Pieza #$1 · unidad $2",
+"Piyesa #$1 · unit $2"
+],
+[
+"Dernière synchro (.+) ✓",
+"Last sync $1 ✓",
+"Última sincronización $1 ✓",
+"Huling sync $1 ✓"
+],
+[
+"Dernière synchro (.+) ⚠ erreur",
+"Last sync $1 ⚠ error",
+"Última sincronización $1 ⚠ error",
+"Huling sync $1 ⚠ error"
+],
+[
+"(\\d+)/(\\d+) connecteur\\(s\\)",
+"$1/$2 connector(s)",
+"$1/$2 conector(es)",
+"$1/$2 connector"
+],
+[
+"Thème : (.+)",
+"Theme: $1",
+"Tema: $1",
+"Theme: $1"
+],
+[
+"Changer de thème \\(suivant : (.+)\\)",
+"Change theme (next: $1)",
+"Cambiar tema (siguiente: $1)",
+"Palitan ang theme (susunod: $1)"
+],
+[
+"Synchro automatique : (.+)",
+"Automatic sync: $1",
+"Sincronización automática: $1",
+"Automatic sync: $1"
+],
+[
+"Annuler : (.+) \\(Ctrl\\+Z\\)",
+"Undo: $1 (Ctrl+Z)",
+"Deshacer: $1 (Ctrl+Z)",
+"I-undo: $1 (Ctrl+Z)"
+],
+[
+"Annulé : (.+)",
+"Undone: $1",
+"Deshecho: $1",
+"Na-undo: $1"
+],
+[
+"Regroupement : (.+)\\. Clique pour changer \\(par commande → une par une → identiques\\)\\.",
+"Stacking: $1. Click to change (by order → one by one → identical).",
+"Agrupación: $1. Pulsa para cambiar (por pedido → una por una → idénticas).",
+"Pag-grupo: $1. Pindutin para palitan (ayon sa order → isa-isa → magkakapareho)."
+],
+[
+"Importé depuis (\\w+) \\(commande (.+)\\)",
+"Imported from $1 (order $2)",
+"Importado de $1 (pedido $2)",
+"Na-import mula sa $1 (order $2)"
+],
+[
+"Ajoutée par (.+)",
+"Added by $1",
+"Añadida por $1",
+"Idinagdag ni $1"
+],
+[
+"Packé par (.+)",
+"Packed by $1",
+"Empacado por $1",
+"Na-pack ni $1"
+],
+[
+"A échoué ×(\\d+)",
+"Failed ×$1",
+"Falló ×$1",
+"Pumalya ×$1"
+],
+[
+"(.+) \\((\\d+)\\)",
+"$1 ($2)",
+"$1 ($2)",
+"$1 ($2)"
+],
+[
+"Mise dans le bac le (.+)",
+"Put in the bin on $1",
+"Puesta en la caja el $1",
+"Inilagay sa bin noong $1"
+],
+[
+"bac · (.+)",
+"bin · $1",
+"caja · $1",
+"bin · $1"
+],
+[
+"Dernier pack : (.+)",
+"Last pack: $1",
+"Último empaque: $1",
+"Huling pack: $1"
+],
+[
+"À racheter · (.+)",
+"To buy again · $1",
+"A recomprar · $1",
+"Bibilhin ulit · $1"
+],
+[
+"Signalé (\\d+) fois · dernier scan (.+)",
+"Reported $1 time(s) · last scan $2",
+"Avisado $1 vez/veces · último escaneo $2",
+"Nai-report nang $1 beses · huling scan $2"
+],
+[
+"Scanner quand il en reste (.+?) · À commander : (.+?) · (.+)",
+"Scan when $1 left · To order: $2 · $3",
+"Escanear cuando queden $1 · A pedir: $2 · $3",
+"I-scan kapag $1 na lang · Ioorder: $2 · $3"
+],
+[
+"Scanner quand il en reste (.+?) · À commander : (.+)",
+"Scan when $1 left · To order: $2",
+"Escanear cuando queden $1 · A pedir: $2",
+"I-scan kapag $1 na lang · Ioorder: $2"
+],
+[
+"Scanner quand il en reste (.+)",
+"Scan when $1 left",
+"Escanear cuando queden $1",
+"I-scan kapag $1 na lang"
+],
+[
+"Qu’est-ce qui manque \\? — (.+)",
+"What's missing? — $1",
+"¿Qué falta? — $1",
+"Ano ang kulang? — $1"
+],
+[
+"Supprimer « (.+) » \\? Sa carte imprimée ne fonctionnera plus\\.",
+"Delete “$1”? Its printed card will stop working.",
+"¿Eliminar «$1»? Su tarjeta impresa dejará de funcionar.",
+"Burahin ang “$1”? Hindi na gagana ang naka-print na card nito."
+],
+[
+"« (.+) » : à racheter",
+"“$1”: to buy again",
+"«$1»: a recomprar",
+"“$1”: bibilhin ulit"
+],
+[
+"était déjà noté « à racheter » \\((.+)\\)\\. Merci, c’est bon !",
+"was already marked “to buy again” ($1). Thanks, all good!",
+"ya estaba anotado «a recomprar» ($1). ¡Gracias, todo bien!",
+"naka-note na na “bibilhin ulit” ($1). Salamat, ayos na!"
+],
+[
+"Racheter : (.+)",
+"Buy again: $1",
+"Recomprar: $1",
+"Bilhin ulit: $1"
+],
+[
+"(\\d+) (à imprimer|en impression|échec|imprimée|expédiée)",
+"$1 $2",
+"$1 $2",
+"$1 $2"
+],
+[
+"Pourquoi il en manque (\\d+) \\?",
+"Why are $1 missing?",
+"¿Por qué faltan $1?",
+"Bakit kulang ng $1?"
+],
+[
+"✓ « (.+) » ajoutée à la commande\\.",
+"✓ “$1” added to the order.",
+"✓ «$1» añadida al pedido.",
+"✓ Naidagdag ang “$1” sa order."
+],
+[
+"Pièce non ajoutée : (.+)",
+"Part not added: $1",
+"Pieza no añadida: $1",
+"Hindi naidagdag ang piyesa: $1"
+],
+[
+"Tag non enregistré : (.+)",
+"Tag not saved: $1",
+"Etiqueta no guardada: $1",
+"Hindi na-save ang tag: $1"
+],
+[
+"Enregistré ici, mais pas dans Shopify : (.+)",
+"Saved here, but not in Shopify: $1",
+"Guardado aquí, pero no en Shopify: $1",
+"Na-save dito, pero hindi sa Shopify: $1"
+],
+[
+"Déjà packée par (.+) \\((.+)\\)\\.",
+"Already packed by $1 ($2).",
+"Ya empacado por $1 ($2).",
+"Na-pack na ni $1 ($2)."
+],
+[
+"Bac commencé par (.+) : il manque encore des pièces\\. Tu peux compléter quand tu veux\\.",
+"Bin started by $1: parts are still missing. You can finish it any time.",
+"Caja empezada por $1: aún faltan piezas. Puedes completarla cuando quieras.",
+"Sinimulan ni $1 ang bin: may kulang pang piyesa. Puwede mong kumpletuhin kahit kailan."
+],
+[
+"📦 Bac — commande (.*)",
+"📦 Bin — order $1",
+"📦 Caja — pedido $1",
+"📦 Bin — order $1"
+],
+[
+"À savoir : cette commande a été annulée \\((.+)\\) : ne la packe pas\\.",
+"Heads up: this order was cancelled ($1): don't pack it.",
+"Atención: este pedido fue cancelado ($1): no lo empaques.",
+"Paalala: kinansela ang order na ito ($1): huwag i-pack."
+],
+[
+"À savoir : cette commande est déjà marquée expédiée \\((.+)\\)\\.",
+"Heads up: this order is already marked shipped ($1).",
+"Atención: este pedido ya está marcado como enviado ($1).",
+"Paalala: naka-mark na itong naipadala ($1)."
+],
+[
+"Le bac n'a pas pu être enregistré \\((.+)\\)\\. Ce n'est pas de ta faute et rien n'a été modifié : réessaie dans un instant\\.",
+"The bin couldn't be saved ($1). It's not your fault and nothing changed: try again in a moment.",
+"No se pudo guardar la caja ($1). No es tu culpa y no se cambió nada: reinténtalo en un momento.",
+"Hindi na-save ang bin ($1). Hindi mo kasalanan at walang nabago: subukan ulit mamaya."
+],
+[
+"👆 Il manque des pièces pour « (.+) » : dis-nous pourquoi \\(menu sous la quantité\\), puis appuie encore sur « Enregistrer le bac »\\.",
+"👆 Parts are missing for “$1”: tell us why (menu under the quantity), then press “Save the bin” again.",
+"👆 Faltan piezas de «$1»: dinos por qué (menú bajo la cantidad) y vuelve a pulsar «Guardar la caja».",
+"👆 May kulang na piyesa sa “$1”: sabihin kung bakit (menu sa ilalim ng dami), tapos pindutin ulit ang “I-save ang bin”."
+],
+[
+"✓ Bac complet · (.+)",
+"✓ Bin complete · $1",
+"✓ Caja completa · $1",
+"✓ Kumpleto ang bin · $1"
+],
+[
+"📦 Bac commencé · (.+) · (\\d+)/(\\d+)",
+"📦 Bin started · $1 · $2/$3",
+"📦 Caja empezada · $1 · $2/$3",
+"📦 Sinimulan ang bin · $1 · $2/$3"
+],
+[
+"Bac complet — (.+)",
+"Bin complete — $1",
+"Caja completa — $1",
+"Kumpleto ang bin — $1"
+],
+[
+"💬 (\\d+) commentaires? de l’équipe sur cette commande",
+"💬 $1 team comment(s) on this order",
+"💬 $1 comentario(s) del equipo en este pedido",
+"💬 $1 comment ng team sa order na ito"
+],
+[
+"(.+) · (il y a \\d+ (?:min|h|j))",
+"$1 · $2",
+"$1 · $2",
+"$1 · $2"
+],
+[
+"Ouvrir (.+) sur Chit Chats \\(le numéro est copié\\)",
+"Open $1 on Chit Chats (the number is copied)",
+"Abrir $1 en Chit Chats (el número se copia)",
+"Buksan ang $1 sa Chit Chats (nakopya ang number)"
+],
+[
+"Ouvrir (.+) sur Chit Chats \\(cherché par le nom de l’acheteur\\)",
+"Open $1 on Chit Chats (searched by buyer name)",
+"Abrir $1 en Chit Chats (buscado por el nombre del comprador)",
+"Buksan ang $1 sa Chit Chats (hinanap ayon sa pangalan ng buyer)"
+],
+[
+"Lien Chit Chats actif : (.+) \\(cliquer pour couper\\)",
+"Chit Chats link on: $1 (click to cut)",
+"Enlace Chit Chats activo: $1 (pulsa para cortar)",
+"Naka-link sa Chit Chats: $1 (pindutin para putulin)"
+],
+[
+"🖨 VAT envoyée à (.+)",
+"🖨 VAT sent to $1",
+"🖨 IVA enviada a $1",
+"🖨 Naipadala ang VAT sa $1"
+],
+[
+"Resin Queue a complété (\\S+) : (.+)\\. Vérifie puis enregistre\\.",
+"Resin Queue filled in $1: $2. Check, then save.",
+"Resin Queue completó $1: $2. Revisa y guarda.",
+"Pinunan ng Resin Queue ang $1: $2. I-check, tapos i-save."
+],
+[
+"a complété (\\S+) : (.+)\\. Vérifie puis enregistre\\.",
+"filled in $1: $2. Check, then save.",
+"completó $1: $2. Revisa y guarda.",
+"pinunan ang $1: $2. I-check, tapos i-save."
+],
+[
+"Resin Queue : rien complété pour (.+) \\((.+)\\)\\.",
+"Resin Queue: nothing filled in for $1 ($2).",
+"Resin Queue: nada completado para $1 ($2).",
+"Resin Queue: walang napunan para sa $1 ($2)."
+],
+[
+"rien complété pour (.+) \\((.+)\\)\\.",
+"nothing filled in for $1 ($2).",
+"nada completado para $1 ($2).",
+"walang napunan para sa $1 ($2)."
+],
+[
+"Resin Queue : rien à compléter pour (.+) \\(les champs sont déjà remplis, ou pas reconnus\\)\\.",
+"Resin Queue: nothing to fill in for $1 (fields already filled, or not recognized).",
+"Resin Queue: nada que completar para $1 (campos ya rellenos, o no reconocidos).",
+"Resin Queue: walang kailangang punan para sa $1 (puno na, o hindi kilala)."
+],
+[
+"code HS ×(\\d+)",
+"HS code ×$1",
+"código HS ×$1",
+"HS code ×$1"
+],
+[
+"pays d'origine ×(\\d+)",
+"origin country ×$1",
+"país de origen ×$1",
+"bansang pinagmulan ×$1"
+],
+[
+"description ×(\\d+)",
+"description ×$1",
+"descripción ×$1",
+"description ×$1"
+],
+[
+"identifiant produit ×(\\d+)",
+"product ID ×$1",
+"ID de producto ×$1",
+"product ID ×$1"
+],
+[
+"poids 1 g ×(\\d+)",
+"weight 1 g ×$1",
+"peso 1 g ×$1",
+"timbang 1 g ×$1"
+],
+[
+"fabricant ×(\\d+)",
+"manufacturer ×$1",
+"fabricante ×$1",
+"manufacturer ×$1"
+],
+[
+"1 ligne VAT : (\\d+) produits, (.+)",
+"1 VAT line: $1 products, $2",
+"1 línea IVA: $1 productos, $2",
+"1 VAT line: $1 produkto, $2"
+],
+[
+"(.+) \\(\\$(.+)\\) choisi",
+"$1 ($$2) chosen",
+"$1 ($$2) elegido",
+"$1 ($$2) napili"
+],
+[
+"Chit Chats refuse l’étape « (.+) » \\(voir les erreurs en rouge\\)\\. Corrige puis clique « Save and continue »\\.",
+"Chit Chats refuses the “$1” step (see the errors in red). Fix, then click “Save and continue”.",
+"Chit Chats rechaza el paso «$1» (mira los errores en rojo). Corrige y pulsa «Save and continue».",
+"Tinanggihan ng Chit Chats ang hakbang na “$1” (tingnan ang pula). Ayusin, tapos pindutin ang “Save and continue”."
+],
+[
+"Je ne trouve pas (.+) sur cette page : remplis-les à la main\\.",
+"I can't find $1 on this page: fill them in by hand.",
+"No encuentro $1 en esta página: rellénalos a mano.",
+"Hindi ko makita ang $1 sa page na ito: punan nang mano-mano."
+],
+[
+"(.+) à remplir à la main",
+"$1 to fill in by hand",
+"$1 a rellenar a mano",
+"$1 na pupunan nang mano-mano"
+],
+[
+"REC (\\d+:\\d+) · (\\d+) évènements( · plein)?",
+"REC $1 · $2 events$3",
+"REC $1 · $2 eventos$3",
+"REC $1 · $2 event$3"
+],
+[
+"Mettre à jour \\(v(.+)\\)",
+"Update (v$1)",
+"Actualizar (v$1)",
+"I-update (v$1)"
+]
+];

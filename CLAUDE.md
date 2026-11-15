@@ -19,6 +19,10 @@ docker compose up -d --build      # stack complète : app + worker + updater
   une première ligne claire, puis le pourquoi.
 - Écrire comme le code autour : mêmes noms, même densité de commentaires (ils expliquent le
   *pourquoi*). Pas de dépendance ni d'étape de build côté front.
+- **Traductions** (English, Español, Filipino) : l'interface reste écrite en français ; `public/js/i18n.js` traduit ce
+  qui s'affiche d'après la table `scripts/i18n-table.py` (relancer `python3 scripts/i18n-table.py`, qui écrit
+  `public/js/i18n-table.js` et `chrome-extension/i18n-table.js`). Un nouveau texte des pages de l'atelier (Resin Queue,
+  kiosque, inventaire du téléphone, page du code QR, extension) s'ajoute à cette table. Les Réglages restent en français.
 - Dans une chaîne JS entre apostrophes, **pas d'apostrophe** (`'qu'il'` casse tout le front) :
   utiliser `’`, des guillemets ou des gabarits. `tests/frontend-syntax.test.js` le détecte.
 

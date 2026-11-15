@@ -55,3 +55,8 @@ extensionRouter.post('/qz/sign', (req, res) => {
   if (typeof request !== 'string' || !request) return res.status(400).json({ error: 'request manquant' });
   res.json({ signature: qzSign(request) });
 });
+
+/** L'équipe et la langue de chacun (l'extension traduit ses fenêtres dans la langue de la personne réglée). */
+extensionRouter.get('/team', (req, res) => {
+  res.json({ members: getSettings()['team.members'] });
+});

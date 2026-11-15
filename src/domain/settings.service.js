@@ -121,6 +121,23 @@ export const DEFINITIONS = [
   },
 
   // --- Production ---------------------------------------------------------
+  {
+    // l'équipe : nom + langue de l'interface (fr, en, es, fil). Choisir son nom en haut à droite met l'app dans sa langue.
+    key: 'team.members',
+    group: 'team',
+    label: 'Équipe',
+    type: 'json',
+    clean: (value) => {
+      const seen = new Set();
+      return [].concat(Array.isArray(value) ? value : [])
+        .map((member) => ({
+          name: String(member?.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 40),
+          lang: ['fr', 'en', 'es', 'fil'].includes(member?.lang) ? member.lang : 'fr',
+        }))
+        .filter((member) => member.name && !seen.has(member.name.toLowerCase()) && seen.add(member.name.toLowerCase()));
+    },
+    fallback: () => [],
+  },
   { key: 'production.uvOptions', group: 'production', label: 'Options UV', type: 'list', hint: 'Une valeur par ligne. Affichée sur chaque carte.', fallback: () => ['Standard', 'A', 'B', 'C'] },
   { key: 'production.commentOptions', group: 'production', label: 'Commentaires prédéfinis', type: 'list', hint: 'Liste déroulante disponible sur chaque pièce.', fallback: () => ['Réimpression', 'Support à revoir', 'Attente client', 'Pièce cassée', 'Prioritaire', 'Échantillon'] },
   { key: 'production.printerOptions', group: 'production', label: 'Imprimantes', type: 'list', hint: 'Une valeur par ligne. Liste déroulante pour assigner une pièce à une imprimante.', fallback: () => ['Mars 4 Ultra #1', 'Mars 4 Ultra #2', 'Mars 4 Ultra #3', 'Mars 4 Ultra #4'] },
@@ -219,6 +236,13 @@ const parse = (definition, raw) => {
       } catch {
         return definition.fallback();
       }
+    case 'json':
+      try {
+        const value = JSON.parse(raw);
+        return definition.clean ? definition.clean(value) : value;
+      } catch {
+        return definition.fallback();
+      }
     default:
       return raw;
   }
@@ -234,6 +258,8 @@ const serialize = (definition, value) => {
       return JSON.stringify(
         [].concat(value ?? []).map((item) => String(item).trim()).filter(Boolean),
       );
+    case 'json':
+      return JSON.stringify(definition.clean ? definition.clean(value) : value ?? null);
     default:
       return value === null || value === undefined ? '' : String(value).trim();
   }

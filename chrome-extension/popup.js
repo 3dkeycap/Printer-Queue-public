@@ -1,3 +1,7 @@
+// la fenêtre de l'extension se traduit aussi (langue de la personne réglée, voir i18n-ext-start.js)
+globalThis.RQI18n?.observe(document.documentElement);
+chrome.runtime.sendMessage({ type: 'ui-lang' }).then((result) => result?.lang && globalThis.RQI18n?.setLang(result.lang, { remember: false })).catch(() => {});
+
 const $ = (id) => document.getElementById(id);
 const ORDER_URL = [/^https:\/\/admin\.shopify\.com\/store\/[^/]+\/orders\/(\d+)/, /^https:\/\/[^/]+\.myshopify\.com\/admin\/orders\/(\d+)/];
 

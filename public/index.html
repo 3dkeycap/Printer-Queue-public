@@ -11,6 +11,9 @@
     <meta name="description" content="File d'attente d'impression et inventaire pour une ferme d'imprimantes 3D résine." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230F0E0C'/><path d='M9 12h14v4H9zM11 17h10v6H11z' fill='%23D9C7A3'/></svg>" />
     <link rel="stylesheet" href="/css/app.css" />
+    <!-- traduction (English, Español, Filipino) : avant l'app, pour qu'aucun texte ne s'affiche d'abord en français -->
+    <script src="/js/i18n-table.js"></script>
+    <script src="/js/i18n.js"></script>
   </head>
   <body>
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none">
@@ -108,6 +111,7 @@
             <button class="ghost-btn" id="undo-btn" title="Rien à annuler" disabled>
               <svg class="icon"><use href="#i-undo" /></svg><span>Annuler</span>
             </button>
+            <button class="ghost-btn person-btn" id="person-btn" title="Qui utilise l’app ?"></button>
             <button class="ghost-btn" id="tutorial-btn" title="Tutoriel : visite guidée de cette page">
               <svg class="icon"><use href="#i-help" /></svg><span>Tutoriel</span>
             </button>

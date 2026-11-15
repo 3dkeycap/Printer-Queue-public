@@ -7,6 +7,28 @@
 const token = document.body.dataset.token;
 const box = document.getElementById('box');
 
+// la page se traduit (langue du téléphone par défaut) ; petits boutons pour changer de langue
+globalThis.RQI18n?.observe(document.documentElement);
+if (globalThis.RQI18n) {
+  const langs = document.createElement('div');
+  langs.className = 'langs';
+  langs.setAttribute('data-no-i18n', '');
+  const paint = () => langs.querySelectorAll('button').forEach((button) => button.classList.toggle('on', button.dataset.lang === RQI18n.getLang()));
+  for (const [code] of Object.entries(RQI18n.LANGS)) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.lang = code;
+    button.textContent = code === 'fil' ? 'FIL' : code.toUpperCase();
+    button.addEventListener('click', () => {
+      RQI18n.setLang(code);
+      paint();
+    });
+    langs.append(button);
+  }
+  document.body.append(langs);
+  paint();
+}
+
 const html = (tone, big, title, body, extra = '') => {
   box.className = tone;
   box.innerHTML = `<div class="big">${big}</div><h1>${title}</h1>${body}${extra}`;

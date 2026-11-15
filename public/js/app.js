@@ -1,3 +1,4 @@
+import { mountPersonPicker } from './person.js';
 import './bug-logs.js';
 import { api } from './api.js';
 import { mountBugButton } from './bug-report.js';
@@ -799,6 +800,8 @@ const render = () => {
   const scroll = captureScroll();
   const root = clear(dom.view);
   root.classList.remove('is-board');
+  // les Réglages (et l'inventaire du bureau) restent en français : seules les pages de l'atelier sont traduites
+  root.toggleAttribute('data-no-i18n', ['integrations', 'inventory'].includes(state.view));
 
   if (state.view === 'board') {
     if (!state.parts.length) {
@@ -1128,6 +1131,9 @@ const consumeOAuthRedirect = () => {
 };
 
 const boot = async () => {
+  // traduction de tout ce qui s'affiche (voir i18n.js) ; la langue est celle de la personne choisie en haut à droite
+  globalThis.RQI18n?.observe(document.documentElement);
+  mountPersonPicker(document.getElementById('person-btn'));
   applyMode();
   mountBugButton();
   if (isKiosk) {

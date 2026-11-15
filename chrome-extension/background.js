@@ -216,6 +216,21 @@ const qzPrintImage = async ({ image, printer, width = 2, height = 1 }) => {
   }
 };
 
+/* ------------------------------------------------------------- langue */
+
+// l'équipe (Réglages → Équipe de l'app) : relue au plus toutes les 5 minutes
+let teamCache = { at: 0, members: [] };
+const uiLang = async () => {
+  const config = await getConfig();
+  const { lastPacker = '' } = await chrome.storage.local.get('lastPacker');
+  if (Date.now() - teamCache.at > 5 * 60000) {
+    const result = await appFetch('/api/team');
+    if (Array.isArray(result?.members)) teamCache = { at: Date.now(), members: result.members };
+  }
+  const find = (name) => teamCache.members.find((member) => member.name.toLowerCase() === String(name ?? '').trim().toLowerCase());
+  return (find(config.user) ?? find(lastPacker))?.lang ?? 'fr';
+};
+
 const report = async (tabId, orderExternalId, state) => {
   const config = await getConfig();
   return appFetch('/api/presence/shopify', {
@@ -434,6 +449,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // étiquette VAT d'une commande Etsy : l'app donne le total et la VAT, la page dessine le PNG
   if (message?.type === 'order-vat') {
     appFetch(`/api/packing/etsy/${encodeURIComponent(message.orderExternalId)}/vat`).then(sendResponse);
+    return true;
+  }
+  // langue des fenêtres de l'extension : celle de la personne réglée (options) ou de la dernière qui a packé
+  if (message?.type === 'ui-lang') {
+    uiLang().then((lang) => sendResponse({ lang }));
     return true;
   }
   // envoi payé dans Chit Chats : l'app relit les envois tout de suite (commande expédiée, suivi envoyé à Etsy)

@@ -492,6 +492,7 @@ Le `POST` d'une commande Shopify (ou par id local) ajoute ensuite les tags « Pa
 | `GET` | `/inventory/cards?ids=1,2&style=small\|large` | `small` (défaut) : 2 po × 1 po, une par page ; `large` : 4 par feuille Lettre avec photo, minimum, quantité à commander, fournisseur |
 | `GET` `POST` | `/r/:token` · `/r/:token/scan` · `/r/:token/undo` | **Publics** (sans mot de passe) : page ouverte par le code QR ; le `GET` ne change rien, c'est son script qui envoie le `POST` |
 | `GET` `POST` | `/api/bugs/webhook` · `/api/bugs/webhook/test` | État du dernier envoi du webhook « nouveau bug » ; envoi d'un faux bug (`{ url? }`) |
+| `GET` | `/api/team` | L'équipe et la langue de chacun (`team.members` : `[{ name, lang: 'fr'\|'en'\|'es'\|'fil' }]`, Réglages → Équipe) ; lu par le sélecteur « Qui utilise l'app ? » et par l'extension |
 | `GET` `POST` | `/api/qz/certificate` · `/api/qz/certificate.crt` · `/api/qz/sign` | **QZ Tray** (impression directe de l'étiquette VAT par l'extension) : certificat X.509 auto-signé de l'atelier (JSON, ou fichier à ajouter une fois dans QZ Tray → Site Manager → Allowed) ; `POST { request }` → `{ signature }` (RSA SHA512). Certificat et clé créés au premier appel (`src/integrations/qzTray.js`, sans openssl), gardés dans `settings` (`internal.qzCertificate`, `internal.qzPrivateKey`) ; la clé ne sort jamais |
 | `POST` | `/api/parts/:id/undo-failure` | Annule le dernier échec d'une pièce (Ctrl+Z) |
 | `GET` | `/api/failures` | Historique des échecs + taux d'échec par fichier (échecs / (échecs + impressions réussies)) |
@@ -731,3 +732,22 @@ image générique. Elle est reconnue automatiquement (une même image utilisée 
 différents n'est pas la photo d'un produit) et n'est affichée nulle part. Dans la fiche,
 « Pas la bonne photo » masque une image à la main (liste dans Réglages → Atelier → Photos masquées).
 Le mode simple retire aussi le bouton « Synchroniser » (la synchro automatique continue).
+
+## Traduction de l'interface (English, Español, Filipino)
+
+L'interface est écrite en français. `public/js/i18n.js` (le même fichier que `chrome-extension/i18n.js`) **traduit ce qui
+s'affiche** : textes, `title`, `placeholder`, boutons `<input>`, avec un `MutationObserver` (rien ne s'affiche d'abord en
+français). Il remplace seulement les textes qu'il connaît EXACTEMENT (table) et des modèles avec des parties variables
+(« Commande · 4 pièces », « il y a 3 min » ; une partie variable connue est traduite aussi, une liste « a, b » morceau par
+morceau). Le reste (produits, clients, notes, tags) ne bouge pas. Le français d'origine est gardé : changer de langue ne
+recharge rien. `[data-no-i18n]` exclut une zone (Réglages, inventaire du bureau, noms des personnes).
+
+- **Table** : `scripts/i18n-table.py` -> `public/js/i18n-table.js` + `chrome-extension/i18n-table.js` (générés ; un test
+  vérifie que les copies de l'app et de l'extension sont identiques et que chaque texte a ses 3 langues).
+- **Langue** : `rpq.lang` (localStorage) ; `public/js/person.js` (« Qui utilise l'app ? ») la règle d'après
+  `team.members` (`GET /api/team`) et garde `rpq.person`. Sans choix : français sur l'app, langue du téléphone sur les
+  pages du téléphone (`i18n-phone.js`).
+- **Page du code QR** (publique) : scripts servis sous `/r/i18n*.js` (car `/js` est derrière le mot de passe).
+- **Extension** : `i18n-ext.js` (pas de localStorage : c'est celui de Shopify / Etsy / Chit Chats), `i18n.js`, puis
+  `i18n-ext-start.js`, qui traduit seulement `[data-resin-queue]` (et le shadow root du bac, `pack-panel.js`) — jamais la
+  page hôte. Langue : message `ui-lang` au service worker (personne des options, sinon dernière qui a packé).

@@ -102,6 +102,18 @@ Le sélecteur en haut de la page (ordinateur seulement) :
   **Échecs** et **Réglages**, ainsi que l'UV, le rush, la provenance et le numéro de commande
   sur les cartes.
 
+## Langue : English, Español, Filipino
+
+Chaque personne choisit **son nom en haut à droite** (bouton 👤 / 🌐 à côté de « Tutoriel », aussi sur le kiosque et sur
+l’inventaire du téléphone) : la page Resin Queue, le kiosque, l’inventaire du téléphone et l’extension Chrome s’affichent
+dans sa langue. On peut aussi choisir seulement une langue. Le choix est gardé sur l’appareil.
+
+- La liste des personnes et de leur langue : **Réglages → Équipe** (nom + Français / English / Español / Filipino).
+- **Extension Chrome** : elle prend la langue de la personne réglée dans ses options (ou de la dernière qui a packé).
+- **Page du code QR** : dans la langue du téléphone, avec des boutons FR / EN / ES / FIL en bas.
+- Ne sont jamais traduits : les noms de produits, les clients, les notes, les tags et les questions écrites par l’équipe.
+  Les Réglages restent en français.
+
 ## Réglages (mode Avancé)
 
 - **Boutiques** : connexion Shopify, Etsy et Chit Chats.

@@ -909,3 +909,13 @@ a.ghost-btn, a.primary-btn { text-decoration: none; }
 .inv-ans strong { font-size: 18px; font-weight: 800; color: var(--text); overflow-wrap: anywhere; }
 .inv-when { color: var(--muted); font-size: 12px; }
 .inv-answers { display: flex; flex-direction: column; gap: 4px; }
+
+/* « Qui utilise l'app ? » (person.js) : bouton en haut à droite + menu */
+.person-btn { gap: 6px; font-weight: 600; }
+.person-menu { position: fixed; z-index: 1000; min-width: 220px; max-height: 70vh; overflow: auto; padding: 6px; border-radius: 12px; border: 1px solid var(--line, #d5dbe8); background: var(--surface, #fff); color: var(--text, #1c2230); box-shadow: 0 20px 50px -18px rgba(0,0,0,.45); font: 14px system-ui, sans-serif; }
+.person-title { padding: 8px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted, #6a7590); }
+.person-item { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.person-item:hover { background: var(--surface-2, #eef1f6); }
+.person-item.is-on { background: color-mix(in srgb, var(--accent, #1f5fd6) 18%, transparent); font-weight: 700; }
+.person-item small { color: var(--muted, #6a7590); font-size: 12px; }
+.person-hint { margin: 4px 10px 8px; font-size: 13px; color: var(--muted, #6a7590); }

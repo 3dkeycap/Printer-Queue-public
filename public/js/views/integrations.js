@@ -9,6 +9,7 @@ import { apiTab } from './api-docs.js';
 
 const TABS = [
   { key: 'atelier', label: 'Atelier', icon: 'printer', desc: "Postes UV, tags, et ce qu'on n'imprime pas." },
+  { key: 'equipe', label: 'Équipe', icon: 'layers', desc: 'Les personnes de l’atelier et la langue de chacune : en choisissant son nom en haut à droite, l’app (et l’extension) passe dans sa langue.' },
   { key: 'resines', label: 'Résines', icon: 'drop', desc: 'Les couleurs de résine, leur stock et leurs alias de détection.' },
   { key: 'boutiques', label: 'Boutiques', icon: 'plug', desc: 'Connexion à Shopify, Etsy et Chit Chats.' },
   { key: 'synchro', label: 'Synchronisation', icon: 'refresh', desc: 'À quelle fréquence on va chercher les commandes.' },
@@ -1017,6 +1018,53 @@ const runRow = (run) =>
 // les modifications pas encore enregistrées survivent au changement d'onglet et aux redessins de la vue
 const sharedDraft = {};
 
+/*
+ * Onglet « Équipe » : nom + langue de chaque personne (team.members). Enregistré tout de suite à chaque changement.
+ * La langue sert au sélecteur « Qui utilise l'app ? » (person.js) et à l'extension (GET /api/team).
+ */
+const LANG_NAMES = { fr: 'Français', en: 'English', es: 'Español', fil: 'Filipino (Tagalog)' };
+const tabEquipe = (actions) => {
+  const members = [...(state.settings.find((item) => item.key === 'team.members')?.value ?? [])];
+  const save = (next) => actions.saveSettings({ 'team.members': next });
+  const langSelect = (value, onchange) =>
+    el('select', { class: 'select', onchange: (event) => onchange(event.target.value) }, Object.entries(LANG_NAMES).map(([code, name]) => el('option', { value: code, selected: code === value }, name)));
+  const name = el('input', { class: 'cell-input', placeholder: 'Nom (ex. Ana)', maxlength: 40 });
+  let lang = 'fr';
+  const add = () => {
+    const value = name.value.trim();
+    if (!value) return toast('Écris un nom', 'err');
+    if (members.some((member) => member.name.toLowerCase() === value.toLowerCase())) return toast('Ce nom est déjà dans l’équipe', 'err');
+    save([...members, { name: value, lang }]);
+  };
+  name.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') add();
+  });
+  return [
+    section('Équipe', 'Chaque personne choisit son nom en haut à droite (à côté de « Tutoriel ») : la page « Resin Queue », le kiosque, l’inventaire du téléphone et l’extension Chrome s’affichent alors dans sa langue. Les Réglages restent en français.', [
+      el('div', { class: 'table-wrap' }, [
+        el('table', { class: 'grid' }, [
+          el('thead', {}, el('tr', {}, [el('th', {}, 'Nom'), el('th', {}, 'Langue'), el('th', {}, '')])),
+          el('tbody', {}, [
+            ...members.map((member, index) =>
+              el('tr', {}, [
+                el('td', {}, el('strong', {}, member.name)),
+                el('td', {}, langSelect(member.lang, (value) => save(members.map((m, i) => (i === index ? { ...m, lang: value } : m))))),
+                el('td', {}, el('button', { class: 'mini-btn danger', title: 'Retirer de l’équipe', onclick: () => save(members.filter((_, i) => i !== index)) }, icon('trash'))),
+              ]),
+            ),
+            el('tr', {}, [
+              el('td', {}, name),
+              el('td', {}, langSelect('fr', (value) => { lang = value; })),
+              el('td', {}, el('button', { class: 'primary-btn', onclick: add }, [icon('plus'), 'Ajouter'])),
+            ]),
+          ]),
+        ]),
+      ]),
+      members.length ? null : el('p', { class: 'field-hint' }, 'Personne pour l’instant : ajoute chaque membre de l’équipe avec sa langue.'),
+    ]),
+  ];
+};
+
 export const renderIntegrations = (root, actions) => {
   const draft = sharedDraft;
   const { bar, touch } = makeSaveBar(draft, actions);
@@ -1055,6 +1103,7 @@ export const renderIntegrations = (root, actions) => {
     apparence: () => tabApparence(actions),
     api: () => apiTab(section),
     maj: () => tabMaj(draft, touch, actions),
+    equipe: () => tabEquipe(actions),
     bugs: () => [bugsSection(), bugWebhookSection(draft, touch)],
   }[current.key]();
 

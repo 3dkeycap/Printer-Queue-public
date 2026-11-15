@@ -6,6 +6,7 @@
  */
 import { resizePhoto } from './photo-resize.js';
 import { drawCard } from './card-png.js';
+import { mountPersonPicker } from './person.js';
 
 const box = document.getElementById('box');
 const UNITS = ['unités', 'rouleaux', 'bac', 'boîtes', 'bouteilles', 'paquets', 'sacs'];
@@ -49,10 +50,16 @@ const withUnit = (value, unit) => `${value}${unit ? ` ${unit}` : ''}`;
 
 /* ------------------------------------------------------------ composants */
 
+// « Qui utilise l'app ? » : le même bouton que sur l'ordinateur (person.js), gardé d'un écran à l'autre
+const personButton = node('button', { type: 'button', class: 'person-btn' });
+globalThis.RQI18n?.observe(document.documentElement);
+mountPersonPicker(personButton);
+
 const nav = (current) =>
   node('nav', { class: 'tabs' }, [
     node('button', { type: 'button', class: current === 'add' ? 'on' : '', text: '➕ Ajouter', onclick: () => showForm(null) }),
     node('button', { type: 'button', class: current === 'list' ? 'on' : '', text: '📋 Objets', onclick: () => showList() }),
+    personButton,
   ]);
 
 const screen = (current, ...content) => box.replaceChildren(nav(current), ...content);

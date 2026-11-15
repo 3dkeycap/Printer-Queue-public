@@ -119,6 +119,8 @@
     host = h('div', { 'data-resin-queue-pack': '' });
     root = host.attachShadow({ mode: 'open' });
     root.append(h('style', {}, CSS));
+    // le bac est dans son propre shadow root : la traduction (i18n-ext-start.js) doit le suivre aussi
+    globalThis.RQI18n?.observe(root);
     document.documentElement.append(host);
   };
 

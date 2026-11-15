@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Resin Queue — Shopify / Etsy → Chit Chats",
-  "version": "1.19.1",
+  "version": "1.20.0",
   "description": "Signale à Resin Queue la commande ouverte (Shopify, Etsy), ouvre le bac « J’ai packé » et propose « Ouvrir sur Chit Chats » avec le bon numéro de commande.",
   "permissions": [
     "storage",
@@ -51,6 +51,10 @@
         "https://*.myshopify.com/admin/*"
       ],
       "js": [
+        "i18n-ext.js",
+        "i18n-table.js",
+        "i18n.js",
+        "i18n-ext-start.js",
         "pack-panel.js",
         "content.js"
       ],
@@ -61,6 +65,10 @@
         "https://chitchats.com/*"
       ],
       "js": [
+        "i18n-ext.js",
+        "i18n-table.js",
+        "i18n.js",
+        "i18n-ext-start.js",
         "chitchats-recorder.js",
         "content-chitchats.js"
       ],
@@ -72,6 +80,10 @@
         "https://www.etsy.com/your/orders/*"
       ],
       "js": [
+        "i18n-ext.js",
+        "i18n-table.js",
+        "i18n.js",
+        "i18n-ext-start.js",
         "pack-panel.js",
         "content-etsy.js"
       ],

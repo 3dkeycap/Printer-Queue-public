@@ -100,6 +100,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - **Les objets d'inventaire se créent depuis `/inventory/mobile`** (le téléphone) : le formulaire « Nouvel objet » a quitté le tableau de bord, qui garde le code QR, le bouton « Ouvrir la page d'inventaire » et l'impression de ce code. Le code QR (et ses étiquettes imprimables) mène maintenant à `/inventory/mobile` ; `/inventory/new` marche toujours (ouvre le formulaire d'ajout), donc les étiquettes déjà imprimées restent valides. Modifier, signaler, commander et supprimer restent aussi possibles sur l'ordinateur.
 
 ### Ajouté
+- **L’interface en English, Español et Filipino.** Chaque personne choisit son nom en haut à droite (à côté de
+  « Tutoriel », aussi sur le kiosque et l’inventaire du téléphone) : Resin Queue, la fiche, « Tout », « Échecs », le
+  tutoriel, le kiosque, l’inventaire du téléphone, la page du code QR et l’extension Chrome (bac « J’ai packé », barre,
+  assistant Chit Chats, fenêtre) passent dans sa langue. Nouvel onglet **Réglages → Équipe** (nom + langue de chacun ;
+  `team.members`, `GET /api/team`). Page du code QR : langue du téléphone + boutons FR/EN/ES/FIL. Les noms de produits,
+  clients, notes et tags ne sont jamais traduits ; les Réglages restent en français. Extension 1.20.0.
 - **Extension 1.19.0 : « ⏺ Enregistrer » dans le panneau Chit Chats.** Enregistre tout ce qui se passe sur la page
   (clics de la personne et de l’extension, saisies, adresses, erreurs affichées par Chit Chats, étapes et messages de
   l’assistant, champs remplis, copie du formulaire à chaque changement), même après un rechargement ; « ■ Stop &
