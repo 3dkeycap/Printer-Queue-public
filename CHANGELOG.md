@@ -204,6 +204,12 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Extension 1.19.1 : la Description Chit Chats retrouve les commandes Shopify** (vu grâce à un enregistrement) :
+  « Commande inconnue de l’app » / « commande introuvable » sur #5668 et #5669. L’extension ne reconnaissait que les
+  numéros de 6 chiffres et plus (Etsy) et prenait la recherche `?q=5668` pour un nom de client. Elle lit maintenant le
+  numéro de commande de l’envoi ouvert sur la page (panneau « Order » ou colonne « Order » de sa ligne, page de recherche
+  comme page d’un lot) et prend une recherche par numéro pour un numéro de commande. Le numéro de l’envoi est lu d’abord
+  dans la fenêtre ouverte (la page d’un lot liste d’autres envois).
 - **Extension 1.18.1 : étiquette VAT imprimée dans le bon sens.** Le rouleau fait 1 po de large × 2 po de long : l’image
   (dessinée 2 × 1) est tournée d’un quart de tour et envoyée à QZ Tray en 1 × 2 po. Si le texte sort à l’envers, options de
   l’extension → « Sens de l’étiquette sur le rouleau » (droite, gauche, ou pas tournée pour un rouleau de 2 po).

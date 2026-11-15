@@ -273,11 +273,51 @@
   const orderRef = async () => {
     const field = String(fieldsByLabel('Order ID')[0]?.value ?? '').trim().replace(/^#/, '');
     if (field) return field;
+    const onPage = orderOfShipmentOnPage();
+    if (onPage) return onPage;
     const status = await send({ type: 'link-status' });
     const link = status?.link;
     if (link?.state === 'live' && link.chitchatsTabId === status.tabId && link.lastOrder) return String(link.lastOrder).replace(/^#/, '');
     const text = String(window.top === window ? document.body.innerText : document.body?.innerText ?? '');
     return /\bOrder\b\s{0,8}[^\d\s]{0,3}\s{0,4}#?(\d{6,})/.exec(text)?.[1] ?? null;
+  };
+
+  /*
+   * Le numéro de commande de L'ENVOI OUVERT, lu à côté de lui sur la page de Chit Chats (recherche, lot « Batch ») :
+   * son panneau de détail (« Order <span title="Shopify order: 5668"> ») ou la colonne « Order » de sa ligne. Avant, on
+   * cherchait seulement un nombre de 6 chiffres et plus (Etsy) : les commandes Shopify (#5668) n'étaient jamais trouvées
+   * (vu dans un enregistrement). On ne regarde que les blocs qui ne contiennent PAS un autre envoi.
+   */
+  const orderOfShipmentOnPage = () => {
+    const id = shipmentId();
+    if (id === 'envoi') return null;
+    const own = new RegExp(`/shipments/${id}(?:[/?#]|$)`, 'i');
+    const links = [...document.querySelectorAll('a[href*="/shipments/"]')].filter((link) => own.test(link.getAttribute('href') ?? '') && !link.closest('[role="dialog"], .modal'));
+    const otherShipment = (node) =>
+      [...node.querySelectorAll('a[href*="/shipments/"]')].some((link) => {
+        const other = /\/shipments\/([a-z0-9]{6,})/i.exec(link.getAttribute('href') ?? '')?.[1]?.toLowerCase();
+        return other && /\d/.test(other) && other !== id;
+      });
+    for (const link of links) {
+      for (let node = link.parentElement; node && node !== document.body; node = node.parentElement) {
+        if (otherShipment(node)) break;
+        const titled = [...node.querySelectorAll('[title]')].map((element) => /order:\s*#?(\d{3,})/i.exec(element.getAttribute('title'))?.[1]).find(Boolean);
+        if (titled) return titled;
+        const written = /\bOrder\b\s{0,8}[^\d\s]{0,3}\s{0,4}#?(\d{3,})/.exec(String(node.textContent).replace(/\s+/g, ' '))?.[1];
+        if (written) return written;
+      }
+    }
+    // liste d'envois : la colonne « Order » de la ligne de cet envoi
+    for (const link of links) {
+      const row = link.closest('tr');
+      const table = row?.closest('table');
+      if (!row || !table) continue;
+      const heads = [...table.querySelectorAll('thead th, tr:first-child th')].map((cell) => norm(cell.textContent));
+      const column = heads.indexOf('order');
+      const number = column >= 0 ? /#?(\d{3,})/.exec(row.children[column]?.textContent ?? '')?.[1] : null;
+      if (number) return number;
+    }
+    return null;
   };
 
   /*
@@ -580,8 +620,11 @@
     descForm.dataset.rqFilled = '1';
     setStep('description', 'running', 'je remplis les champs vides…');
     // dernier recours : le nom cherché dans la page de recherche de Chit Chats (…/shipments/search?q=Alison%20Thompson)
-    const name = new URL(window.top === window ? location.href : document.referrer || location.href).searchParams.get('q') ?? '';
-    const ref = (await orderRef()) ?? (name ? `nom:${name}` : null);
+    const query = (new URL(window.top === window ? location.href : document.referrer || location.href).searchParams.get('q') ?? '').trim();
+    // recherche par numéro (…/search?q=5668) : c'est une commande, pas un nom
+    const queryIsOrder = /^#?\d{3,}$/.test(query);
+    const name = queryIsOrder ? '' : query;
+    const ref = (await orderRef()) ?? (queryIsOrder ? query.replace(/^#/, '') : name ? `nom:${name}` : null);
     if (!ref) {
       setStep('description', 'warn', 'commande introuvable : remplis à la main');
       say('Je ne trouve pas la commande de cet envoi (ni « Order ID », ni lien Live, ni nom recherché).', 'warn');
@@ -722,7 +765,10 @@
   let asking = false;
 
   const shipmentId = () => {
-    for (const link of document.querySelectorAll('a[href*="/shipments/"]')) {
+    // d'abord la fenêtre « Edit Shipment » ouverte : la page derrière (lot, recherche) liste d'autres envois
+    const dialogs = [...document.querySelectorAll('[role="dialog"], .modal')].filter((node) => node.offsetWidth || node.offsetHeight);
+    const links = [...dialogs.flatMap((node) => [...node.querySelectorAll('a[href*="/shipments/"]')]), ...document.querySelectorAll('a[href*="/shipments/"]')];
+    for (const link of links) {
       const match = /\/shipments\/([a-z0-9]{6,})\/(?:address|customs|package|postage)/i.exec(link.getAttribute('href') ?? '');
       if (match) return match[1].toLowerCase();
     }
