@@ -626,19 +626,25 @@ suivis déjà présents sur le reçu (pas de doublon), le transporteur est tradu
 est dans `orders.etsy_tracking_at` / `etsy_tracking_error`, et le job des expéditions renvoie au plus 10 commandes en attente
 (14 jours). Réglage `etsy.pushTracking`.
 
-## Import automatique des commandes dans Chit Chats
+## Commandes et envois Chit Chats (plus d'import par l'app)
 
-Toutes les heures (Réglages → Synchronisation, activable dans Boutiques → Chit Chats), chaque
-commande Shopify / Etsy ouverte et récente devient un **envoi « en attente » dans Chit Chats**
-(rien n'est acheté : l'étiquette s'achète toujours dans Chit Chats). Adresse reprise de la commande,
-poids / dimensions par défaut réglables, Canada → Chit Chats Canada Tracked, États-Unis → USPS
-Ground Advantage, ailleurs → International Tracked (avec détail douane : chaque article porte le code tarifaire `hs_tariff_code`, réglage `chitchats.hsTariffCode`, `8473305100` par défaut ; Chit Chats l'exige pour une origine Canada), ou « le moins cher ».
-Si Chit Chats a déjà un envoi pour ce numéro de commande, il est simplement relié (pas de doublon).
+L'app **ne crée plus aucun envoi dans Chit Chats** : c'est l'import Etsy / Shopify de Chit Chats qui crée les envois.
+L'ancien import de l'app (un envoi « pending » par commande ouverte, chaque heure) faisait des **doublons** avec celui
+de Chit Chats ; il est retiré, avec ses réglages (`chitchats.autoImport`, `importWindowDays`, `packageType`,
+`packageWeightGrams`, `packageSizeCm`, `cheapestPostage`) et la route `POST /api/orders/:id/chitchats-import`.
 
-En cas d'échec, l'app **trouve la raison** (adresse incomplète : code postal / province manquant,
-pas d'adresse de livraison, accès refusé, refus de Chit Chats avec le champ en cause...) et
-l'affiche en **étiquette rouge sur les pièces** de la commande, avec le détail et un bouton
-« Réessayer maintenant » dans la fiche. Les commandes en erreur sont retentées à chaque heure.
+Le job horaire (`reconcileChitChats`, `schedule.chitchatsImportCron`, bouton « Relier les envois maintenant » =
+`POST /api/sync/run?source=chitchats-import`) fait seulement :
+- **relier** chaque commande à l'envoi que Chit Chats a déjà (même numéro de commande, `linkExistingShipments`) ;
+- **retirer les doublons de l'app** (`removeAppDuplicates`) : pour une commande dont l'envoi a été créé par l'app
+  (`chitchats_import_status = 'imported'`), on relit cet envoi ; s'il est encore `pending` (jamais payé) ET que
+  Chit Chats a un autre envoi pour la même commande (même numéro, ou même destinataire si cet envoi n'appartient pas
+  à une autre commande du client), l'envoi de l'app est supprimé (`DELETE /clients/:id/shipments/:id`) et la commande
+  reliée à l'autre. Un envoi payé n'est jamais touché ; un envoi de l'app seul pour sa commande est gardé (revu au
+  passage suivant). 40 commandes au plus par passage.
+
+Les anciennes erreurs d'import sont effacées une fois (`internal.chitchatsImportErrorsCleared`). Le code HS
+(`chitchats.hsTariffCode`) sert à l'extension, qui complète le formulaire de douane.
 
 **Photo du produit** : la fiche d'une pièce affiche la photo Shopify / Etsy quand elle est connue.
 Pour Shopify, la photo vient de la ligne de commande (API GraphQL, scope `read_orders` suffit) ;

@@ -318,7 +318,7 @@ const actions = {
 
   async importChitChats() {
     try {
-      toast('Import vers Chit Chats en cours…');
+      toast('Chit Chats : relier les envois, retirer les doublons de l’app…');
       const { import: result } = await api.sync('chitchats-import');
       if (result.status === 'skipped') toast(result.message, 'err');
       else toast(`Chit Chats : ${result.message ?? 'terminé'}`);

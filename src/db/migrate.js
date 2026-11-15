@@ -234,6 +234,21 @@ const shipPartsOfShippedOrders = (db) => {
   setSetting(SHIPPED_ORDERS_KEY, '1');
 };
 
+const IMPORT_ERRORS_KEY = 'internal.chitchatsImportErrorsCleared';
+
+/**
+ * Une seule fois : l'app ne crée plus d'envoi dans Chit Chats, les anciennes erreurs d'import (« adresse incomplète »…)
+ * ne veulent plus rien dire : on les efface (seulement ce statut technique, pas la commande).
+ */
+const clearChitChatsImportErrors = (db) => {
+  if (getSetting(IMPORT_ERRORS_KEY)) return;
+  const { changes } = db
+    .prepare(`UPDATE orders SET chitchats_import_status = NULL, chitchats_import_error = NULL WHERE chitchats_import_status = 'error'`)
+    .run();
+  if (changes) log.info('old chit chats import errors cleared', { orders: changes });
+  setSetting(IMPORT_ERRORS_KEY, '1');
+};
+
 export const migrate = () => {
   const db = getDb();
   const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
@@ -267,6 +282,7 @@ export const migrate = () => {
   addColumnIfMissing(db, 'orders', 'chitchats_import_status', 'TEXT');
   addColumnIfMissing(db, 'orders', 'chitchats_import_error', 'TEXT');
   addColumnIfMissing(db, 'orders', 'chitchats_import_at', 'TEXT');
+  clearChitChatsImportErrors(db);
   // pièce expédiée d'ici mais pas imprimée ici (article en stock, supplément…) :
   // absente de « À imprimer », visible dans « Tout »
   // pack : pièce mise dans le bac, par qui

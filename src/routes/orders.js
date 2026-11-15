@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncRoute } from '../lib/errors.js';
-import { chitchatsDiagnosis, importOrdersToChitChats } from '../domain/chitchatsImport.js';
+import { chitchatsDiagnosis } from '../domain/chitchatsImport.js';
 import { getOrder, listOrders, markOrderShipped } from '../domain/orders.service.js';
 
 export const ordersRouter = Router();
@@ -21,14 +21,6 @@ ordersRouter.get(
   }),
 );
 
-/** « Réessayer » sur une commande dont l'import Chit Chats a échoué. */
-ordersRouter.post(
-  '/:id/chitchats-import',
-  asyncRoute(async (req, res) => {
-    const order = getOrder(req.params.id);
-    res.json(await importOrdersToChitChats({ trigger: 'manual', orderId: order.id }));
-  }),
-);
 
 /** Manual "this parcel is gone" button, when Chit Chats is not in the loop. */
 ordersRouter.post(

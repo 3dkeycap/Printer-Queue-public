@@ -185,6 +185,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Doublons dans Chit Chats : l’app ne crée plus d’envoi.** Les envois « venus de nulle part » étaient créés par l’import
+  automatique de l’app (un envoi « pending » par commande ouverte, chaque heure), en plus de l’import Etsy de Chit Chats.
+  Cet import est retiré (réglages et bouton compris). Le job horaire relie maintenant les commandes aux envois importés
+  par Chit Chats et **supprime les doublons créés autrefois par l’app** : seulement ses propres envois, encore « pending »
+  (jamais payés), et seulement si Chit Chats a un autre envoi pour la même commande. Un envoi payé n’est jamais touché.
 - **Commandes expédiées encore dans « À imprimer » (réimprimées par l’équipe).** Plusieurs trous, tous bouchés :
   la relecture des envois Chit Chats ne lisait **aucun** envoi (Chit Chats renvoie une liste, l’app attendait un objet) et
   seulement les 100 derniers (maintenant jusqu’à 500) ; un envoi ne comptait qu’une fois « en route » : il compte maintenant

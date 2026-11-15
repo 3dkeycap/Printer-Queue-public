@@ -6,39 +6,16 @@ import { getSettings } from './settings.service.js';
 const log = createLogger('chitchats:import');
 
 /**
- * Import automatique des commandes Shopify / Etsy dans Chit Chats.
+ * Commandes Shopify / Etsy <-> envois Chit Chats.
  *
- * Chaque commande ouverte (pas encore expédiée, pas encore dans Chit Chats)
- * devient un envoi « pending » chez Chit Chats : rien n'est acheté, il reste à
- * acheter l'étiquette là-bas. Si Chit Chats a déjà un envoi pour ce numéro de
- * commande (import natif Chit Chats, import précédent...), on se contente de
- * le relier.
- *
- * En cas d'échec, on cherche POURQUOI (adresse incomplète, province manquante,
- * accès refusé...) et on l'enregistre sur la commande : les pièces de la file
- * affichent alors l'étiquette « Chit Chats : <raison> ».
+ * L'app NE CRÉE PLUS d'envoi dans Chit Chats : Chit Chats importe lui-même les commandes (import Etsy / Shopify de
+ * Chit Chats) et l'import de l'app faisait des doublons « venus de nulle part ». L'app se contente de :
+ *   - relier chaque commande à l'envoi que Chit Chats a déjà (même numéro de commande) ;
+ *   - supprimer les doublons qu'elle avait créés autrefois : seulement SES envois, encore « pending » (jamais payés),
+ *     et seulement quand Chit Chats a un autre envoi pour la même commande. Un envoi payé n'est jamais touché ; un
+ *     envoi de l'app qui est le seul de sa commande est gardé.
+ * Elle garde aussi ce qu'il faut à l'extension pour compléter le formulaire de douane (customsFor).
  */
-
-const POSTAGE_BY_COUNTRY = { CA: 'chit_chats_canada_tracked', US: 'usps_ground_advantage' };
-const INTERNATIONAL_POSTAGE = 'chit_chats_international_tracked';
-
-const FIELD_LABELS = {
-  name: 'nom du destinataire',
-  address_1: 'adresse',
-  city: 'ville',
-  province_code: 'province / état',
-  postal_code: 'code postal',
-  country_code: 'pays',
-  value: 'valeur déclarée',
-  description: 'description',
-  weight: 'poids',
-  size_x: 'dimensions',
-  size_y: 'dimensions',
-  size_z: 'dimensions',
-  postage_type: 'type d\'envoi',
-  line_items: 'détail des articles (douane)',
-  phone: 'téléphone',
-};
 
 const clean = (value) => (value === undefined || value === null ? '' : String(value).trim());
 
@@ -77,134 +54,14 @@ export const extractAddress = (source, raw) => {
   return null;
 };
 
-const parseSize = (value) => {
-  const parts = String(value ?? '').toLowerCase().split(/[x×*,; ]+/).map(Number).filter((n) => n > 0);
-  return parts.length === 3 ? parts : null;
-};
-
-/**
- * Construit l'envoi Chit Chats d'une commande. Renvoie `problems` (en clair)
- * quand on sait d'avance que Chit Chats refusera : inutile d'appeler l'API.
- */
-export const buildShipment = (order, items, settings = getSettings()) => {
-  const problems = [];
-  let raw = null;
-  try {
-    raw = order.raw_payload ? JSON.parse(order.raw_payload) : null;
-  } catch {
-    raw = null;
-  }
-
-  const address = extractAddress(order.source, raw);
-  if (!address) {
-    problems.push(
-      "pas d'adresse de livraison dans la commande (commande sans expédition, ou la boutique ne partage pas les données client)",
-    );
-    return { payload: null, problems };
-  }
-
-  const missing = ['name', 'address_1', 'city', 'postal_code', 'country_code'].filter((field) => !address[field]);
-  if (['CA', 'US'].includes(address.country_code) && !address.province_code) missing.push('province_code');
-  if (missing.length) problems.push(`adresse incomplète : ${missing.map((f) => FIELD_LABELS[f]).join(', ')} manquant(s)`);
-
-  const size = parseSize(settings['chitchats.packageSizeCm']);
-  if (!size) problems.push('dimensions du colis par défaut invalides (Réglages → Boutiques → Chit Chats, ex. 15x10x5)');
-  const weight = Number(settings['chitchats.packageWeightGrams']);
-  if (!(weight > 0)) problems.push('poids du colis par défaut invalide (Réglages → Boutiques → Chit Chats)');
-
-  const currency = String(order.currency ?? 'CAD').toUpperCase() === 'USD' ? 'usd' : 'cad';
-  const value = Number(order.total_price ?? 0) > 0
-    ? Number(order.total_price)
-    : items.reduce((sum, item) => sum + Number(item.unit_price ?? 0) * Number(item.quantity ?? 1), 0);
-  if (!(value > 0)) problems.push('valeur de la commande à 0 (Chit Chats exige une valeur déclarée)');
-
-  const description =
-    items
-      .map((item) => `${item.quantity}x ${item.title}`)
-      .join(', ')
-      .slice(0, 250) || 'Keycaps';
-
-  // Chit Chats exige le détail des articles dès que le colis sort du Canada (États-Unis compris)
-  const international = address.country_code && address.country_code !== 'CA';
-  const payload = {
-    name: address.name,
-    address_1: address.address_1,
-    address_2: address.address_2 || undefined,
-    city: address.city,
-    province_code: address.province_code || undefined,
-    postal_code: address.postal_code,
-    country_code: address.country_code,
-    phone: address.phone || undefined,
-    email: address.email || undefined,
-    order_id: String(order.order_number ?? order.external_id).replace(/^#/, ''),
-    package_contents: 'merchandise',
-    description,
-    value: value.toFixed(2),
-    value_currency: currency,
-    package_type: settings['chitchats.packageType'] || 'parcel',
-    weight_unit: 'g',
-    weight,
-    size_unit: 'cm',
-    size_x: size?.[0],
-    size_y: size?.[1],
-    size_z: size?.[2],
-    postage_type: POSTAGE_BY_COUNTRY[address.country_code] ?? INTERNATIONAL_POSTAGE,
-    cheapest_postage_type_requested: settings['chitchats.cheapestPostage'] ? 'yes' : undefined,
-    ship_date: 'today',
-    line_items: international
-      ? items.map((item) => ({
-          quantity: Number(item.quantity ?? 1),
-          description: String(item.title).slice(0, 100),
-          value_amount: Number(item.unit_price ?? 0).toFixed(2),
-          currency_code: currency,
-          // pays de fabrication : Canada pour l'atelier, Hong Kong pour le nylon, Chine pour les switchs
-          origin_country: manufacturerFor(item).countryCode,
-          // Chit Chats l'exige dès que l'origine est le Canada (« hs_tariff_code required for origin_country CA »)
-          hs_tariff_code: clean(settings['chitchats.hsTariffCode']) || undefined,
-        }))
-      : undefined,
-  };
-  return { payload: JSON.parse(JSON.stringify(payload)), problems };
-};
-
-/** Traduit une erreur de l'API Chit Chats en raison compréhensible. */
-export const explainApiError = (error) => {
-  if (!(error instanceof ApiError)) {
-    return `Chit Chats injoignable (${error.message}) — réessai à la prochaine heure`;
-  }
-  if (error.status === 401 || error.status === 403) {
-    return 'accès refusé par Chit Chats : vérifie le Client ID et le token (Réglages → Boutiques → Chit Chats)';
-  }
-  if (error.status === 429) return 'Chit Chats limite le nombre d\'appels : réessai à la prochaine heure';
-  if (error.status >= 500) return `Chit Chats en panne (erreur ${error.status}) — réessai à la prochaine heure`;
-
-  // on affiche le message de Chit Chats tel quel (ex. « line_items required »)
-  const body = error.body ?? {};
-  const messages = [];
-  const GENERIC_KEYS = new Set(['message', 'error', 'errors', 'detail', 'details', 'raw']);
-  const collect = (field, value) => {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      for (const [key, inner] of Object.entries(value)) collect(GENERIC_KEYS.has(key) ? field : key, inner);
-      return;
-    }
-    const text = [].concat(value).map((v) => (typeof v === 'string' ? v : JSON.stringify(v))).join(', ');
-    if (!text) return;
-    messages.push(field && !GENERIC_KEYS.has(field) ? `${field} ${text}` : text);
-  };
-  const errors = body.errors ?? body.error ?? body.message ?? body.raw;
-  if (Array.isArray(errors)) errors.forEach((value) => collect(null, value));
-  else if (errors) collect(null, errors);
-  return messages.length ? messages.join(' ; ') : `refusé par Chit Chats (erreur ${error.status})`;
-};
-
 const api = (settings) => {
   const base = `${settings['chitchats.apiBase']}/clients/${settings['chitchats.clientId']}`;
   const headers = { Authorization: settings['chitchats.accessToken'], 'Content-Type': 'application/json' };
   return {
     search: (q) => requestJson(`${base}/shipments?q=${encodeURIComponent(q)}&limit=25`, { headers, retries: 1 }),
     list: (page) => requestJson(`${base}/shipments?limit=100&page=${page}`, { headers, retries: 1 }),
-    create: (payload) =>
-      requestJson(`${base}/shipments`, { method: 'POST', headers, body: JSON.stringify(payload), retries: 1 }),
+    get: (id) => requestJson(`${base}/shipments/${encodeURIComponent(id)}`, { headers, retries: 1 }),
+    remove: (id) => requestJson(`${base}/shipments/${encodeURIComponent(id)}`, { method: 'DELETE', headers, retries: 1 }),
   };
 };
 
@@ -217,10 +74,6 @@ const record = (orderId, { status, error = null, shipmentId = null }) =>
        WHERE id = @orderId`,
     )
     .run({ orderId, status, error, shipmentId: shipmentId ? String(shipmentId) : null, ts: nowIso() });
-
-/** Début de la fenêtre d'import (réglable, 30 jours par défaut). */
-const importSince = (settings) =>
-  new Date(Date.now() - Math.max(Number(settings['chitchats.importWindowDays']) || 30, 1) * 86400000).toISOString();
 
 const listOf = (payload) => (Array.isArray(payload) ? payload : payload?.shipments ?? payload?.data ?? []);
 const cleanRef = (value) => String(value ?? '').trim().replace(/^#/, '');
@@ -276,35 +129,22 @@ export const linkExistingShipments = async (client, { pages = 5 } = {}) => {
  */
 export const chitchatsState = (row, ctx) => {
   if (row.source === 'manual') return { state: 'na', reason: 'Pièce interne : rien à expédier par Chit Chats' };
-  if (row.chitchats_shipment_id || ['imported', 'linked'].includes(row.chitchats_import_status)) {
+  if (row.chitchats_shipment_id) {
     return {
       state: 'true',
-      reason: row.chitchats_import_status === 'imported' ? 'Envoi créé dans Chit Chats par l\'app' : 'Envoi trouvé dans Chit Chats et relié',
+      reason: row.chitchats_import_status === 'imported' ? 'Envoi créé autrefois par l\'app dans Chit Chats' : 'Envoi trouvé dans Chit Chats et relié',
     };
   }
-  if (row.chitchats_import_status === 'error') return { state: 'failed', reason: row.chitchats_import_error ?? 'Raison inconnue' };
   if (row.order_shipped_at || row.status === 'SHIPPED') {
-    return { state: 'shipped', reason: 'Déjà expédiée, sans envoi Chit Chats connu de l\'app : rien à importer' };
+    return { state: 'shipped', reason: 'Déjà expédiée, sans envoi Chit Chats connu de l\'app' };
   }
   if (!ctx.configured) return { state: 'false', reason: 'Chit Chats n\'est pas configuré (Client ID / token)' };
-  const placed = row.placed_at ?? row.created_at;
-  if (placed && placed < ctx.since) {
-    return {
-      state: 'false',
-      reason: `Commande trop ancienne (plus de ${ctx.windowDays} jours) : pas créée dans Chit Chats. Élargis « Importer les commandes des derniers (jours) » dans Réglages → Boutiques → Chit Chats.`,
-    };
-  }
-  if (!ctx.autoImport) return { state: 'false', reason: "Import automatique désactivé (Réglages → Boutiques → Chit Chats)" };
-  return { state: 'false', reason: `Pas encore importée : prochain import automatique ${ctx.nextRun}` };
+  return { state: 'false', reason: 'Pas encore dans Chit Chats : importe-la avec l’import Etsy / Shopify de Chit Chats, l’app la relie toute seule' };
 };
 
 /** Contexte commun pour chitchatsState (une seule lecture des réglages). */
 export const chitchatsContext = (settings = getSettings()) => ({
   configured: Boolean(settings['chitchats.clientId'] && settings['chitchats.accessToken']),
-  autoImport: Boolean(settings['chitchats.autoImport']),
-  since: importSince(settings),
-  windowDays: Math.max(Number(settings['chitchats.importWindowDays']) || 30, 1),
-  nextRun: settings['schedule.chitchatsImportCron'] === '0 * * * *' ? 'à la prochaine heure' : `(cron ${settings['schedule.chitchatsImportCron']})`,
 });
 
 /** Résumé : combien de commandes ouvertes ne sont pas dans Chit Chats, et pourquoi. */
@@ -323,73 +163,113 @@ export const chitchatsDiagnosis = () => {
     const { state, reason } = chitchatsState(row, ctx);
     if (state in totals) totals[state] += 1;
     if (state === 'false' || state === 'failed') {
-      const key = state === 'failed' ? `Échec : ${reason}` : reason.replace(/prochain import automatique .*$/, 'prochain import automatique');
+      const key = state === 'failed' ? `Échec : ${reason}` : reason;
       reasons.set(key, (reasons.get(key) ?? 0) + 1);
     }
   }
   return { totals, reasons: [...reasons].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count) };
 };
 
-/** Commandes à envoyer : ouvertes, pas encore dans Chit Chats, dans la fenêtre d'import. */
-const pendingOrders = (settings, onlyOrderId) => {
-  const db = getDb();
-  if (onlyOrderId) return db.prepare('SELECT * FROM orders WHERE id = ?').all(Number(onlyOrderId));
-  const since = importSince(settings);
-  return db
+const CANCELLED_STATUSES = new Set(['canceled', 'cancelled', 'voided', 'void']);
+const sameName = (a, b) => Boolean(a && b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase());
+
+/** La commande locale dont `ref` est le numéro (ou null). */
+const orderIdForRef = (ref) => {
+  const cleaned = cleanRef(ref);
+  if (!cleaned) return null;
+  return (
+    getDb()
+      .prepare(`SELECT id FROM orders WHERE order_number = ? OR order_number = '#' || ? OR external_id = ? ORDER BY id DESC LIMIT 1`)
+      .get(cleaned, cleaned, cleaned)?.id ?? null
+  );
+};
+
+/** La commande quitte son envoi « app » : reliée au bon envoi (le jumeau) ou à aucun. */
+const detach = (orderId, twinId) =>
+  getDb()
     .prepare(
-      `SELECT * FROM orders
-        WHERE source IN ('shopify', 'etsy')
-          AND shipped_at IS NULL
-          AND cancelled_at IS NULL
-          AND chitchats_shipment_id IS NULL
-          AND COALESCE(placed_at, created_at) >= ?
-          AND EXISTS (SELECT 1 FROM parts p WHERE p.order_id = orders.id AND p.status <> 'SHIPPED')
-        ORDER BY COALESCE(placed_at, created_at) ASC`,
+      `UPDATE orders SET chitchats_shipment_id = @twin, chitchats_import_status = @status, chitchats_import_error = NULL,
+              chitchats_import_at = @ts, updated_at = @ts WHERE id = @orderId`,
     )
-    .all(since);
-};
+    .run({ orderId, twin: twinId ? String(twinId) : null, status: twinId ? 'linked' : null, ts: nowIso() });
 
-/** Importe une commande ; renvoie { status: 'imported' | 'linked' | 'error', error? }. */
-export const importOrder = async (order, settings = getSettings(), client = api(settings)) => {
-  const items = getDb().prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id').all(order.id);
-  const orderRef = String(order.order_number ?? order.external_id).replace(/^#/, '');
-
-  try {
-    // déjà chez Chit Chats (import natif, import précédent) : on relie, sans doublon
-    const found = await client.search(orderRef);
-    const list = Array.isArray(found) ? found : found?.shipments ?? found?.data ?? [];
-    const existing = list.find((s) => String(s.order_id ?? '').replace(/^#/, '') === orderRef);
-    if (existing) {
-      record(order.id, { status: 'linked', shipmentId: existing.id });
-      return { status: 'linked', shipmentId: existing.id };
+/**
+ * Supprime dans Chit Chats les doublons créés autrefois par l'app (voir en-tête). On regarde au plus `max` commandes
+ * par passage (les plus anciennement vérifiées d'abord) ; un envoi « app » encore seul de sa commande est revu au
+ * passage suivant (l'import de Chit Chats peut arriver plus tard).
+ */
+export const removeAppDuplicates = async (client, { max = 40 } = {}) => {
+  const counts = { removed: 0, kept: 0, error: 0 };
+  if (!client.get || !client.remove || !client.search) return counts;
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT id, order_number, external_id, customer_name, chitchats_shipment_id FROM orders
+        WHERE chitchats_import_status = 'imported' AND chitchats_shipment_id IS NOT NULL
+        ORDER BY COALESCE(chitchats_import_at, '') ASC, id ASC LIMIT ?`,
+    )
+    .all(max);
+  const touch = db.prepare('UPDATE orders SET chitchats_import_at = ? WHERE id = ?');
+  for (const row of rows) {
+    const ours = String(row.chitchats_shipment_id);
+    try {
+      let mine;
+      try {
+        const payload = await client.get(ours);
+        mine = payload?.shipment ?? payload;
+      } catch (error) {
+        // déjà supprimé dans Chit Chats (à la main) : la commande n'a plus d'envoi « app »
+        if (error instanceof ApiError && error.status === 404) {
+          detach(row.id, null);
+          counts.removed += 1;
+          continue;
+        }
+        throw error;
+      }
+      // payé, en route, annulé… : on n'y touche jamais, c'est l'envoi de la commande
+      if (String(mine?.status ?? '').toLowerCase() !== 'pending') {
+        db.prepare(`UPDATE orders SET chitchats_import_status = 'linked', chitchats_import_at = ? WHERE id = ?`).run(nowIso(), row.id);
+        counts.kept += 1;
+        continue;
+      }
+      const refs = new Set([cleanRef(row.order_number), cleanRef(row.external_id)].filter(Boolean));
+      const name = String(mine?.to_name ?? row.customer_name ?? '').trim();
+      let twin = null;
+      for (const query of [...new Set([...refs, name].filter(Boolean))]) {
+        twin = listOf(await client.search(query)).find((shipment) => {
+          if (!shipment?.id || String(shipment.id) === ours) return false;
+          if (CANCELLED_STATUSES.has(String(shipment.status ?? '').toLowerCase())) return false;
+          if (refs.has(cleanRef(shipment.order_id))) return true;
+          // même client : seulement si cet envoi n'appartient pas à UNE AUTRE de ses commandes
+          const other = orderIdForRef(shipment.order_id);
+          return sameName(shipment.to_name, name) && (!other || other === row.id);
+        });
+        if (twin) break;
+      }
+      if (!twin) {
+        touch.run(nowIso(), row.id);
+        counts.kept += 1;
+        continue;
+      }
+      await client.remove(ours);
+      detach(row.id, twin.id);
+      log.info('app duplicate removed from chit chats', { orderId: row.id, removed: ours, kept: twin.id });
+      counts.removed += 1;
+    } catch (error) {
+      touch.run(nowIso(), row.id);
+      counts.error += 1;
+      log.warn('could not check app shipment in chit chats', { orderId: row.id, shipmentId: ours, error: error.message });
     }
-
-    const { payload, problems } = buildShipment(order, items, settings);
-    if (problems.length) {
-      const error = problems.join(' ; ');
-      record(order.id, { status: 'error', error });
-      return { status: 'error', error };
-    }
-
-    const created = await client.create(payload);
-    const shipment = created?.shipment ?? created;
-    record(order.id, { status: 'imported', shipmentId: shipment?.id ?? null });
-    return { status: 'imported', shipmentId: shipment?.id ?? null };
-  } catch (error) {
-    const reason = explainApiError(error);
-    record(order.id, { status: 'error', error: reason });
-    log.warn('order import failed', { orderId: order.id, reason });
-    return { status: 'error', error: reason };
   }
+  return counts;
 };
 
-/** Le job (toutes les heures par défaut), aussi lancé par le bouton « Importer maintenant ». */
-export const importOrdersToChitChats = async ({ trigger = 'cron', orderId = null, client } = {}) => {
+/** Le job (toutes les heures par défaut) : relier les envois de Chit Chats, supprimer les doublons de l'app. */
+export const reconcileChitChats = async ({ trigger = 'cron', client } = {}) => {
   const settings = getSettings();
   const db = getDb();
   const configured = Boolean(settings['chitchats.clientId'] && settings['chitchats.accessToken']);
-  if (!orderId && !settings['chitchats.autoImport'] && trigger === 'cron') return { status: 'disabled' };
-  if (!configured) return { status: 'skipped', message: 'Chit Chats non configuré' };
+  if (!configured && !client) return { status: 'skipped', message: 'Chit Chats non configuré' };
 
   const startedAt = nowIso();
   const runId = Number(
@@ -397,33 +277,17 @@ export const importOrdersToChitChats = async ({ trigger = 'cron', orderId = null
       .prepare(`INSERT INTO sync_runs (source, trigger, status, started_at) VALUES ('chitchats-import', ?, 'running', ?)`)
       .run(trigger, startedAt).lastInsertRowid,
   );
-
-  const counts = { imported: 0, linked: 0, error: 0 };
   const apiClient = client ?? api(settings);
-  // d'abord : relier tout ce que Chit Chats a déjà (n'importe quel âge)
-  if (!orderId) counts.linked += await linkExistingShipments(apiClient);
-  const orders = pendingOrders(settings, orderId);
-  for (const order of orders) {
-    const result = await importOrder(order, settings, apiClient);
-    counts[result.status] += 1;
-  }
-
-  const message = `${counts.imported} importée(s), ${counts.linked} déjà présente(s) et reliée(s), ${counts.error} en erreur`;
+  const linked = await linkExistingShipments(apiClient);
+  const duplicates = await removeAppDuplicates(apiClient);
+  const message = `${linked} commande(s) reliée(s) à leur envoi Chit Chats, ${duplicates.removed} doublon(s) de l’app supprimé(s)${duplicates.error ? `, ${duplicates.error} à revoir` : ''}`;
   const finishedAt = nowIso();
   db.prepare(
-    `UPDATE sync_runs SET status = @status, finished_at = @finishedAt, duration_ms = @ms,
-       orders_seen = @seen, orders_created = @created, message = @message WHERE id = @id`,
-  ).run({
-    id: runId,
-    status: counts.error && !counts.imported && !counts.linked ? 'error' : 'success',
-    finishedAt,
-    ms: new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
-    seen: orders.length,
-    created: counts.imported,
-    message,
-  });
-  log.info('chit chats import done', { trigger, ...counts });
-  return { status: 'success', orders: orders.length, ...counts, message };
+    `UPDATE sync_runs SET status = 'success', finished_at = @finishedAt, duration_ms = @ms,
+       orders_seen = @seen, orders_created = 0, message = @message WHERE id = @id`,
+  ).run({ id: runId, finishedAt, ms: new Date(finishedAt).getTime() - new Date(startedAt).getTime(), seen: linked + duplicates.removed + duplicates.kept, message });
+  log.info('chit chats reconcile done', { trigger, linked, ...duplicates });
+  return { status: 'success', linked, ...duplicates, message };
 };
 
 /*

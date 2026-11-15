@@ -8,129 +8,116 @@ const { closeDb, getDb } = await import('../src/db/index.js');
 const { updateSettings } = await import('../src/domain/settings.service.js');
 const { ingestOrder } = await import('../src/domain/ingest.js');
 const { ApiError } = await import('../src/lib/http.js');
-const { buildShipment, explainApiError, importOrdersToChitChats } = await import('../src/domain/chitchatsImport.js');
-const { getPart } = await import('../src/domain/parts.service.js');
+const { reconcileChitChats, removeAppDuplicates, linkExistingShipments, chitchatsState, chitchatsContext } = await import('../src/domain/chitchatsImport.js');
 
-const shopifyRaw = (address) => ({ id: 1, email: 'bob@example.com', shipping_address: address });
-const GOOD_ADDRESS = {
-  name: 'Bob Tremblay', address1: '123 rue Principale', city: 'Montréal',
-  province_code: 'QC', zip: 'H2X 1Y4', country_code: 'CA',
-};
+const orderRow = (externalId) => getDb().prepare("SELECT * FROM orders WHERE external_id = ?").get(externalId);
+// envoi créé autrefois par l'app (avant la suppression de l'import)
+const asAppShipment = (externalId, shipmentId) =>
+  getDb().prepare("UPDATE orders SET chitchats_import_status = 'imported', chitchats_shipment_id = ? WHERE external_id = ?").run(shipmentId, externalId);
 
-const fakeClient = ({ existing = [], createError = null } = {}) => {
+/** Faux Chit Chats : `shipments` = tous les envois du compte ; note ce qui est créé / supprimé. */
+const fakeChitChats = (shipments) => {
+  const removed = [];
   const created = [];
   return {
+    removed,
     created,
-    search: async () => ({ shipments: existing }),
-    create: async (payload) => {
-      if (createError) throw createError;
-      created.push(payload);
-      return { shipment: { id: `S${created.length}`, ...payload } };
+    list: async (page) => (page === 1 ? shipments.filter((s) => !removed.includes(s.id)) : []),
+    search: async (q) => shipments.filter((s) => !removed.includes(s.id) && [s.order_id, s.to_name].some((v) => String(v ?? '').toLowerCase().includes(String(q).toLowerCase()))),
+    get: async (id) => {
+      const found = shipments.find((s) => s.id === id && !removed.includes(id));
+      if (!found) throw new ApiError(404, {}, 'u');
+      return found;
     },
+    remove: async (id) => removed.push(id),
+    create: async (payload) => created.push(payload),
   };
 };
 
-const orderRow = (externalId) => getDb().prepare("SELECT * FROM orders WHERE external_id = ?").get(externalId);
-const partOf = (externalId) => getDb().prepare('SELECT id FROM parts WHERE order_id = ?').get(orderRow(externalId).id);
-
-describe('import des commandes dans Chit Chats', () => {
+describe('Chit Chats : l’app ne crée plus d’envoi, elle relie et retire ses doublons', () => {
   before(() => {
     migrate();
     updateSettings({ 'chitchats.clientId': '42', 'chitchats.accessToken': 'tok' });
   });
-  after(() => closeDb());
 
-  it('construit un envoi Chit Chats complet depuis une commande Shopify', () => {
-    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A1', orderNumber: '#2001', totalPrice: 55, raw: shopifyRaw(GOOD_ADDRESS) }));
-    const order = orderRow('A1');
-    const items = getDb().prepare('SELECT * FROM order_items WHERE order_id = ?').all(order.id);
-    const { payload, problems } = buildShipment(order, items);
-    assert.deepEqual(problems, []);
-    assert.equal(payload.order_id, '2001');
-    assert.equal(payload.postage_type, 'chit_chats_canada_tracked');
-    assert.equal(payload.postal_code, 'H2X 1Y4');
-    assert.equal(payload.value, '55.00');
-    assert.equal(payload.line_items, undefined, 'pas de douane pour le Canada');
+  it('ne crée jamais d’envoi ; relie la commande à l’envoi importé par Chit Chats', async () => {
+    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A1', orderNumber: '#2001', customerName: 'Bob Tremblay' }));
+    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A2', orderNumber: '#2002', customerName: 'Léa Roy' }));
+    const cc = fakeChitChats([{ id: 'ETSY1', order_id: '2001', to_name: 'Bob Tremblay', status: 'pending' }]);
+    const result = await reconcileChitChats({ trigger: 'manual', client: cc });
+    assert.equal(cc.created.length, 0);
+    assert.equal(result.linked, 1);
+    assert.equal(orderRow('A1').chitchats_shipment_id, 'ETSY1');
+    const ctx = chitchatsContext();
+    const missing = chitchatsState(orderRow('A2'), ctx);
+    assert.equal(missing.state, 'false');
+    assert.match(missing.reason, /import Etsy \/ Shopify de Chit Chats/);
   });
 
-  it('crée l\'envoi, ou relie celui qui existe déjà', async () => {
-    const client = fakeClient();
-    const result = await importOrdersToChitChats({ trigger: 'manual', client });
-    assert.equal(result.imported, 1);
-    assert.equal(orderRow('A1').chitchats_import_status, 'imported');
-    assert.equal(orderRow('A1').chitchats_shipment_id, 'S1');
-
-    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A2', orderNumber: '#2002', totalPrice: 20, raw: shopifyRaw(GOOD_ADDRESS) }));
-    const linked = await importOrdersToChitChats({
-      trigger: 'manual',
-      client: fakeClient({ existing: [{ id: 'X9', order_id: '2002' }] }),
-    });
-    assert.equal(linked.linked, 1);
-    assert.equal(orderRow('A2').chitchats_shipment_id, 'X9');
+  it('doublon de l’app encore « pending » + envoi importé par Chit Chats : le doublon de l’app est supprimé', async () => {
+    ingestOrder(makeOrder({ externalId: 'D1', orderNumber: '#3001', customerName: 'Anna Weber' }));
+    asAppShipment('D1', 'APP1');
+    const cc = fakeChitChats([
+      { id: 'APP1', order_id: '3001', to_name: 'Anna Weber', status: 'pending' },
+      { id: 'ETSY3', order_id: '3001', to_name: 'Anna Weber', status: 'pending' },
+    ]);
+    const counts = await removeAppDuplicates(cc);
+    assert.deepEqual(cc.removed, ['APP1']);
+    assert.equal(counts.removed, 1);
+    assert.equal(orderRow('D1').chitchats_shipment_id, 'ETSY3');
+    assert.equal(orderRow('D1').chitchats_import_status, 'linked');
   });
 
-  it('explique pourquoi : adresse incomplète, visible sur la pièce', async () => {
-    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A3', orderNumber: '#2003', totalPrice: 20, raw: shopifyRaw({ ...GOOD_ADDRESS, zip: '', province_code: '' }) }));
-    const client = fakeClient();
-    await importOrdersToChitChats({ trigger: 'manual', client });
-    assert.equal(client.created.length, 0, "on n'appelle pas l'API pour rien");
-    const part = getPart(partOf('A3').id);
-    assert.equal(part.chitchats_import_status, 'error');
-    assert.match(part.chitchats_import_error, /code postal/);
-    assert.match(part.chitchats_import_error, /province/);
+  it('jumeau trouvé par le nom du client (numéro différent chez Chit Chats)', async () => {
+    ingestOrder(makeOrder({ externalId: 'D2', orderNumber: '#3002', customerName: 'Marc Petit' }));
+    asAppShipment('D2', 'APP2');
+    const cc = fakeChitChats([
+      { id: 'APP2', order_id: '3002', to_name: 'Marc Petit', status: 'pending' },
+      { id: 'ETSY4', order_id: '1359999', to_name: 'Marc Petit', status: 'pending' },
+    ]);
+    await removeAppDuplicates(cc);
+    assert.deepEqual(cc.removed, ['APP2']);
   });
 
-  it('commande sans adresse de livraison', async () => {
-    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A4', orderNumber: '#2004', totalPrice: 20, raw: { id: 4 } }));
-    await importOrdersToChitChats({ trigger: 'manual', client: fakeClient() });
-    assert.match(orderRow('A4').chitchats_import_error, /pas d'adresse de livraison/);
+  it('jamais supprimé : un envoi de l’app payé, ou seul envoi de sa commande, ou le jumeau d’une AUTRE commande du client', async () => {
+    ingestOrder(makeOrder({ externalId: 'K1', orderNumber: '#4001', customerName: 'Paid Person' }));
+    asAppShipment('K1', 'APPPAID');
+    ingestOrder(makeOrder({ externalId: 'K2', orderNumber: '#4002', customerName: 'Only Person' }));
+    asAppShipment('K2', 'APPONLY');
+    ingestOrder(makeOrder({ externalId: 'K3', orderNumber: '#4003', customerName: 'Repeat Buyer' }));
+    ingestOrder(makeOrder({ externalId: 'K4', orderNumber: '#4004', customerName: 'Repeat Buyer' }));
+    asAppShipment('K4', 'APPREPEAT');
+    const cc = fakeChitChats([
+      { id: 'APPPAID', order_id: '4001', to_name: 'Paid Person', status: 'ready' },
+      { id: 'ETSYPAID', order_id: '4001', to_name: 'Paid Person', status: 'pending' },
+      { id: 'APPONLY', order_id: '4002', to_name: 'Only Person', status: 'pending' },
+      { id: 'APPREPEAT', order_id: '4004', to_name: 'Repeat Buyer', status: 'pending' },
+      { id: 'OTHERORDER', order_id: '4003', to_name: 'Repeat Buyer', status: 'ready' },
+    ]);
+    const counts = await removeAppDuplicates(cc);
+    assert.deepEqual(cc.removed, []);
+    assert.equal(counts.removed, 0);
+    assert.equal(orderRow('K1').chitchats_shipment_id, 'APPPAID');
+    assert.equal(orderRow('K1').chitchats_import_status, 'linked', 'payé : plus jamais revu');
+    assert.equal(orderRow('K2').chitchats_import_status, 'imported', 'seul : revu au prochain passage');
+    assert.equal(orderRow('K4').chitchats_shipment_id, 'APPREPEAT');
   });
 
-  it('traduit les refus de l\'API', async () => {
-    assert.match(explainApiError(new ApiError(401, {}, 'u')), /accès refusé/);
-    assert.match(
-      explainApiError(new ApiError(422, { errors: { postal_code: ['is invalid'] } }, 'u')),
-      /^postal_code is invalid$/,
-    );
-    assert.match(explainApiError(new Error('fetch failed')), /injoignable/);
-
-    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A5', orderNumber: '#2005', totalPrice: 20, raw: shopifyRaw(GOOD_ADDRESS) }));
-    await importOrdersToChitChats({
-      trigger: 'manual',
-      client: fakeClient({ createError: new ApiError(422, { error: 'Province code is not valid for country' }, 'u') }),
-    });
-    assert.equal(orderRow('A5').chitchats_import_error, 'Province code is not valid for country');
-    assert.equal(explainApiError(new ApiError(400, { error: { message: 'line_items required' } }, 'u')), 'line_items required');
-    assert.equal(explainApiError(new ApiError(400, { message: 'line_items required' }, 'u')), 'line_items required');
-  });
-
-  it('international : détail des articles pour la douane', () => {
-    ingestOrder(makeOrder({ placedAt: new Date().toISOString(), externalId: 'A6', orderNumber: '#2006', totalPrice: 80, raw: shopifyRaw({ ...GOOD_ADDRESS, country_code: 'FR', province_code: '', zip: '75001', city: 'Paris' }) }));
-    const order = orderRow('A6');
-    const items = getDb().prepare('SELECT * FROM order_items WHERE order_id = ?').all(order.id);
-    const { payload, problems } = buildShipment(order, items);
-    assert.deepEqual(problems, []);
-    assert.equal(payload.postage_type, 'chit_chats_international_tracked');
-    assert.equal(payload.line_items.length, 1);
-    // Chit Chats refuse le détail douanier sans code tarifaire quand l'origine est le Canada
-    assert.equal(payload.line_items[0].origin_country, 'CA');
-    assert.equal(payload.line_items[0].hs_tariff_code, '8473305100');
+  it('déjà supprimé à la main dans Chit Chats : la commande n’a plus d’envoi « app »', async () => {
+    ingestOrder(makeOrder({ externalId: 'G1', orderNumber: '#5001', customerName: 'Gone Person' }));
+    asAppShipment('G1', 'APPGONE');
+    await removeAppDuplicates(fakeChitChats([]));
+    assert.equal(orderRow('G1').chitchats_shipment_id, null);
+    assert.equal(orderRow('G1').chitchats_import_status, null);
   });
 });
 
 describe('envois déjà présents dans Chit Chats', () => {
-  it('relie les commandes de tout âge à leur envoi existant, et explique les autres', async () => {
-    const { linkExistingShipments, chitchatsState, chitchatsContext } = await import('../src/domain/chitchatsImport.js');
-    migrate();
+  it('relie les commandes de tout âge à leur envoi existant', async () => {
     ingestOrder(makeOrder({ placedAt: '2025-01-01T00:00:00.000Z', externalId: 'OLD1', orderNumber: '#900', totalPrice: 10, raw: { id: 9 } }));
-    ingestOrder(makeOrder({ placedAt: '2025-01-02T00:00:00.000Z', externalId: 'OLD2', orderNumber: '#901', totalPrice: 10, raw: { id: 9 } }));
     const client = { list: async (page) => (page === 1 ? [{ id: 'CC900', order_id: '900' }] : []) };
     assert.equal(await linkExistingShipments(client), 1);
-    const ctx = chitchatsContext();
-    assert.equal(chitchatsState(orderRow('OLD1'), ctx).state, 'true');
-    const old = chitchatsState(orderRow('OLD2'), ctx);
-    assert.equal(old.state, 'false');
-    assert.match(old.reason, /trop ancienne/);
+    assert.equal(chitchatsState(orderRow('OLD1'), chitchatsContext()).state, 'true');
   });
 });
 
@@ -178,3 +165,5 @@ describe('compléter le formulaire Chit Chats (extension)', () => {
     assert.equal(customsFor('', { name: 'Personne' }), null);
   });
 });
+
+after(() => closeDb());

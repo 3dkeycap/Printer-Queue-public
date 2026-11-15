@@ -379,7 +379,7 @@ const SHOP_CARDS = [
     key: 'chitchats',
     title: 'Chit Chats',
     hint: 'Un colis scanné fait passer les pièces en « Expédié ».',
-    advanced: ['chitchats.apiBase', 'chitchats.packageType', 'chitchats.hsTariffCode', 'chitchats.cheapestPostage', 'chitchats.shipUrlTemplate', 'chitchats.webhookSecret'],
+    advanced: ['chitchats.apiBase', 'chitchats.hsTariffCode', 'chitchats.shipUrlTemplate', 'chitchats.webhookSecret'],
     enabled: null,
   },
 ];
@@ -412,7 +412,7 @@ const tabBoutiques = (draft, touch, actions) =>
         ['shopify', 'etsy', 'chitchats'].includes(card.key)
           ? el('div', { class: 'panel-foot' }, [
               card.key === 'chitchats'
-                ? el('button', { class: 'ghost-btn', onclick: () => actions.importChitChats() }, [icon('truck'), 'Importer les commandes maintenant'])
+                ? el('button', { class: 'ghost-btn', onclick: () => actions.importChitChats() }, [icon('truck'), 'Relier les envois maintenant'])
                 : null,
               el('button', { class: 'ghost-btn', onclick: () => actions.sync(card.key) }, [icon('refresh'), 'Synchroniser maintenant']),
             ])
@@ -428,7 +428,7 @@ const tabSynchro = (draft, touch, actions) => [
       byKey('schedule.syncCron') ? field(byKey('schedule.syncCron'), draft, touch, { label: 'Importer les commandes', hint: null }) : null,
       byKey('schedule.shipmentCron') ? field(byKey('schedule.shipmentCron'), draft, touch, { label: 'Vérifier les expéditions', hint: null }) : null,
       byKey('schedule.chitchatsImportCron')
-        ? field(byKey('schedule.chitchatsImportCron'), draft, touch, { label: 'Importer les commandes dans Chit Chats', hint: 'Activable dans Boutiques → Chit Chats.' })
+        ? field(byKey('schedule.chitchatsImportCron'), draft, touch, { label: 'Relier les envois Chit Chats', hint: 'L’app ne crée plus d’envoi : elle relie ceux que Chit Chats a importés et retire ses anciens doublons.' })
         : null,
       byKey('schedule.lookbackDays')
         ? field(byKey('schedule.lookbackDays'), draft, touch, { label: 'Remonter dans le passé de (jours)', hint: 'Les commandes plus anciennes que ça sont ignorées à chaque synchronisation.' })

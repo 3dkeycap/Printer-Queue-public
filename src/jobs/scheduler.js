@@ -4,7 +4,7 @@ import { createLogger } from '../lib/logger.js';
 import { getSettings } from '../domain/settings.service.js';
 import { syncAllSources } from './syncOrders.js';
 import { syncShipments } from './syncShipments.js';
-import { importOrdersToChitChats } from '../domain/chitchatsImport.js';
+import { reconcileChitChats } from '../domain/chitchatsImport.js';
 
 const log = createLogger('scheduler');
 
@@ -53,7 +53,8 @@ export const startScheduler = () => {
     guarded('shipments', () => syncShipments({ trigger: 'cron' })),
   );
 
-  const importJob = guarded('chitchats-import', () => importOrdersToChitChats({ trigger: 'cron' }));
+  // l'app ne crée plus d'envoi dans Chit Chats : elle relie les envois existants et retire ses anciens doublons
+  const importJob = guarded('chitchats-import', () => reconcileChitChats({ trigger: 'cron' }));
   let chitchatsImport = schedule(settings['schedule.chitchatsImportCron'], '0 * * * *', importJob);
 
   log.info('scheduler started', {

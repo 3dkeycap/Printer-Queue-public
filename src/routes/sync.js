@@ -3,7 +3,7 @@ import { getDb } from '../db/index.js';
 import { asyncRoute, badRequest } from '../lib/errors.js';
 import { syncAllSources, syncSource } from '../jobs/syncOrders.js';
 import { syncShipments } from '../jobs/syncShipments.js';
-import { importOrdersToChitChats } from '../domain/chitchatsImport.js';
+import { reconcileChitChats } from '../domain/chitchatsImport.js';
 
 export const syncRouter = Router();
 
@@ -18,7 +18,7 @@ syncRouter.post(
       return res.json({ orders, shipments });
     }
     if (source === 'chitchats-import') {
-      return res.json({ import: await importOrdersToChitChats({ trigger: 'manual' }) });
+      return res.json({ import: await reconcileChitChats({ trigger: 'manual' }) });
     }
     if (source === 'chitchats') {
       return res.json({ shipments: await syncShipments({ trigger: 'manual' }) });
