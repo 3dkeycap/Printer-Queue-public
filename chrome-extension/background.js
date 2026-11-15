@@ -176,14 +176,40 @@ const qzPrinters = async () => {
   }
 };
 
-/** Image PNG (base64) imprimée sur l'imprimante choisie, au format de l'étiquette (2 × 1 po par défaut). */
+/*
+ * L'étiquette est dessinée à plat (2 po de large × 1 po de haut), mais le rouleau de l'imprimante d'étiquettes avance
+ * dans l'autre sens (1 po de large × 2 po de haut) : on tourne l'image d'un quart de tour avant de l'envoyer.
+ * Le sens (droite / gauche / pas tournée) se règle dans les options de l'extension (`qzRotate`, 90 par défaut).
+ */
+const rotateImage = async (base64, degrees) => {
+  if (!degrees) return base64;
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+  const quarter = degrees % 180 !== 0;
+  const canvas = new OffscreenCanvas(quarter ? bitmap.height : bitmap.width, quarter ? bitmap.width : bitmap.height);
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((degrees * Math.PI) / 180);
+  ctx.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
+  const out = new Uint8Array(await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < out.length; i += 0x8000) binary += String.fromCharCode(...out.subarray(i, i + 0x8000));
+  return btoa(binary);
+};
+
+/** Image PNG (base64, dessinée 2 × 1 po) imprimée sur l'imprimante choisie, dans le sens du rouleau. */
 const qzPrintImage = async ({ image, printer, width = 2, height = 1 }) => {
   try {
-    const target = printer || (await chrome.storage.local.get('qzPrinter')).qzPrinter;
+    const stored = await chrome.storage.local.get(['qzPrinter', 'qzRotate']);
+    const target = printer || stored.qzPrinter;
     if (!target) throw new Error('aucune imprimante choisie (options de l’extension → Impression directe)');
+    const degrees = Number(stored.qzRotate ?? 90) || 0;
+    const quarter = degrees % 180 !== 0;
+    const data = await rotateImage(image, degrees);
     const qz = await qzConnect();
-    const config = qz.configs.create(target, { size: { width, height }, units: 'in', scaleContent: true, margins: 0 });
-    await qz.print(config, [{ type: 'pixel', format: 'image', flavor: 'base64', data: image }]);
+    const size = quarter ? { width: height, height: width } : { width, height };
+    const config = qz.configs.create(target, { size, units: 'in', scaleContent: true, margins: 0 });
+    await qz.print(config, [{ type: 'pixel', format: 'image', flavor: 'base64', data }]);
     return { ok: true, printer: target };
   } catch (error) {
     return qzError(error);

@@ -199,6 +199,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Extension 1.18.1 : étiquette VAT imprimée dans le bon sens.** Le rouleau fait 1 po de large × 2 po de long : l’image
+  (dessinée 2 × 1) est tournée d’un quart de tour et envoyée à QZ Tray en 1 × 2 po. Si le texte sort à l’envers, options de
+  l’extension → « Sens de l’étiquette sur le rouleau » (droite, gauche, ou pas tournée pour un rouleau de 2 po).
 - **Doublons dans Chit Chats : l’app ne crée plus d’envoi.** Les envois « venus de nulle part » étaient créés par l’import
   automatique de l’app (un envoi « pending » par commande ouverte, chaque heure), en plus de l’import Etsy de Chit Chats.
   Cet import est retiré (réglages et bouton compris). Le job horaire relie maintenant les commandes aux envois importés

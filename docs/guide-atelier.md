@@ -167,7 +167,8 @@ l'extension (clic droit sur l'icône → Options) → « Impression directe (QZ 
 1. **Télécharger le certificat**, puis dans QZ Tray (icône près de l'horloge) → *Advanced* → *Site Manager* → onglet
    *Allowed* → **+** → choisir ce fichier (sans ça, QZ Tray demande « Allow » à chaque étiquette) ;
 2. **Chercher les imprimantes**, choisir celle des étiquettes 2 × 1 po ;
-3. **Imprimer un test**.
+3. **Imprimer un test**. Si le texte sort à l’envers ou de travers, change « Sens de l’étiquette sur le rouleau »
+   (l’étiquette est tournée d’un quart de tour pour un rouleau de 1 po de large).
 
 Si QZ Tray ne répond pas, l'étiquette est téléchargée en PNG comme avant (un message dit pourquoi). Si la valeur en
 euros n'est pas sur la page, rien n'est imprimé (pas d'étiquette « € — » gâchée).

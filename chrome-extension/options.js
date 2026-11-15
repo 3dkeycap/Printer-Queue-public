@@ -248,9 +248,16 @@ const fillPrinters = (names, current) => {
 };
 
 const initQz = async () => {
-  const { qzPrinter } = await chrome.storage.local.get('qzPrinter');
+  const { qzPrinter, qzRotate = 90 } = await chrome.storage.local.get(['qzPrinter', 'qzRotate']);
   fillPrinters([], qzPrinter);
+  $('qz-rotate').value = String(qzRotate);
 };
+
+// le rouleau avance dans le sens de la longueur : l'image est tournée d'un quart de tour (réglable si le texte sort à l'envers)
+$('qz-rotate').addEventListener('change', async () => {
+  await chrome.storage.local.set({ qzRotate: Number($('qz-rotate').value) });
+  show($('qz-status'), 'Sens enregistré : fais « Imprimer un test » pour vérifier.', true);
+});
 
 $('qz-cert').addEventListener('click', async () => {
   const { appUrl } = await chrome.storage.sync.get('appUrl');

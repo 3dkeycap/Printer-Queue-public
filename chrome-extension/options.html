@@ -79,6 +79,12 @@
         </div>
         <label for="qz-printer">Imprimante des étiquettes VAT (sur cet ordinateur)</label>
         <select id="qz-printer"><option value="">— aucune : télécharger le PNG —</option></select>
+        <label for="qz-rotate" style="margin-top:10px">Sens de l'étiquette sur le rouleau</label>
+        <select id="qz-rotate">
+          <option value="90">Rouleau de 1 po de large : texte tourné vers la droite</option>
+          <option value="270">Rouleau de 1 po de large : texte tourné vers la gauche</option>
+          <option value="0">Rouleau de 2 po de large : pas tourné</option>
+        </select>
         <div class="row" style="margin-top:10px">
           <button id="qz-test" class="ghost">Imprimer un test</button>
         </div>
