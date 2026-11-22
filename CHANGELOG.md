@@ -213,6 +213,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Extension 1.20.1 : la livraison la moins chère est choisie tout de suite** (vu dans 2 enregistrements). Chit Chats ne
+  présélectionne aucun tarif et modifie la page sans arrêt pendant le chargement : l’extension attendait que la page se
+  calme et choisissait ~2 s après l’arrivée des tarifs, alors la personne cliquait avant elle. La page « Postage » est
+  maintenant traitée dès qu’elle apparaît (« Livraison : je cherche la moins chère… ») et le tarif le moins cher est coché
+  quelques dizaines de millisecondes après l’arrivée des tarifs.
 - **Extension 1.19.1 : la Description Chit Chats retrouve les commandes Shopify** (vu grâce à un enregistrement) :
   « Commande inconnue de l’app » / « commande introuvable » sur #5668 et #5669. L’extension ne reconnaissait que les
   numéros de 6 chiffres et plus (Etsy) et prenait la recherche `?q=5668` pour un nom de client. Elle lit maintenant le

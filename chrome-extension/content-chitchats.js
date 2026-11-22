@@ -1093,15 +1093,15 @@
     root.dataset.rqPostage = '1';
     showPanel();
     setStep('postage', 'running', 'je cherche la moins chère…');
-    // les tarifs arrivent un peu après l'affichage de l'étape
+    // les tarifs arrivent un peu après l'affichage de l'étape : on regarde souvent, pour choisir AVANT la personne
     let rates = [];
-    for (let attempt = 0; attempt < 40 && !rates.length; attempt += 1) {
+    for (let attempt = 0; attempt < 120 && !rates.length; attempt += 1) {
       rates = [...root.querySelectorAll('input[type="radio"]')]
         .map((radio) => ({ radio, row: rateRow(radio) }))
         .filter(({ row, radio }) => row && !radio.disabled && visible(row))
         .map(({ radio, row }) => ({ radio, row, price: Number((/\$\s?(\d[\d,]*\.\d{2})/.exec(row.textContent) ?? [])[1]?.replace(/,/g, '')) }))
         .filter((rate) => rate.price > 0);
-      if (!rates.length) await sleep(400);
+      if (!rates.length) await sleep(125);
     }
     const done = [];
     if (rates.length) {
@@ -1227,7 +1227,21 @@
     complete().catch(() => {});
     advance().catch((error) => say(error.message, 'warn'));
   };
+  /*
+   * Page « Postage » : tout de suite, sans attendre que la page se calme. Chit Chats n'y présélectionne aucun tarif et
+   * continue de modifier la page pendant le chargement : avec l'attente habituelle (700 ms sans changement),
+   * l'extension choisissait ~2 s après l'arrivée des tarifs et la personne cliquait avant elle (vu dans 2 enregistrements).
+   */
+  const fastPostage = () => {
+    if (!enabled || isLocked()) return;
+    const box = [...document.querySelectorAll('input[type="checkbox"]')].find((input) => /chit chats insurance/i.test(input.closest('label, div')?.textContent ?? ''));
+    if (!box || !visible(box.closest('label, div'))) return;
+    const root = stepRoot(box);
+    if (root.dataset.rqPostage) return;
+    postageStep(root).catch((error) => say(error.message, 'warn'));
+  };
   new MutationObserver(() => {
+    fastPostage();
     clearTimeout(timer);
     timer = setTimeout(tick, 700);
   }).observe(document.documentElement, { childList: true, subtree: true });
