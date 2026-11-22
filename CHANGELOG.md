@@ -218,6 +218,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Extension 1.21.1 : la ligne unique « VAT » marche vers l’Europe** (vu dans un enregistrement : « regroupement VAT
+  impossible (lignes de la Description non reconnues) »). Vers l’Europe, Chit Chats n’affiche pas les « Manufacturer
+  Details » (exigés seulement pour les États-Unis) et l’extension s’en servait pour repérer chaque ligne d’article. Elle
+  reconnaît maintenant les lignes par elles-mêmes (quantité, code HS), avec ou sans ce bloc.
 - **Keycaps « Ore » (Minecraft) : made in Canada.** Elles sont en nylon (gris) mais assemblées à l’atelier : l’extension
   remplit maintenant le fabricant Innov3d au Québec et le pays d’origine Canada au lieu de Hong Kong (titre contenant
   « Ore » ou « Minecraft »).

@@ -578,8 +578,15 @@
     if (!result.ok) widgetProblems.push(result);
     return result.ok;
   };
+  /*
+   * Les lignes d'articles, avec ou sans « Manufacturer Details » : vers l'Europe, Chit Chats n'affiche pas ce bloc (exigé
+   * seulement pour les États-Unis) et itemBlocks (qui cherche « Contact ») ne trouvait aucune ligne (vu dans un
+   * enregistrement : « lignes de la Description non reconnues »).
+   */
+  const rowBlocks = () => fieldsByLabel('HS Code').map((hs) => hs.closest('.js-shipment-item') ?? blockWith(hs, 'Quantity'));
+
   const groupForVat = async (group) => {
-    const blocks = itemBlocks();
+    const blocks = rowBlocks();
     if (!blocks.length || blocks.some((block) => !block)) return { ok: false, why: 'lignes de la Description non reconnues' };
     for (const block of blocks.slice(1).reverse()) {
       if (!visible(block)) continue;
@@ -590,7 +597,7 @@
     }
     for (let attempt = 0; attempt < 20 && visibleRows().length > 1; attempt += 1) await sleep(150);
     if (visibleRows().length !== 1) return { ok: false, why: `${visibleRows().length} lignes restent après la suppression` };
-    const block = itemBlocks().find((entry) => entry && visible(entry));
+    const block = rowBlocks().find((entry) => entry && visible(entry));
     if (!block) return { ok: false, why: 'ligne restante non reconnue' };
     const one = (label, exact = false) => fieldsByLabel(label, block, { exact }).find((control) => !control.disabled);
     const wrong = [];
