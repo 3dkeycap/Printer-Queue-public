@@ -153,8 +153,11 @@ En ouvrant un envoi (« Edit Shipment »), un **petit panneau Resin Queue** (à 
 Description), **Enveloppe** (il demande la taille — **Petite** déjà choisie, 3 cm de haut par défaut et modifiable ; sinon moyenne ou grosse + hauteur — et le poids),
 **Livraison** (la moins chère, assurance Chit Chats décochée). **Le paiement (« Pay for Shipment ») reste à toi**, après
 vérification ; ensuite, la fenêtre « Print Postage » lance l’impression toute seule. « Je fais à la main » arrête l’automatisme
-pour cet envoi, « ↻ Relancer » le reprend. Pour tout couper : la case **« Auto »** (marquée BETA) en bas à droite du panneau, ou icône de l’extension → interrupteur
-**« Automatisation Chit Chats »** en haut (c’est le même réglage ; on le rallume depuis l’icône).
+pour cet envoi, « ↻ Relancer » le reprend. **Deux interrupteurs** en bas à droite du panneau (les mêmes dans la fenêtre de l’extension, icône) :
+- **Aide au remplissage** : SEULEMENT la livraison la moins chère, l’assurance décochée et « Print Postage » après ton
+  paiement. Tu fais toi-même la Description, l’enveloppe et les « Save and continue » ;
+- **BETA · Tout faire** : tout l’assistant (Description, enveloppe, « Save and continue », livraison, « Print Postage »).
+Les deux coupés : l’extension ne touche à rien (on les rallume depuis l’icône de l’extension).
 
 **Quelque chose cloche ? Enregistre-le** : bouton **⏺ Enregistrer** en bas du panneau. Une pastille rouge « REC »
 apparaît en haut de la page ; fais l’envoi normalement (l’enregistrement continue même si la page se recharge), puis

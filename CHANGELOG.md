@@ -6,6 +6,11 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 ## [Non publié]
 
 ### Modifié
+- **Extension 1.21.0 : deux interrupteurs dans le panneau Chit Chats** (et dans la fenêtre de l’extension) :
+  **« Aide au remplissage »** fait seulement la livraison la moins chère, décoche l’assurance et clique « Print Postage »
+  après le paiement ; **« BETA · Tout faire »** fait tout l’assistant (ancien « Auto » / « Automatisation Chit Chats »,
+  dont il garde le réglage). « Print Postage » est aussi cliqué tout de suite, même si la page de Chit Chats continue de
+  bouger (comme le choix de la livraison).
 - **Réglages → Mises à jour refait, simple** : une grande carte d’état (à jour / nouvelle version avec la liste des nouveautés
   / mise à jour en cours avec les étapes Vérification → Sauvegarde → Construction → Redémarrage → Terminé / erreur, sans
   jargon) et UN bouton ; l’interrupteur « Mise à jour automatique » et la fréquence s’enregistrent tout de suite ; le journal

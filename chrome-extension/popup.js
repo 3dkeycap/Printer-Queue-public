@@ -8,9 +8,12 @@ const ORDER_URL = [/^https:\/\/admin\.shopify\.com\/store\/[^/]+\/orders\/(\d+)/
 const init = async () => {
   $('version').textContent = `v${chrome.runtime.getManifest().version}`;
   // interrupteur de l'automatisation Chit Chats (activée par défaut)
-  const { ccAuto } = await chrome.storage.sync.get('ccAuto');
-  $('ccAuto').checked = ccAuto !== false;
-  $('ccAuto').addEventListener('change', () => chrome.storage.sync.set({ ccAuto: $('ccAuto').checked }));
+  // deux interrupteurs (voir content-chitchats.js) ; l'ancien « Automatisation » (ccAuto) devient « Tout faire »
+  const { ccHelp, ccFull, ccAuto } = await chrome.storage.sync.get(['ccHelp', 'ccFull', 'ccAuto']);
+  $('ccHelp').checked = ccHelp !== false;
+  $('ccFull').checked = (ccFull ?? ccAuto) !== false;
+  $('ccHelp').addEventListener('change', () => chrome.storage.sync.set({ ccHelp: $('ccHelp').checked }));
+  $('ccFull').addEventListener('change', () => chrome.storage.sync.set({ ccFull: $('ccFull').checked }));
   $('settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
   $('update').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('options.html#update') }));
 

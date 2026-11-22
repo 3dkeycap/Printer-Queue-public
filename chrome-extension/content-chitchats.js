@@ -792,11 +792,14 @@
   };
   window.addEventListener('resize', placePanel);
 
+  // « Aide au remplissage » seule : l'assistant ne s'occupe que de la livraison, du paiement (toi) et de l'impression
+  const shownSteps = () => (modes.full ? STEPS : STEPS.filter(([key]) => ['postage', 'pay', 'print'].includes(key)));
+
   const renderSteps = () => {
     if (!panel) return;
     const list = panel.querySelector('[data-steps]');
     list.replaceChildren(
-      ...STEPS.map(([key, label]) => {
+      ...shownSteps().map(([key, label]) => {
         const state = steps[key]?.state ?? 'todo';
         const [icon, color] = ICONS[state];
         const row = document.createElement('div');
@@ -811,7 +814,7 @@
       }),
     );
     // version réduite : l'étape en cours sur une ligne
-    const current = STEPS.find(([key]) => ['running', 'warn', 'you'].includes(steps[key]?.state)) ?? STEPS.filter(([key]) => steps[key]?.state === 'done').at(-1);
+    const current = shownSteps().find(([key]) => ['running', 'warn', 'you'].includes(steps[key]?.state)) ?? shownSteps().filter(([key]) => steps[key]?.state === 'done').at(-1);
     panel.querySelector('[data-mini]').textContent = current ? `${ICONS[steps[current[0]].state][0]} ${current[1]}${steps[current[0]].detail ? ` — ${steps[current[0]].detail}` : ''}` : 'Prêt';
   };
 
@@ -848,9 +851,12 @@
         <div data-msg style="margin-top:6px;font-size:13px"></div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
           <button data-rec type="button" title="Enregistre tout ce qui se passe sur la page, puis télécharge un fichier à envoyer pour corriger les bugs" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:7px;background:#fdecec;color:#b42318;font:700 11px system-ui"></button>
-          <label data-auto style="display:flex;align-items:center;gap:6px;margin-left:auto;font:600 11px system-ui;color:#5b6a86;cursor:pointer">
+          <span style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <label data-mode="help" title="Seulement : la livraison la moins chère, l’assurance décochée et « Print Postage » après le paiement" style="display:flex;align-items:center;gap:6px;font:600 11px system-ui;color:#5b6a86;cursor:pointer">
+          Aide au remplissage <input type="checkbox" style="margin:0;cursor:pointer" /></label>
+          <label data-mode="full" title="Tout : Description, enveloppe, « Save and continue », livraison, « Print Postage »" style="display:flex;align-items:center;gap:6px;font:600 11px system-ui;color:#5b6a86;cursor:pointer">
           <span style="padding:1px 6px;border-radius:6px;background:#fff1c9;color:#8a6414;font-weight:800;letter-spacing:.04em">BETA</span>
-          Auto <input type="checkbox" checked style="margin:0;cursor:pointer" /></label></div>`;
+          Tout faire <input type="checkbox" style="margin:0;cursor:pointer" /></label></span></div>`;
       // la fenêtre de Chit Chats reprend le curseur : on garde nos événements (sinon impossible de taper)
       for (const type of ['focusin', 'focus', 'keydown', 'keypress', 'keyup', 'mousedown', 'click']) panel.addEventListener(type, (event) => event.stopPropagation());
       panel.querySelector('[data-rerun]').addEventListener('click', () => rerun().catch((error) => say(error.message, 'warn')));
@@ -862,13 +868,13 @@
       paintRec();
       globalThis.RQRec?.onChange(paintRec);
       recButton.addEventListener('click', () => (globalThis.RQRec?.isOn() ? globalThis.RQRec.stop() : globalThis.RQRec?.start()));
-      // même réglage que l'interrupteur de la fenêtre de l'extension : décoché = plus rien d'automatique (le panneau part)
-      panel.querySelector('[data-auto] input').addEventListener('change', (event) => {
-        if (!event.target.checked) chrome.storage.sync.set({ ccAuto: false });
-      });
+      // les deux interrupteurs (mêmes réglages que dans la fenêtre de l'extension) ; les deux coupés = le panneau part
+      panel.querySelector('[data-mode="help"] input').addEventListener('change', (event) => chrome.storage.sync.set({ ccHelp: event.target.checked }));
+      panel.querySelector('[data-mode="full"] input').addEventListener('change', (event) => chrome.storage.sync.set({ ccFull: event.target.checked }));
       document.documentElement.append(panel);
     }
     if (orderLabel) panel.querySelector('[data-order]').textContent = orderLabel;
+    paintModes();
     renderSteps();
     placePanel();
   };
@@ -1128,7 +1134,8 @@
    * bas), et seulement quand elle dit que l'envoi est prêt à imprimer.
    */
   const printPostage = async () => {
-    const print = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a')]
+    // seulement les boutons DANS une fenêtre (appelé à chaque changement de la page : doit rester léger)
+    const print = [...document.querySelectorAll(['.modal', '[role="dialog"]'].flatMap((box) => ['button', 'input[type="submit"]', 'input[type="button"]', 'a'].map((tag) => `${box} ${tag}`)).join(', '))]
       .filter((element) => visible(element) && !element.disabled && !element.classList.contains('disabled'))
       .find((element) => norm(element.textContent || element.value) === 'print postage' && element.closest('.modal, [role="dialog"]'));
     if (!print) return false;
@@ -1192,6 +1199,10 @@
   /** « ↻ Relancer » : refait l'étape affichée. */
   const rerun = async () => {
     setLocked(false);
+    if (!modes.full) {
+      for (const element of document.querySelectorAll('[data-rq-postage]')) delete element.dataset.rqPostage;
+      return fastPostage();
+    }
     if (fieldsByLabel('HS Code').length) return complete({ force: true });
     for (const element of document.querySelectorAll('[data-rq-package], [data-rq-postage], [data-rq-saved]')) {
       delete element.dataset.rqPackage;
@@ -1202,19 +1213,46 @@
     return advance();
   };
 
-  // interrupteur de la fenêtre de l'extension (« Automatisation Chit Chats ») : coupé = on ne touche à rien
+  /*
+   * Deux interrupteurs (panneau et fenêtre de l'extension) :
+   *   - « Aide au remplissage » (ccHelp) : SEULEMENT la livraison la moins chère, l'assurance décochée et « Print
+   *     Postage » après le paiement ; ne touche ni à la Description, ni à l'enveloppe, ni aux « Save and continue » ;
+   *   - « BETA · Tout faire » (ccFull, ancien ccAuto) : tout l'assistant.
+   * Les deux coupés : on ne touche à rien.
+   */
+  const modes = { help: true, full: true };
   let enabled = true;
-  chrome.storage.sync.get('ccAuto').then(({ ccAuto }) => {
-    enabled = ccAuto !== false;
-  });
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== 'sync' || !changes.ccAuto) return;
-    enabled = changes.ccAuto.newValue !== false;
+  const readModes = (stored) => {
+    modes.help = stored.ccHelp !== false;
+    modes.full = (stored.ccFull ?? stored.ccAuto) !== false;
+    enabled = modes.help || modes.full;
+  };
+  function paintModes() {
+    if (!panel) return;
+    panel.querySelector('[data-mode="help"] input').checked = modes.help;
+    panel.querySelector('[data-mode="full"] input').checked = modes.full;
+  }
+  chrome.storage.sync.get(['ccHelp', 'ccFull', 'ccAuto']).then(readModes);
+  chrome.storage.onChanged.addListener(async (changes, area) => {
+    if (area !== 'sync' || !(changes.ccHelp || changes.ccFull || changes.ccAuto)) return;
+    readModes(await chrome.storage.sync.get(['ccHelp', 'ccFull', 'ccAuto']));
+    paintModes();
+    renderSteps();
     if (!enabled) {
       asking = false;
       hidePanel();
-    }
+    } else tick();
   });
+
+  /** « Aide au remplissage » seule : Print Postage, et le panneau sur les pages d'un envoi (la livraison se fait dans fastPostage). */
+  const helpTick = async () => {
+    if (await printPostage()) return;
+    const onShipment =
+      fieldsByLabel('HS Code').length ||
+      [...document.querySelectorAll('.nav-steps, nav')].some((nav) => visible(nav) && /description/i.test(nav.textContent ?? '') && /postage/i.test(nav.textContent ?? ''));
+    if (!onShipment) return hidePanel();
+    showPanel();
+  };
 
   // le formulaire de Chit Chats se construit après le chargement (et change sans recharger la page)
   let timer = null;
@@ -1222,6 +1260,10 @@
     if (!enabled) return;
     if (isLocked()) {
       lockedTick().catch(() => {});
+      return;
+    }
+    if (!modes.full) {
+      helpTick().catch(() => {});
       return;
     }
     complete().catch(() => {});
@@ -1240,8 +1282,14 @@
     if (root.dataset.rqPostage) return;
     postageStep(root).catch((error) => say(error.message, 'warn'));
   };
+  // fenêtre « Print Postage » (après le paiement) : tout de suite aussi, même si la page continue de bouger
+  const fastPrint = () => {
+    if (!enabled || !document.querySelector('.modal, [role="dialog"]')) return;
+    printPostage().catch(() => {});
+  };
   new MutationObserver(() => {
     fastPostage();
+    fastPrint();
     clearTimeout(timer);
     timer = setTimeout(tick, 700);
   }).observe(document.documentElement, { childList: true, subtree: true });

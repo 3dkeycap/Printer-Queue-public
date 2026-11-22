@@ -2416,6 +2416,48 @@ globalThis.RQI18nTable = [
 "Hindi makopya"
 ],
 [
+"Aide au remplissage",
+"Filling help",
+"Ayuda de llenado",
+"Tulong sa pagpuno"
+],
+[
+"Tout faire",
+"Do everything",
+"Hacerlo todo",
+"Gawin lahat"
+],
+[
+"BETA · Tout faire",
+"BETA · Do everything",
+"BETA · Hacerlo todo",
+"BETA · Gawin lahat"
+],
+[
+"Seulement : la livraison la moins chère, l’assurance décochée et « Print Postage » après le paiement",
+"Only: the cheapest shipping, insurance unchecked and “Print Postage” after payment",
+"Solo: el envío más barato, el seguro desmarcado y «Print Postage» después del pago",
+"Ito lang: pinakamurang padala, naka-uncheck ang insurance at “Print Postage” pagkatapos magbayad"
+],
+[
+"Tout : Description, enveloppe, « Save and continue », livraison, « Print Postage »",
+"Everything: Description, envelope, “Save and continue”, shipping, “Print Postage”",
+"Todo: Descripción, sobre, «Save and continue», envío, «Print Postage»",
+"Lahat: Description, sobre, “Save and continue”, padala, “Print Postage”"
+],
+[
+"Chit Chats : la livraison la moins chère, l’assurance décochée, « Print Postage » (jamais le paiement)",
+"Chit Chats: the cheapest shipping, insurance unchecked, “Print Postage” (never pays)",
+"Chit Chats: el envío más barato, seguro desmarcado, «Print Postage» (nunca paga)",
+"Chit Chats: pinakamurang padala, naka-uncheck ang insurance, “Print Postage” (hindi nagbabayad)"
+],
+[
+"En plus : Description, enveloppe, « Save and continue »",
+"Also: Description, envelope, “Save and continue”",
+"Además: Descripción, sobre, «Save and continue»",
+"Dagdag pa: Description, sobre, “Save and continue”"
+],
+[
 "Automatisation Chit Chats",
 "Chit Chats automation",
 "Automatización de Chit Chats",
