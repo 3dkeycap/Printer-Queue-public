@@ -213,6 +213,9 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Keycaps « Ore » (Minecraft) : made in Canada.** Elles sont en nylon (gris) mais assemblées à l’atelier : l’extension
+  remplit maintenant le fabricant Innov3d au Québec et le pays d’origine Canada au lieu de Hong Kong (titre contenant
+  « Ore » ou « Minecraft »).
 - **Extension 1.20.1 : la livraison la moins chère est choisie tout de suite** (vu dans 2 enregistrements). Chit Chats ne
   présélectionne aucun tarif et modifie la page sans arrêt pendant le chargement : l’extension attendait que la page se
   calme et choisissait ~2 s après l’arrivée des tarifs, alors la personne cliquait avant elle. La page « Postage » est

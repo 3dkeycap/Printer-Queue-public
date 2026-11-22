@@ -155,6 +155,10 @@ describe('compléter le formulaire Chit Chats (extension)', () => {
     assert.equal(manufacturerFor({ title: 'Keycap', color_key: 'nylon-grey' }).key, 'hongkong');
     assert.equal(manufacturerFor({ title: 'Artisan', variant_title: 'Material & Color Nylon (Black)' }).key, 'hongkong');
     assert.equal(manufacturerFor({ title: 'Gateron Switches (10 pack)' }).key, 'dongguan');
+    // keycaps « Ore » (Minecraft) : nylon, mais assemblées ici -> Québec (made in Canada)
+    assert.equal(manufacturerFor({ title: 'Ore Keycap', variant_title: 'Gold', color_key: 'nylon-grey' }).key, 'quebec');
+    assert.equal(manufacturerFor({ title: 'Minecraft Diamond Ore Keycaps (Set of 4)', color_name: 'Nylon Grey' }).key, 'quebec');
+    assert.equal(manufacturerFor({ title: 'Core Keycap', color_key: 'nylon-grey' }).key, 'hongkong');
     // custom set : l'extension demande (Québec / Hong Kong / Chine) ; pas les descriptions « Custom Keyboards »
     const { isCustomSet } = await import('../src/domain/chitchatsImport.js');
     assert.equal(isCustomSet({ title: 'Custom Keycap Set' }), true);

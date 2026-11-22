@@ -308,11 +308,16 @@ export const MANUFACTURERS = {
 export const isCustomSet = (item) =>
   /\bcustom\b[^|()]{0,20}?\bsets?\b/i.test([item.title, item.variant_title].filter(Boolean).join(' | '));
 
-/** Le fabricant d'un article : nylon (couleur, titre ou variante) -> Hong Kong ; switchs (pas les « switch covers ») -> Dongguan. */
+/**
+ * Le fabricant d'un article : nylon (couleur, titre ou variante) -> Hong Kong ; switchs (pas les « switch covers ») ->
+ * Dongguan. Exception : les keycaps « Ore » (Minecraft) sont en nylon mais ASSEMBLÉES à l'atelier -> Québec (made in
+ * Canada), demande de l'atelier.
+ */
 export const manufacturerFor = (item) => {
   const text = [item.title, item.variant_title, item.sku, item.color_key, item.color_name].filter(Boolean).join(' ').toLowerCase();
-  if (/\bnylon\b/.test(text)) return { key: 'hongkong', ...MANUFACTURERS.hongkong };
   const title = String(item.title ?? '').toLowerCase();
+  if (/\b(ores?|minecraft)\b/.test(title)) return { key: 'quebec', ...MANUFACTURERS.quebec };
+  if (/\bnylon\b/.test(text)) return { key: 'hongkong', ...MANUFACTURERS.hongkong };
   if (/\bswitch(es)?\b/.test(title) && !/\bcovers?\b/.test(title)) return { key: 'dongguan', ...MANUFACTURERS.dongguan };
   return { key: 'quebec', ...MANUFACTURERS.quebec };
 };
