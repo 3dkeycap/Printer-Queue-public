@@ -460,11 +460,19 @@
     return fillText(control, text);
   };
 
+  /*
+   * Chaque ligne d'article de la Description a un « HS Code »… sauf pour un envoi AU CANADA (pas de douane : ni HS Code,
+   * ni pays d'origine). On repère alors les lignes par « Unit Value », présent partout. Avant, sans HS Code, l'extension
+   * ne reconnaissait pas la page Description et ne faisait rien (vu dans un enregistrement : commande 5697).
+   */
+  const anchorLabel = () => (fieldsByLabel('HS Code').length ? 'HS Code' : 'Unit Value');
+  const itemAnchors = () => fieldsByLabel(anchorLabel());
+
   /** Le bloc d'un article qui contient aussi `label` : le plus petit ancêtre de son « HS Code » qui n'a qu'un seul HS Code. */
   const blockWith = (hs, label) => {
     let node = hs.parentElement;
     while (node && node !== document.body) {
-      if (fieldsByLabel('HS Code', node).length > 1) return null;
+      if (fieldsByLabel(anchorLabel(), node).length > 1) return null;
       if (fieldsByLabel(label, node).length) return node;
       node = node.parentElement;
     }
@@ -477,7 +485,7 @@
    */
   const setItemWeights = async () => {
     let done = 0;
-    for (const hs of fieldsByLabel('HS Code')) {
+    for (const hs of itemAnchors()) {
       const block = blockWith(hs, 'Weight');
       if (!block) continue;
       const weight = fieldsByLabel('Weight', block)[0];
@@ -556,7 +564,7 @@
    * « Keyboard keycaps », SKU et identifiant « 3DK », la quantité totale et la valeur des produits (voir vatGroupFor côté
    * app). Ici on remplace les valeurs déjà là : c'est le but. Si une ligne ne part pas, on s'arrête (rien n'est enregistré).
    */
-  const visibleRows = () => fieldsByLabel('HS Code').filter(visible);
+  const visibleRows = () => itemAnchors().filter(visible);
   const removeButton = (block) =>
     block.querySelector('.js-remove-shipment-item') ??
     [...block.querySelectorAll('button, a')].find((button) => button.querySelector('.fa-trash') || /^(remove|delete|supprimer)$/i.test(String(button.getAttribute('aria-label') ?? button.textContent).trim()));
@@ -583,7 +591,7 @@
    * seulement pour les États-Unis) et itemBlocks (qui cherche « Contact ») ne trouvait aucune ligne (vu dans un
    * enregistrement : « lignes de la Description non reconnues »).
    */
-  const rowBlocks = () => fieldsByLabel('HS Code').map((hs) => hs.closest('.js-shipment-item') ?? blockWith(hs, 'Quantity'));
+  const rowBlocks = () => itemAnchors().map((hs) => hs.closest('.js-shipment-item') ?? blockWith(hs, 'Quantity'));
 
   const groupForVat = async (group) => {
     const blocks = rowBlocks();
@@ -618,7 +626,7 @@
   let widgetProblems = [];
   const complete = async ({ force = false } = {}) => {
     // pas un formulaire d'envoi (aucun champ « HS Code ») : rien à faire
-    const firstHs = fieldsByLabel('HS Code')[0];
+    const firstHs = itemAnchors()[0];
     if (!firstHs) return hideButton();
     showButton();
     // une fois par formulaire Description affiché (on peut y revenir depuis Package : il est alors refait)
@@ -685,7 +693,7 @@
     }
     if (origin) filled.push(`pays d'origine ×${origin}`);
     // description et identifiant produit : seulement quand chaque ligne de Chit Chats correspond à un article de la commande
-    const rows = fieldsByLabel('HS Code').length;
+    const rows = itemAnchors().length;
     if (rows === data.items.length) {
       // une seule « Description » par ligne (sinon on ne sait pas laquelle va avec quel article : on n'y touche pas)
       if (fieldsByLabel('Description').length === rows) {
@@ -696,7 +704,7 @@
     // « Manufacturer product / model ID » est OBLIGATOIRE pour l'Union européenne : le SKU de l'article quand il y en a
     // un, sinon (la plupart de nos produits n'ont pas de SKU) la description de la ligne, déjà sur la page
     let pid = 0;
-    for (const [index, hsControl] of fieldsByLabel('HS Code').entries()) {
+    for (const [index, hsControl] of itemAnchors().entries()) {
       const block = blockWith(hsControl, 'Manufacturer product');
       const control = block && fieldsByLabel('Manufacturer product', block)[0];
       if (!control) continue;
@@ -1186,14 +1194,14 @@
     if (insuranceBox && visible(insuranceBox.closest('label, div'))) return postageStep(stepRoot(insuranceBox));
     // plus aucune page d'envoi à l'écran (ni la fenêtre « Print Postage ») : l'assistant s'en va
     const printing = [...document.querySelectorAll('.modal, [role="dialog"]')].some((modal) => visible(modal) && /ready to print/i.test(modal.innerText ?? ''));
-    if (!fieldsByLabel('HS Code').length && !printing) hidePanel();
+    if (!itemAnchors().length && !printing) hidePanel();
     return null;
   };
 
   /** Envoi verrouillé (page de paiement déjà atteinte) : rien d'automatique, sauf la fenêtre « Print Postage ». */
   const lockedTick = async () => {
     if (await printPostage()) return;
-    const onShipment = fieldsByLabel('HS Code').length || [...document.querySelectorAll('.nav-steps, nav')].some((nav) => visible(nav) && /description/i.test(nav.textContent ?? '') && /postage/i.test(nav.textContent ?? ''));
+    const onShipment = itemAnchors().length || [...document.querySelectorAll('.nav-steps, nav')].some((nav) => visible(nav) && /description/i.test(nav.textContent ?? '') && /postage/i.test(nav.textContent ?? ''));
     if (!onShipment) return hidePanel();
     showPanel();
     // sur la page de paiement elle-même, le message « vérifie, puis paie » reste affiché
@@ -1210,7 +1218,7 @@
       for (const element of document.querySelectorAll('[data-rq-postage]')) delete element.dataset.rqPostage;
       return fastPostage();
     }
-    if (fieldsByLabel('HS Code').length) return complete({ force: true });
+    if (itemAnchors().length) return complete({ force: true });
     for (const element of document.querySelectorAll('[data-rq-package], [data-rq-postage], [data-rq-saved]')) {
       delete element.dataset.rqPackage;
       delete element.dataset.rqPostage;
@@ -1255,7 +1263,7 @@
   const helpTick = async () => {
     if (await printPostage()) return;
     const onShipment =
-      fieldsByLabel('HS Code').length ||
+      itemAnchors().length ||
       [...document.querySelectorAll('.nav-steps, nav')].some((nav) => visible(nav) && /description/i.test(nav.textContent ?? '') && /postage/i.test(nav.textContent ?? ''));
     if (!onShipment) return hidePanel();
     showPanel();

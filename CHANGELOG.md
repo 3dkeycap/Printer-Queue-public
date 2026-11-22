@@ -218,6 +218,10 @@ plus récentes sont en haut ; chaque ligne correspond à un commit de l'historiq
 - Test qui vérifie que chaque module du front se charge (pas de page blanche).
 
 ### Corrigé
+- **Extension 1.21.2 : envois au Canada** (vu dans un enregistrement, commande 5697). Sans douane, la Description de
+  Chit Chats n’a pas de « HS Code » : l’extension ne reconnaissait pas la page et ne faisait rien (poids des articles,
+  unité « kg » laissée, « Save and continue » à la main). Les lignes d’articles sont maintenant repérées par « Unit Value »
+  quand il n’y a pas de HS Code : poids 1 g, unité g, puis « Save and continue ».
 - **Extension 1.21.1 : la ligne unique « VAT » marche vers l’Europe** (vu dans un enregistrement : « regroupement VAT
   impossible (lignes de la Description non reconnues) »). Vers l’Europe, Chit Chats n’affiche pas les « Manufacturer
   Details » (exigés seulement pour les États-Unis) et l’extension s’en servait pour repérer chaque ligne d’article. Elle
